@@ -1,0 +1,1 @@
+DROP TABLE `member_contact_labels`;

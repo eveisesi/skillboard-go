@@ -1,0 +1,42 @@
+version: "3.7"
+
+services:
+    # app:
+    #     image: ghcr.io/eveisesi/skillboard:latest
+    #     restart: unless-stopped
+    #     container_name: skillboard-app
+    #     env_file: .config/.env
+    redis:
+        image: redis:6.2.5
+        restart: unless-stopped
+        container_name: skillboard-redis
+        env_file: .config/redis/.env
+        ports:
+            - "54400:6379"
+        command: >
+            redis-server /etc/redis.conf
+        volumes:
+            - skillboard-cache:/data
+            - ./.config/redis/redis.conf:/etc/redis.conf
+    # mongo:
+    #     image: mongo:latest
+    #     restart: unless-stopped
+    #     container_name: skillboard-mongo
+    #     env_file: .config/mongo/.env
+    #     ports:
+    #         - "54410:27017"
+    #     volumes:
+    #         - skillboard-mongo:/data/db
+    mysql:
+        image: mysql:5.7
+        restart: unless-stopped
+        container_name: skillboard-mysql
+        env_file: .config/mysql/.env
+        ports:
+            - "54420:3306"
+        volumes:
+            - skillboard-mysql:/var/lib/mysql
+volumes:
+    skillboard-cache:
+    skillboard-mongo:
+    skillboard-mysql:
