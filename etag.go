@@ -8,7 +8,7 @@ import (
 type EtagRepository interface {
 	Etag(ctx context.Context, path string) (*Etag, error)
 	// Etags(ctx context.Context, operators ...*Operator) ([]*Etag, error)
-	InsertEtag(ctx context.Context, etag *Etag) (*Etag, error)
+	InsertEtag(ctx context.Context, etag *Etag) error
 	// UpdateEtag(ctx context.Context, path string, etag *Etag) (*Etag, error)
 	// DeleteEtag(ctx context.Context, path string) (bool, error)
 }

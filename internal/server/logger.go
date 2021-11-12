@@ -28,7 +28,7 @@ func (l *structuredLogger) NewLogEntry(r *http.Request) middleware.LogEntry {
 		logFields["req_id"] = reqID
 	}
 
-	logFields["application"] = "pillbox-api"
+	logFields["application"] = "skillz-api"
 	logFields["http_method"] = r.Method
 
 	printQueryAndVariables(r, logFields)

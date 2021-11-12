@@ -2,23 +2,36 @@ package user
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/eveisesi/skillz"
 	"github.com/eveisesi/skillz/internal/auth"
+	"github.com/eveisesi/skillz/internal/character"
+	"github.com/gofrs/uuid"
 	"github.com/lestrrat-go/jwx/jwt"
 	"github.com/pkg/errors"
 )
 
-type Service struct {
-	auth auth.API
+type API interface {
+	Login(ctx context.Context, code, state string) error
+	UserFromToken(ctx context.Context, token jwt.Token) (*skillz.User, error)
 }
 
-func New(auth auth.API) *Service {
+type Service struct {
+	auth      auth.API
+	character character.API
+	user      skillz.UserRepository
+}
+
+func New(auth auth.API, character character.API, user skillz.UserRepository) *Service {
 	return &Service{
-		auth: auth,
+		auth:      auth,
+		character: character,
+		user:      user,
 	}
 }
 
@@ -48,23 +61,86 @@ func (s *Service) Login(ctx context.Context, code, state string) error {
 		return errors.Wrap(err, "failed to fetch/provision user for the provided token")
 	}
 
+	claims := token.PrivateClaims()
+	if _, ok := claims["owner"]; !ok {
+		return errors.New("invalid token, owner claims is missing")
+	}
+
+	ownerHash := claims["owner"].(string)
+
+	if user.OwnerHash == "" {
+		user.OwnerHash = ownerHash
+	} else if user.OwnerHash != ownerHash {
+		return errors.New("character owner hash mismatch. please contact support")
+	}
+
+	if _, ok := claims["scp"]; !ok {
+		return errors.New("invalid token, scope claim is missing")
+	}
+
+	scp := make([]skillz.Scope, 0)
+	switch a := claims["scp"].(type) {
+	case []interface{}:
+		for _, v := range a {
+			scp = append(scp, skillz.Scope(v.(string)))
+		}
+	case string:
+		scp = append(scp, skillz.Scope(a))
+	default:
+		return errors.New("invalid type for scp claim in token.")
+	}
+
+	user.Scopes = scp
+	user.AccessToken = bearer.AccessToken
+	user.RefreshToken = bearer.RefreshToken
+	user.Expires = bearer.Expiry
+	user.LastLogin = time.Now()
+
+	switch user.ID == uuid.Nil {
+	case true:
+		user.ID = uuid.Must(uuid.NewV4())
+		_, err = s.user.CreateUser(ctx, user)
+	case false:
+		_, err = s.user.UpdateUser(ctx, user)
+	}
+
+	return err
+
 }
 
-func (s *Service) MemberFromToken(ctx context.Context, token jwt.Token) (*skillz.User, error) {
+func (s *Service) UserFromToken(ctx context.Context, token jwt.Token) (*skillz.User, error) {
 
 	subject := token.Subject()
 	if subject == "" {
 		return nil, errors.New("token subject is empty, expected parsable value")
 	}
 
-	memberID, err := memberIDFromSubject(subject)
+	characterID, err := memberIDFromSubject(subject)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse character id from token subject")
 	}
 
+	user, err := s.user.UserByCharacterID(ctx, characterID)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
+
+	if errors.Is(err, sql.ErrNoRows) {
+		user = &skillz.User{
+			CharacterID: characterID,
+		}
+	}
+
+	_, err = s.character.Character(ctx, characterID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to fetch user's character")
+	}
+
+	return user, nil
+
 }
 
-func memberIDFromSubject(sub string) (uint, error) {
+func memberIDFromSubject(sub string) (uint64, error) {
 
 	parts := strings.Split(sub, ":")
 
@@ -72,8 +148,6 @@ func memberIDFromSubject(sub string) (uint, error) {
 		return 0, fmt.Errorf("invalid sub format")
 	}
 
-	id, err := strconv.ParseUint(parts[2], 10, 32)
-
-	return uint(id), err
+	return strconv.ParseUint(parts[2], 10, 64)
 
 }

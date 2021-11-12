@@ -23,6 +23,20 @@ type config struct {
 	Log struct {
 		Level string `envconfig:"LOG_LEVEL" required:"true"`
 	}
+
+	Eve struct {
+		ClientID     string `envconfig:"EVE_CLIENT_ID" required:"true"`
+		ClientSecret string `envconfig:"EVE_CLIENT_SECRET" required:"true"`
+		JWKSURI      string `envconfig:"EVE_JWKS_URI" required:"true"`
+	}
+
+	Server struct {
+		Port uint `envconfig:"SERVER_PORT" required:"true"`
+	}
+
+	Environment string `envconfig:"ENVIRONMENT" required:"true"`
+
+	UserAgent string `envconfig:"USER_AGENT" required:"true"`
 }
 
 func buildConfig() {

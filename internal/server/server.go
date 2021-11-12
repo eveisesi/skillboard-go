@@ -5,8 +5,15 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/handler/extension"
+	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/eveisesi/skillz"
+	"github.com/eveisesi/skillz/internal/auth"
+	"github.com/eveisesi/skillz/internal/character"
+	resolvers "github.com/eveisesi/skillz/internal/server/gql"
+	"github.com/eveisesi/skillz/internal/server/gql/generated"
 	"github.com/eveisesi/skillz/internal/user"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -20,24 +27,34 @@ type server struct {
 	logger *logrus.Logger
 	// loaders dataloaders.Service
 
-	user user.Service
+	auth      auth.API
+	character character.API
+	user      user.API
 
 	server *http.Server
 }
 
 func New(
+
 	port uint,
 	env skillz.Environment,
 	// newrelic *newrelic.Application,
 	logger *logrus.Logger,
 	// loaders dataloaders.Service,
 
+	auth auth.API,
+	character character.API,
+	user user.API,
+
 ) *server {
 
 	s := &server{
-		port:   port,
-		env:    env,
-		logger: logger,
+		port:      port,
+		env:       env,
+		logger:    logger,
+		auth:      auth,
+		character: character,
+		user:      user,
 		// loaders:     loaders,
 	}
 
@@ -50,13 +67,23 @@ func New(
 }
 
 func (s *server) Run() error {
-	s.logger.WithField("service", "server").Infof("Starting on Port %d", s.port)
+	// defer wg.Done()
+	entry := s.logger.WithField("service", "server")
+	entry.Infof("Starting on Port %d", s.port)
+
 	return s.server.ListenAndServe()
+	// if err != nil {
+	// 	entry.WithError(err).Fatal("failed to start server")
+	// }
+
+	// entry.Infof("Server is running on Port %d", s.port)
+
+	// <-done
+	// entry.Info("attempting to gracefully shutdown server")
+
 }
 
-// GracefullyShutdown gracefully shuts down the HTTP API.
-func (s *server) GracefullyShutdown(ctx context.Context) error {
-	s.logger.Info("attempting to shutdown server gracefully")
+func (s *server) Shutdown(ctx context.Context) error {
 	return s.server.Shutdown(ctx)
 }
 
@@ -73,30 +100,33 @@ func (s *server) buildRouter() *chi.Mux {
 		w.WriteHeader(http.StatusOK)
 	})
 
+	r.Get("/auth/callback", s.handleGetAuthCallback)
+
 	r.Get("/playground", playground.Handler("GraphQL playground", "/graphql"))
 
-	// r.Group(func(r chi.Router) {
-	// 	r.Use(s.authorization)
+	r.Group(func(r chi.Router) {
+		// r.Use(s.authorization)
 
-	// 	// ##### GraphQL Handler #####
-	// 	handler := handler.New(
-	// 		generated.NewExecutableSchema(
-	// 			generated.Config{
-	// 				Resolvers: resolvers.New(
-	// 					s.logger,
-	// 				),
-	// 			},
-	// 		),
-	// 	)
-	// 	handler.AddTransport(transport.POST{})
-	// 	handler.AddTransport(transport.MultipartForm{})
-	// 	handler.Use(extension.Introspection{})
-	// 	handler.SetQueryCache(lru.New(1000))
-	// 	handler.Use(extension.AutomaticPersistedQuery{
-	// 		Cache: lru.New(100),
-	// 	})
-	// 	r.Handle("/graphql", handler)
-	// })
+		// ##### GraphQL Handler #####
+		handler := handler.New(
+			generated.NewExecutableSchema(
+				generated.Config{
+					Resolvers: resolvers.New(s.auth, s.character, s.user),
+				},
+			),
+		)
+		handler.AddTransport(transport.POST{})
+
+		if s.env != skillz.Production {
+			handler.Use(extension.Introspection{})
+		}
+
+		// handler.SetQueryCache(lru.New(1000))
+		// handler.Use(extension.AutomaticPersistedQuery{
+		// 	Cache: lru.New(100),
+		// })
+		r.Handle("/graphql", handler)
+	})
 
 	return r
 }

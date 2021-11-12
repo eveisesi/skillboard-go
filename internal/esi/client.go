@@ -10,15 +10,15 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/eveisesi/skillz"
 	"github.com/eveisesi/skillz/internal/etag"
-	"github.com/go-http-utils/headers"
 	"github.com/go-redis/redis/v8"
 	"github.com/pkg/errors"
 )
 
 type API interface {
 	characters
+	corporations
+	alliance
 }
 
 type Service struct {
@@ -26,8 +26,6 @@ type Service struct {
 	redis  *redis.Client
 
 	etag etag.API
-
-	userAgent string
 }
 
 // Compile Check
@@ -38,9 +36,9 @@ const (
 	headerTimestampFormat = "Mon, 02 Jan 2006 15:04:05 MST"
 )
 
-func New(client *http.Client, redis *redis.Client, etag etag.API, userAgent string) *Service {
+func New(client *http.Client, redis *redis.Client, etag etag.API) *Service {
 	return &Service{
-		client, redis, etag, userAgent,
+		client, redis, etag,
 	}
 }
 
@@ -50,23 +48,10 @@ type out struct {
 	Status  int         `json:"status"`
 }
 
-func (s *Service) request(ctx context.Context, method, path string, body io.Reader, expected int, out *out) error {
+func (s *Service) request(ctx context.Context, method, path string, body io.Reader, expected int, out *out, mods ...ModifierFunc) error {
 
-	var etag *skillz.Etag
 	var err error
 	var res = new(http.Response)
-	if method == http.MethodGet {
-		err = s.getResponseCache(ctx, path, out)
-		if err == nil {
-			return nil
-		}
-
-		etag, err = s.etag.Etag(ctx, path)
-		if err != nil {
-			return errors.Wrap(err, "failed to fetch etag for request")
-		}
-
-	}
 
 	uri, _ := url.ParseRequestURI(path)
 	uri.Scheme = "https"
@@ -78,10 +63,11 @@ func (s *Service) request(ctx context.Context, method, path string, body io.Read
 			return errors.Wrap(err, "failed to build request")
 		}
 
-		req.Header.Add(headers.UserAgent, s.userAgent)
-
-		if method == http.MethodGet && etag != nil {
-			req.Header.Add(headers.IfNoneMatch, etag.Etag)
+		for _, mod := range mods {
+			err = mod(req, nil)
+			if err != nil {
+				return err
+			}
 		}
 
 		res, err = s.client.Do(req)
@@ -117,21 +103,10 @@ func (s *Service) request(ctx context.Context, method, path string, body io.Read
 		return errors.Errorf("expected status %d, got %d: %s", expected, res.StatusCode, string(data))
 	}
 
-	var cacheDuration time.Duration
-	expiresHeader := res.Header.Get(headers.Expires)
-	if expiresHeader != "" {
-		expires, err := time.Parse(headerTimestampFormat, expiresHeader)
-		if err == nil {
-			cacheDuration = time.Until(expires)
-		}
-		etagHeader := res.Header.Get(headers.ETag)
-		if etagHeader != "" {
-			etag.Path = path
-			etag.Etag = etagHeader
-			etag.CachedUntil = expires
-
-			s.etag.InsertEtag(ctx, etag)
-
+	for _, mod := range mods {
+		err = mod(nil, res)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -144,38 +119,7 @@ func (s *Service) request(ctx context.Context, method, path string, body io.Read
 		return errors.Wrap(err, "failed to decode request body to json")
 	}
 
-	if method == http.MethodGet {
-		_ = s.cacheResponse(ctx, path, cacheDuration, out)
-	}
-
 	return nil
-
-}
-
-func (s *Service) cacheResponse(ctx context.Context, path string, duration time.Duration, out *out) error {
-
-	payload, err := json.Marshal(out)
-	if err != nil {
-		return errors.Wrap(err, "failed to cache response for cache")
-	}
-
-	_, err = s.redis.Set(ctx, hash(path), string(payload), duration).Result()
-	if err != nil {
-		return errors.Wrap(err, "failed to write response body to cache layer")
-	}
-
-	return nil
-
-}
-
-func (s *Service) getResponseCache(ctx context.Context, path string, out *out) error {
-
-	b, err := s.redis.Get(ctx, hash(path)).Bytes()
-	if err != nil {
-		return err
-	}
-
-	return json.Unmarshal(b, out)
 
 }
 

@@ -1,6 +1,7 @@
 package mysql
 
 const (
-	ColumnCreatedAt = "created_at"
-	ColumnUpdatedAt = "updated_at"
+	ColumnCharacterID string = "character_id"
+	ColumnCreatedAt   string = "created_at"
+	ColumnUpdatedAt   string = "updated_at"
 )

@@ -7,6 +7,25 @@ import (
 	"github.com/eveisesi/skillz"
 )
 
+const (
+	prefixFormat string = "[%s.%s]"
+	errorFFormat string = "[%s.%s] %s"
+)
+const (
+	allianceRepository    string = "AllianceRepository"
+	characterRepository   string = "CharacterRepository"
+	cloneRepository       string = "CloneRepository"
+	corporationRepository string = "CorporationRepository"
+	etagRepository        string = "ETagRepository"
+	skillsRepository      string = "SkillsRepository"
+	userRepository        string = "UserRepository"
+)
+
+type tableConf struct {
+	table   string
+	columns []string
+}
+
 func BuildFilters(s sq.SelectBuilder, operators ...*skillz.Operator) sq.SelectBuilder {
 	for _, a := range operators {
 		if !a.Operation.IsValid() {

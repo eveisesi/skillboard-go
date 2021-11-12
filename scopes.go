@@ -6,10 +6,21 @@ import (
 	"encoding/json"
 
 	"github.com/pkg/errors"
-	"github.com/volatiletech/null"
 )
 
-type ScopeMap map[Scope][]ScopeResolver
+// How to use Processor interface
+// Call Scopes to get a slice of scopes that the Processor supports
+// Loops over that slice, if the user use one of more of the scopes
+// that the processor supports, call the Process func passing in the
+// User. That process func will evaluate the user's scopes to determine
+// which internal functionality to call
+
+type Processor interface {
+	Process(user *User) error
+	Scopes() []string
+}
+
+type ScopeProcessors []Processor
 
 type ScopeResolver struct {
 	Name string
@@ -37,18 +48,13 @@ func (s Scope) String() string {
 	return string(s)
 }
 
-type MemberScope struct {
-	Scope  Scope     `db:"scope" json:"scope"`
-	Expiry null.Time `db:"expiry,omitempty" json:"expiry,omitempty"`
-}
+type UserScopes []Scope
 
-type MemberScopes []MemberScope
-
-func (s *MemberScopes) Scan(value interface{}) error {
+func (s *UserScopes) Scan(value interface{}) error {
 
 	switch data := value.(type) {
 	case []byte:
-		var scopes MemberScopes
+		var scopes UserScopes
 		err := json.Unmarshal(data, &scopes)
 		if err != nil {
 			return err
@@ -60,12 +66,13 @@ func (s *MemberScopes) Scan(value interface{}) error {
 	return nil
 }
 
-func (s MemberScopes) Value() (driver.Value, error) {
+func (s UserScopes) Value() (driver.Value, error) {
 
 	if len(s) == 0 {
 		return `[]`, nil
 	}
 	data, err := json.Marshal(s)
 
-	return data, errors.Wrap(err, "[MemberScopes] Failed to marshal scope for storage in data store")
+	return data, errors.Wrap(err, "[UserScopes] Failed to marshal scope for data store")
+
 }

@@ -7,23 +7,25 @@ import (
 	"time"
 
 	"github.com/eveisesi/skillz"
-	"github.com/go-redis/redis"
+	"github.com/go-redis/redis/v8"
+	"github.com/pkg/errors"
 )
 
 type AuthAPI interface {
 	JSONWebKeySet(ctx context.Context) ([]byte, error)
 	SaveJSONWebKeySet(ctx context.Context, jwks []byte) error
 	AuthAttempt(ctx context.Context, hash string) (*skillz.AuthAttempt, error)
-	CreateAuthAttempt(ctx context.Context, attempt *skillz.AuthAttempt) (*skillz.AuthAttempt, error)
+	CreateAuthAttempt(ctx context.Context, attempt *skillz.AuthAttempt) error
 }
 
-const keyAuthAttempt = "skillz::auth::attempt::%s"
-const keyAuthJWKS = "skillz::auth::jwks"
+const keyAuthAttempt = "auth::attempt"
+const keyAuthJWKS = "auth::jwks"
 
 func (s *Service) JSONWebKeySet(ctx context.Context) ([]byte, error) {
+	key := generateKey(keyAuthJWKS)
 
-	result, err := s.redis.Get(ctx, keyAuthJWKS).Bytes()
-	if err != nil && err != redis.Nil {
+	result, err := s.redis.Get(ctx, key).Bytes()
+	if err != nil && !errors.Is(err, redis.Nil) {
 		return nil, err
 	}
 
@@ -36,19 +38,17 @@ func (s *Service) JSONWebKeySet(ctx context.Context) ([]byte, error) {
 }
 
 func (s *Service) SaveJSONWebKeySet(ctx context.Context, jwks []byte) error {
-
-	_, err := s.redis.Set(ctx, keyAuthJWKS, jwks, time.Hour*6).Result()
-
+	key := generateKey(keyAuthJWKS)
+	_, err := s.redis.Set(ctx, key, jwks, time.Hour*6).Result()
 	return err
-
 }
 
-func (s *Service) AuthAttempt(ctx context.Context, hash string) (*skillz.AuthAttempt, error) {
+func (s *Service) AuthAttempt(ctx context.Context, state string) (*skillz.AuthAttempt, error) {
 
-	var attempt = new(skillz.AuthAttempt)
+	key := generateKey(keyAuthAttempt, state)
 
-	result, err := s.redis.Get(ctx, fmt.Sprintf(keyAuthAttempt, hash)).Bytes()
-	if err != nil && err != redis.Nil {
+	result, err := s.redis.Get(ctx, key).Bytes()
+	if err != nil && !errors.Is(err, redis.Nil) {
 		return nil, err
 	}
 
@@ -56,30 +56,33 @@ func (s *Service) AuthAttempt(ctx context.Context, hash string) (*skillz.AuthAtt
 		return nil, nil
 	}
 
+	var attempt = new(skillz.AuthAttempt)
 	err = json.Unmarshal(result, attempt)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal data onto result struct: %w", err)
+		return nil, errors.Wrap(err, "failed to unmarshal data onto result struct")
 	}
 
 	return attempt, nil
 
 }
 
-func (s *Service) CreateAuthAttempt(ctx context.Context, attempt *skillz.AuthAttempt) (*skillz.AuthAttempt, error) {
+func (s *Service) CreateAuthAttempt(ctx context.Context, attempt *skillz.AuthAttempt) error {
 
 	if attempt.State == "" {
-		return nil, fmt.Errorf("empty state provided")
+		return fmt.Errorf("empty state provided")
 	}
 
 	b, err := json.Marshal(attempt)
 	if err != nil {
-		return nil, fmt.Errorf("failed to cache auth attempt: %w", err)
+		return fmt.Errorf("failed to cache auth attempt: %w", err)
 	}
 
-	_, err = s.redis.Set(ctx, fmt.Sprintf(keyAuthAttempt, attempt.State), b, time.Minute*5).Result()
+	key := generateKey(keyAuthAttempt, attempt.State)
+
+	_, err = s.redis.Set(ctx, key, b, time.Minute*5).Result()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create auth attempt: %w", err)
+		return errors.Wrap(err, "failed to create auth attempt")
 	}
 
-	return attempt, nil
+	return nil
 }

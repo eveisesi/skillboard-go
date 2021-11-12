@@ -13,10 +13,10 @@ type CharacterRepository interface {
 }
 
 type characterRepository interface {
-	Character(ctx context.Context, id uint) (*Character, error)
+	Character(ctx context.Context, id uint64) (*Character, error)
 	// Characters(ctx context.Context, operators ...*Operator) ([]*Character, error)
-	CreateCharacter(ctx context.Context, character *Character) (*Character, error)
-	UpdateCharacter(ctx context.Context, id uint, character *Character) (*Character, error)
+	CreateCharacter(ctx context.Context, character *Character) error
+	UpdateCharacter(ctx context.Context, character *Character) error
 }
 
 type characterHistoryRepository interface {
@@ -41,7 +41,7 @@ type Character struct {
 }
 
 type CharacterCorporationHistory struct {
-	CharacterID   uint      `db:"character_id" json:"character_id"`
+	CharacterID   uint64    `db:"character_id" json:"character_id"`
 	RecordID      uint64    `db:"record_id" json:"record_id"`
 	CorporationID uint      `db:"corporation_id" json:"corporation_id"`
 	IsDeleted     bool      `db:"is_deleted" json:"is_deleted"`

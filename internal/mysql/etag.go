@@ -7,12 +7,11 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/eveisesi/skillz"
-	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 )
 
 type ETagRepository struct {
-	db      *sqlx.DB
+	db      QueryExecContext
 	table   string
 	columns []string
 }
@@ -23,7 +22,7 @@ const (
 	ETagCachedUntil = "cached_until"
 )
 
-func NewETagRepository(db *sqlx.DB, table string) *ETagRepository {
+func NewETagRepository(db QueryExecContext, table string) *ETagRepository {
 	return &ETagRepository{
 		db:    db,
 		table: table,
@@ -41,22 +40,23 @@ func (r *ETagRepository) Etag(ctx context.Context, path string) (*skillz.Etag, e
 		Limit(1).
 		ToSql()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, etagRepository, "Etag", "failed to generate sql")
 	}
 
 	var etag = new(skillz.Etag)
-	return etag, r.db.GetContext(ctx, etag, query, args...)
+	err = r.db.GetContext(ctx, etag, query, args...)
+	return etag, errors.Wrapf(err, prefixFormat, etagRepository, "Etag")
 
 }
 
 var insertEtagDuplicateKeyStmt = fmt.Sprintf(
-	"ON DUPLICATE KEY UPDATE %[1]s = VALUES(%[1]s), %[2]s = VALUES(%[2]s), %[3]s = VALLUES(%[3]s)",
+	"ON DUPLICATE KEY UPDATE %[1]s = VALUES(%[1]s), %[2]s = VALUES(%[2]s), %[3]s = VALUES(%[3]s)",
 	ETagETag,
 	ETagCachedUntil,
 	ColumnUpdatedAt,
 )
 
-func (r *ETagRepository) InsertEtag(ctx context.Context, etag *skillz.Etag) (*skillz.Etag, error) {
+func (r *ETagRepository) InsertEtag(ctx context.Context, etag *skillz.Etag) error {
 
 	now := time.Now()
 	etag.CreatedAt = now
@@ -70,12 +70,10 @@ func (r *ETagRepository) InsertEtag(ctx context.Context, etag *skillz.Etag) (*sk
 		ColumnUpdatedAt: etag.UpdatedAt,
 	}).Suffix(insertEtagDuplicateKeyStmt).ToSql()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, etagRepository, "InsertEtag", "failed to generate sql")
 	}
 
-	fmt.Println(query)
-
-	_, err = r.db.ExecContext(ctx, query, args)
-	return etag, err
+	_, err = r.db.ExecContext(ctx, query, args...)
+	return errors.Wrapf(err, prefixFormat, etagRepository, "InsertEtag")
 
 }

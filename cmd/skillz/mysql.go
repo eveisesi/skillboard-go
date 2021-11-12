@@ -5,15 +5,16 @@ import (
 	"log"
 	"time"
 
-	"github.com/go-sql-driver/mysql"
+	"github.com/eveisesi/skillz/internal/mysql"
+	driver "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 )
 
-func buildMySQL() *sqlx.DB {
+func buildMySQL() {
 
 	m := cfg.MySQL
 
-	config := mysql.Config{
+	config := driver.Config{
 		User:                 m.User,
 		Passwd:               m.Pass,
 		Net:                  "tcp",
@@ -42,6 +43,6 @@ func buildMySQL() *sqlx.DB {
 		log.Panicf("[MySQL Connect] Failed to ping mysql server: %s", err)
 	}
 
-	return sqlx.NewDb(db, "mysql")
+	mysqlClient = mysql.NewQueryLogger(sqlx.NewDb(db, "mysql"), logger)
 
 }

@@ -12,7 +12,7 @@ import (
 
 type API interface {
 	Etag(ctx context.Context, path string) (*skillz.Etag, error)
-	InsertEtag(ctx context.Context, etag *skillz.Etag) (*skillz.Etag, error)
+	InsertEtag(ctx context.Context, etag *skillz.Etag) error
 }
 
 type Service struct {
@@ -45,15 +45,16 @@ func (s *Service) Etag(ctx context.Context, path string) (*skillz.Etag, error) {
 	}
 
 	return etag, nil
+
 }
 
-func (s *Service) InsertEtag(ctx context.Context, etag *skillz.Etag) (*skillz.Etag, error) {
+func (s *Service) InsertEtag(ctx context.Context, etag *skillz.Etag) error {
 
-	etag, err := s.etag.InsertEtag(ctx, etag)
+	err := s.etag.InsertEtag(ctx, etag)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to persist etag to datastore")
+		return errors.Wrap(err, "failed to persist etag to datastore")
 	}
 
-	return etag, s.cache.SetEtag(ctx, etag.Path, etag, time.Since(etag.CachedUntil))
+	return s.cache.SetEtag(ctx, etag, time.Since(etag.CachedUntil))
 
 }

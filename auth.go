@@ -20,3 +20,11 @@ const (
 	ExpiredAuthStatus
 	CompletedAuthStatus
 )
+
+var StatusMap = map[AuthAttemptStatus]string{
+	CreateAuthStatus:    "create",
+	PendingAuthStatus:   "pending",
+	InvalidAuthStatus:   "invalid",
+	ExpiredAuthStatus:   "expired",
+	CompletedAuthStatus: "completed",
+}

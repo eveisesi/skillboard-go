@@ -9,11 +9,6 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-type API interface {
-	AuthAPI
-	EtagAPI
-}
-
 type Service struct {
 	redis *redis.Client
 }
@@ -30,6 +25,10 @@ func generateKey(args ...string) string {
 
 func hashUint64(i uint64) string {
 	return hash(strconv.FormatUint(i, 10))
+}
+
+func hashUint(i uint) string {
+	return hash(strconv.FormatUint(uint64(i), 10))
 }
 
 func hash(s string) string {

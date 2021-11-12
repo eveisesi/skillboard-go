@@ -4,14 +4,15 @@ import (
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/eveisesi/skillz"
 	"github.com/eveisesi/skillz/internal/cache"
+	"github.com/go-redis/redis/v8"
 	"github.com/lestrrat-go/jwx/jwk"
 	"github.com/lestrrat-go/jwx/jwt"
 	"golang.org/x/oauth2"
@@ -19,12 +20,13 @@ import (
 
 type API interface {
 	InitializeAttempt(ctx context.Context) (*skillz.AuthAttempt, error)
-	AuthAttempt(ctx context.Context, hash string) (*skillz.AuthAttempt, error)
-	UpdateAuthAttempt(ctx context.Context, hash string, attempt *skillz.AuthAttempt) (*skillz.AuthAttempt, error)
-	AuthorizationURI(ctx context.Context, state string, scopes []string) string
-	ValidateToken(ctx context.Context, member *skillz.User) (*skillz.User, error)
+	AuthAttempt(ctx context.Context, state string) (*skillz.AuthAttempt, error)
+	UpdateAuthAttempt(ctx context.Context, attempt *skillz.AuthAttempt) error
+	AuthorizationURI(ctx context.Context, state string) string
 	BearerForCode(ctx context.Context, code string) (*oauth2.Token, error)
 	ParseAndVerifyToken(ctx context.Context, t string) (jwt.Token, error)
+
+	// ValidateToken(ctx context.Context, user *skillz.User) (*skillz.User, error)
 }
 
 type Service struct {
@@ -45,6 +47,9 @@ func New(client *http.Client, oauth *oauth2.Config, cache cache.AuthAPI, jwksEnd
 	}
 }
 
+// have func(ctx context.Context, state string) (*github.com/eveisesi/skillz.AuthAttempt, error),
+// want func(ctx context.Context, attempt *github.com/eveisesi/skillz.AuthAttempt) error)
+
 func (s *Service) InitializeAttempt(ctx context.Context) (*skillz.AuthAttempt, error) {
 
 	h := hmac.New(sha256.New, nil)
@@ -56,72 +61,64 @@ func (s *Service) InitializeAttempt(ctx context.Context) (*skillz.AuthAttempt, e
 		State:  fmt.Sprintf("%x", string(b)),
 	}
 
+	return attempt, s.cache.CreateAuthAttempt(ctx, attempt)
+
+}
+
+func (s *Service) AuthAttempt(ctx context.Context, state string) (*skillz.AuthAttempt, error) {
+
+	attempt, err := s.cache.AuthAttempt(ctx, state)
+	if err != nil && !errors.Is(err, redis.Nil) {
+		return nil, fmt.Errorf("failed to fetch attempt with state of %s: %w", attempt.State, err)
+	}
+
+	if err == nil {
+		return attempt, nil
+	}
+
+	attempt.Status = skillz.InvalidAuthStatus
+
+	return attempt, nil
+
+}
+
+func (s *Service) UpdateAuthAttempt(ctx context.Context, attempt *skillz.AuthAttempt) error {
+
+	// attempt.State = hash
+
 	return s.cache.CreateAuthAttempt(ctx, attempt)
 
 }
 
-func (s *Service) AuthAttempt(ctx context.Context, hash string) (*skillz.AuthAttempt, error) {
-
-	attempt, err := s.cache.AuthAttempt(ctx, hash)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch attempt with hash of %s: %w", hash, err)
-	}
-
-	if attempt == nil {
-		attempt = new(skillz.AuthAttempt)
-		attempt.Status = skillz.InvalidAuthStatus
-	}
-
-	return attempt, nil
-
+func (s *Service) AuthorizationURI(ctx context.Context, state string) string {
+	return s.oauth.AuthCodeURL(state)
 }
 
-func (s *Service) UpdateAuthAttempt(ctx context.Context, hash string, attempt *skillz.AuthAttempt) (*skillz.AuthAttempt, error) {
+// func (s *Service) ValidateToken(ctx context.Context, user *skillz.User) error {
 
-	attempt.State = hash
+// 	ctx = context.WithValue(ctx, oauth2.HTTPClient, s.client)
 
-	attempt, err := s.cache.CreateAuthAttempt(ctx, attempt)
-	if err != nil {
-		return nil, err
-	}
+// 	token := &oauth2.Token{
+// 		AccessToken:  user.AccessToken,
+// 		RefreshToken: user.RefreshToken,
+// 		Expiry:       user.Expires,
+// 	}
 
-	return attempt, nil
+// 	tokenSource := s.oauth.TokenSource(ctx, token)
+// 	newToken, err := tokenSource.Token()
+// 	if err != nil {
+// 		return err
+// 	}
 
-}
+// 	if user.AccessToken != newToken.AccessToken {
+// 		user.AccessToken = newToken.AccessToken
+// 		user.Expires = newToken.Expiry
+// 		user.RefreshToken = newToken.RefreshToken
+// 	}
 
-func (s *Service) AuthorizationURI(ctx context.Context, state string, scopes []string) string {
-	strScopes := ""
-	if len(scopes) > 0 {
-		strScopes = strings.Join(scopes, " ")
-	}
+// 	return nil
 
-	return s.oauth.AuthCodeURL(state, oauth2.SetAuthURLParam("scope", strScopes))
-}
-
-func (s *Service) ValidateToken(ctx context.Context, member *skillz.User) (*skillz.User, error) {
-
-	ctx = context.WithValue(ctx, oauth2.HTTPClient, s.client)
-
-	token := new(oauth2.Token)
-	token.AccessToken = member.AccessToken
-	token.RefreshToken = member.RefreshToken.String
-	token.Expiry = member.Expires.Time
-
-	tokenSource := s.oauth.TokenSource(ctx, token)
-	newToken, err := tokenSource.Token()
-	if err != nil {
-		return nil, err
-	}
-
-	if member.AccessToken.String != newToken.AccessToken {
-		member.AccessToken.SetValid(newToken.AccessToken)
-		member.Expires.SetValid(newToken.Expiry)
-		member.RefreshToken.SetValid(newToken.RefreshToken)
-	}
-
-	return member, nil
-
-}
+// }
 
 func (s *Service) BearerForCode(ctx context.Context, code string) (*oauth2.Token, error) {
 	return s.oauth.Exchange(ctx, code)
@@ -153,7 +150,7 @@ func (s *Service) getSet() (jwk.Set, error) {
 	ctx := context.Background()
 
 	b, err := s.cache.JSONWebKeySet(ctx)
-	if err != nil {
+	if err != nil && !errors.Is(err, redis.Nil) {
 		return nil, fmt.Errorf("unexpected error occured querying redis for jwks: %w", err)
 	}
 

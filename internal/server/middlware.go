@@ -44,7 +44,7 @@ func (s *server) authorization(next http.Handler) http.Handler {
 		for _, prefix := range prefixes {
 			authHeader = strings.TrimPrefix(authHeader, prefix)
 		}
-		// token, err := s.auth.ValidateToken(ctx, authHeader)
+		// token, err := s.auth.ParseAndVerifyToken(ctx, authHeader)
 		// if err != nil {
 		// 	s.writeError(ctx, w, http.StatusUnauthorized, fmt.Errorf("failed to validate token: %w", err))
 		// 	return
@@ -69,13 +69,13 @@ func (s *server) requestLogger(logger *logrus.Logger) func(next http.Handler) ht
 	return middleware.RequestLogger(&structuredLogger{logger})
 }
 
-func closeRequestBody(ctx context.Context, r *http.Request) {
-	err := r.Body.Close()
-	if err != nil {
-		// newrelic.FromContext(ctx).NoticeError(err)
+// func closeRequestBody(ctx context.Context, r *http.Request) {
+// 	err := r.Body.Close()
+// 	if err != nil {
+// 		// newrelic.FromContext(ctx).NoticeError(err)
 
-	}
-}
+// 	}
+// }
 
 func (s *server) writeResponse(ctx context.Context, w http.ResponseWriter, code int, data interface{}) {
 

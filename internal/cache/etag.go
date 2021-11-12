@@ -12,7 +12,7 @@ import (
 
 type EtagAPI interface {
 	EtagByPath(ctx context.Context, pathHashed string) (*skillz.Etag, error)
-	SetEtag(ctx context.Context, etagID string, etag *skillz.Etag, expires time.Duration) error
+	SetEtag(ctx context.Context, etag *skillz.Etag, expires time.Duration) error
 }
 
 const (
@@ -25,7 +25,7 @@ func (s *Service) EtagByPath(ctx context.Context, path string) (*skillz.Etag, er
 
 	result, err := s.redis.Get(ctx, key).Bytes()
 	if err != nil && !errors.Is(err, redis.Nil) {
-		return nil, errors.Wrap(err, "failed to query cache for record")
+		return nil, err
 	}
 
 	if errors.Is(err, redis.Nil) {
@@ -39,7 +39,7 @@ func (s *Service) EtagByPath(ctx context.Context, path string) (*skillz.Etag, er
 
 }
 
-func (s *Service) SetEtag(ctx context.Context, path string, etag *skillz.Etag, expires time.Duration) error {
+func (s *Service) SetEtag(ctx context.Context, etag *skillz.Etag, expires time.Duration) error {
 
 	data, err := json.Marshal(etag)
 	if err != nil {
@@ -47,7 +47,7 @@ func (s *Service) SetEtag(ctx context.Context, path string, etag *skillz.Etag, e
 	}
 
 	return errors.Wrap(
-		s.redis.Set(ctx, generateKey(etagKeyPrefix, hash(path)), data, expires).Err(),
+		s.redis.Set(ctx, generateKey(etagKeyPrefix, hash(etag.Path)), data, expires).Err(),
 		"failed to cache etag",
 	)
 
