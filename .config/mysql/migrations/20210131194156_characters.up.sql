@@ -8,7 +8,6 @@ CREATE TABLE `characters` (
     `gender` ENUM('male', 'female') NOT NULL,
     `birthday` DATETIME NOT NULL,
     `title` VARCHAR(255) NULL DEFAULT NULL,
-    `ancestry_id` INT UNSIGNED NOT NULL,
     `bloodline_id` INT UNSIGNED NOT NULL,
     `race_id` INT UNSIGNED NOT NULL,
     `created_at` DATETIME NOT NULL,

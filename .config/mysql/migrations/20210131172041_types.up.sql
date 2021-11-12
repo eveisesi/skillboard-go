@@ -10,8 +10,8 @@ CREATE TABLE `types` (
 	`portion_size` INT NULL DEFAULT NULL,
 	`radius` FLOAT NULL DEFAULT NULL,
 	`volume` FLOAT NOT NULL DEFAULT '0.00',
-	`created_at` TIMESTAMP NOT NULL,
-	`updated_at` TIMESTAMP NOT NULL,
+	`created_at` DATETIME NOT NULL,
+	`updated_at` DATETIME NOT NULL,
 	PRIMARY KEY (`id`) USING BTREE,
 	INDEX `types_group_id_idx` (`group_id`) USING BTREE
 ) COLLATE = 'utf8mb4_unicode_ci' ENGINE = InnoDB;

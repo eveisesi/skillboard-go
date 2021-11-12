@@ -1,1 +1,0 @@
-DROP TABLE `member_mail_labels`;

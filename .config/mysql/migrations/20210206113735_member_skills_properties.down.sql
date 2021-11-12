@@ -1,1 +1,1 @@
-DROP TABLE `member_skill_properties`;
+DROP TABLE `member_skill_meta`;

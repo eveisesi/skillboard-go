@@ -1,1 +1,0 @@
-DROP TABLE `member_contract_bids`;
