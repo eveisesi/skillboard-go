@@ -23,6 +23,7 @@ type universe interface {
 	GetCategory(ctx context.Context, categoryID uint, mods ...ModifierFunc) (*skillz.Category, error)
 	GetGroups(ctx context.Context, mods ...ModifierFunc) ([]uint, error)
 	GetGroup(ctx context.Context, groupID uint, mods ...ModifierFunc) (*skillz.Group, error)
+	GetType(ctx context.Context, typeID uint, mods ...ModifierFunc) (*skillz.Type, error)
 
 	// Map
 	GetRegions(ctx context.Context, mods ...ModifierFunc) ([]uint, error)
@@ -30,6 +31,8 @@ type universe interface {
 	GetConstellations(ctx context.Context, mods ...ModifierFunc) ([]uint, error)
 	GetConstellation(ctx context.Context, constellationID uint, mods ...ModifierFunc) (*skillz.Constellation, error)
 	GetSolarSystem(ctx context.Context, solarSystemID uint, mods ...ModifierFunc) (*skillz.SolarSystem, error)
+	GetStructure(ctx context.Context, structureID uint64, mods ...ModifierFunc) (*skillz.Structure, error)
+	GetStation(ctx context.Context, stationID uint, mods ...ModifierFunc) (*skillz.Station, error)
 }
 
 func (s *Service) GetBloodlines(ctx context.Context, mods ...ModifierFunc) ([]*skillz.Bloodline, error) {
