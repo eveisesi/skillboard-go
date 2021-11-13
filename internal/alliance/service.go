@@ -74,25 +74,29 @@ func (s *Service) Alliance(ctx context.Context, allianceID uint) (*skillz.Allian
 		mods = append(mods, s.esi.AddIfNoneMatchHeader(ctx, etag.Etag))
 	}
 
-	alliance, err = s.esi.GetAlliance(ctx, allianceID, mods...)
+	updatedAlliance, err := s.esi.GetAlliance(ctx, allianceID, mods...)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to fetch alliance from ESI")
 	}
 
+	if updatedAlliance == nil {
+		return alliance, nil
+	}
+
 	switch exists {
 	case true:
-		err = s.alliance.UpdateAlliance(ctx, alliance)
+		err = s.alliance.UpdateAlliance(ctx, updatedAlliance)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to save alliance to data store")
 		}
 	case false:
-		err = s.alliance.CreateAlliance(ctx, alliance)
+		err = s.alliance.CreateAlliance(ctx, updatedAlliance)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to save alliance to data store")
 		}
 
 	}
 
-	return alliance, s.cache.SetAlliance(ctx, alliance, time.Hour)
+	return updatedAlliance, s.cache.SetAlliance(ctx, updatedAlliance, time.Hour)
 
 }

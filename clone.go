@@ -12,8 +12,8 @@ import (
 
 type CloneRepository interface {
 	CharacterCloneMeta(ctx context.Context, characterID uint64) (*CharacterCloneMeta, error)
-	CreateCloneMeta(ctx context.Context, meta *CharacterCloneMeta) error
-	UpdateCloneMeta(ctx context.Context, meta *CharacterCloneMeta) error
+	CreateCharacterCloneMeta(ctx context.Context, meta *CharacterCloneMeta) error
+	UpdateCharacterCloneMeta(ctx context.Context, meta *CharacterCloneMeta) error
 
 	CharacterDeathClone(ctx context.Context, characterID uint64) (*CharacterDeathClone, error)
 	CreateCharacterDeathClone(ctx context.Context, death *CharacterDeathClone) error
@@ -29,7 +29,7 @@ type CloneRepository interface {
 }
 
 type CharacterCloneMeta struct {
-	CharacterID           uint      `db:"character_id" json:"character_id"`
+	CharacterID           uint64    `db:"character_id" json:"character_id"`
 	LastCloneJumpDate     null.Time `db:"last_clone_jump_date" json:"last_clone_jump_date"`
 	LastStationChangeDate null.Time `db:"last_station_change_date" json:"last_station_change_date"`
 	CreatedAt             time.Time `db:"created_at" json:"created_at"`
@@ -48,7 +48,7 @@ type CharacterDeathClone struct {
 }
 
 type CharacterJumpClone struct {
-	CharacterID  uint      `db:"character_id" json:"character_id"`
+	CharacterID  uint64    `db:"character_id" json:"character_id"`
 	JumpCloneID  uint      `db:"jump_clone_id" json:"jump_clone_id"`
 	LocationID   uint64    `db:"location_id" json:"location_id"`
 	LocationType string    `db:"location_type" json:"location_type"`
@@ -57,7 +57,7 @@ type CharacterJumpClone struct {
 }
 
 type CharacterImplant struct {
-	CharacterID uint      `db:"character_id" json:"character_id"`
+	CharacterID uint64    `db:"character_id" json:"character_id"`
 	ImplantID   uint      `db:"implant_id" json:"implant_id"`
 	CreatedAt   time.Time `db:"created_at" json:"created_at"`
 }

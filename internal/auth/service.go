@@ -2,12 +2,11 @@ package auth
 
 import (
 	"context"
-	"crypto/hmac"
 	"crypto/sha256"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/eveisesi/skillz"
@@ -15,6 +14,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/lestrrat-go/jwx/jwk"
 	"github.com/lestrrat-go/jwx/jwt"
+	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 )
 
@@ -26,7 +26,7 @@ type API interface {
 	BearerForCode(ctx context.Context, code string) (*oauth2.Token, error)
 	ParseAndVerifyToken(ctx context.Context, t string) (jwt.Token, error)
 
-	// ValidateToken(ctx context.Context, user *skillz.User) (*skillz.User, error)
+	ValidateToken(ctx context.Context, user *skillz.User) (bool, error)
 }
 
 type Service struct {
@@ -47,18 +47,13 @@ func New(client *http.Client, oauth *oauth2.Config, cache cache.AuthAPI, jwksEnd
 	}
 }
 
-// have func(ctx context.Context, state string) (*github.com/eveisesi/skillz.AuthAttempt, error),
-// want func(ctx context.Context, attempt *github.com/eveisesi/skillz.AuthAttempt) error)
-
 func (s *Service) InitializeAttempt(ctx context.Context) (*skillz.AuthAttempt, error) {
 
-	h := hmac.New(sha256.New, nil)
-	_, _ = h.Write([]byte(time.Now().Format(time.RFC3339Nano)))
-	b := h.Sum(nil)
+	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(time.Now().Format(time.RFC3339Nano))))
 
 	attempt := &skillz.AuthAttempt{
 		Status: skillz.PendingAuthStatus,
-		State:  fmt.Sprintf("%x", string(b)),
+		State:  hash,
 	}
 
 	return attempt, s.cache.CreateAuthAttempt(ctx, attempt)
@@ -94,31 +89,43 @@ func (s *Service) AuthorizationURI(ctx context.Context, state string) string {
 	return s.oauth.AuthCodeURL(state)
 }
 
-// func (s *Service) ValidateToken(ctx context.Context, user *skillz.User) error {
+func isExpiredJWTError(err error) bool {
+	return strings.Contains(err.Error(), "exp not satisfied")
+}
 
-// 	ctx = context.WithValue(ctx, oauth2.HTTPClient, s.client)
+func (s *Service) ValidateToken(ctx context.Context, user *skillz.User) (bool, error) {
 
-// 	token := &oauth2.Token{
-// 		AccessToken:  user.AccessToken,
-// 		RefreshToken: user.RefreshToken,
-// 		Expiry:       user.Expires,
-// 	}
+	_, err := s.ParseAndVerifyToken(ctx, user.AccessToken)
+	if err == nil || (err != nil && !isExpiredJWTError(err)) {
+		return false, err
+	}
 
-// 	tokenSource := s.oauth.TokenSource(ctx, token)
-// 	newToken, err := tokenSource.Token()
-// 	if err != nil {
-// 		return err
-// 	}
+	ctx = context.WithValue(ctx, oauth2.HTTPClient, s.client)
 
-// 	if user.AccessToken != newToken.AccessToken {
-// 		user.AccessToken = newToken.AccessToken
-// 		user.Expires = newToken.Expiry
-// 		user.RefreshToken = newToken.RefreshToken
-// 	}
+	token := &oauth2.Token{
+		AccessToken:  user.AccessToken,
+		RefreshToken: user.RefreshToken,
+		Expiry:       user.Expires,
+	}
 
-// 	return nil
+	tokenSource := s.oauth.TokenSource(ctx, token)
+	newToken, err := tokenSource.Token()
+	if err != nil {
+		return false, err
+	}
 
-// }
+	var updated bool = false
+	if user.AccessToken != newToken.AccessToken {
+		updated = true
+		user.AccessToken = newToken.AccessToken
+		user.Expires = newToken.Expiry
+		user.RefreshToken = newToken.RefreshToken
+
+	}
+
+	return updated, nil
+
+}
 
 func (s *Service) BearerForCode(ctx context.Context, code string) (*oauth2.Token, error) {
 	return s.oauth.Exchange(ctx, code)
@@ -136,10 +143,10 @@ func (s *Service) ParseAndVerifyToken(ctx context.Context, t string) (jwt.Token,
 		return nil, fmt.Errorf("failed to parse token: %w", err)
 	}
 
-	// err = jwt.Validate(token, jwt.WithIssuer("login.eveonline.com"), jwt.WithClaimValue("azp", "27a0d315019c4d15bf909abefe67282b"))
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to validate token: %w", err)
-	// }
+	err = jwt.Validate(token, jwt.WithIssuer("login.eveonline.com"), jwt.WithClaimValue("azp", s.oauth.ClientID), jwt.WithAcceptableSkew(time.Minute))
+	if err != nil {
+		return token, fmt.Errorf("failed to validate token: %w", err)
+	}
 
 	return token, nil
 

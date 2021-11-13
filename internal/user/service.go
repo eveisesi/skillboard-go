@@ -9,29 +9,47 @@ import (
 	"time"
 
 	"github.com/eveisesi/skillz"
+	"github.com/eveisesi/skillz/internal/alliance"
 	"github.com/eveisesi/skillz/internal/auth"
 	"github.com/eveisesi/skillz/internal/character"
+	"github.com/eveisesi/skillz/internal/corporation"
 	"github.com/gofrs/uuid"
 	"github.com/lestrrat-go/jwx/jwt"
 	"github.com/pkg/errors"
 )
 
 type API interface {
+	User(ctx context.Context, id uuid.UUID) (*skillz.User, error)
 	Login(ctx context.Context, code, state string) error
 	UserFromToken(ctx context.Context, token jwt.Token) (*skillz.User, error)
+	ValidateToken(ctx context.Context, user *skillz.User) error
 }
 
 type Service struct {
-	auth      auth.API
-	character character.API
-	user      skillz.UserRepository
+	auth        auth.API
+	character   character.API
+	corporation corporation.API
+	alliance    alliance.API
+
+	skillz.UserRepository
 }
 
-func New(auth auth.API, character character.API, user skillz.UserRepository) *Service {
+var _ API = new(Service)
+
+func New(
+	auth auth.API,
+	alliance alliance.API,
+	character character.API,
+	corporation corporation.API,
+	user skillz.UserRepository,
+) *Service {
 	return &Service{
-		auth:      auth,
-		character: character,
-		user:      user,
+
+		alliance:       alliance,
+		auth:           auth,
+		character:      character,
+		corporation:    corporation,
+		UserRepository: user,
 	}
 }
 
@@ -99,9 +117,9 @@ func (s *Service) Login(ctx context.Context, code, state string) error {
 	switch user.ID == uuid.Nil {
 	case true:
 		user.ID = uuid.Must(uuid.NewV4())
-		_, err = s.user.CreateUser(ctx, user)
+		err = s.UserRepository.CreateUser(ctx, user)
 	case false:
-		_, err = s.user.UpdateUser(ctx, user)
+		err = s.UserRepository.UpdateUser(ctx, user)
 	}
 
 	return err
@@ -120,7 +138,7 @@ func (s *Service) UserFromToken(ctx context.Context, token jwt.Token) (*skillz.U
 		return nil, errors.Wrap(err, "failed to parse character id from token subject")
 	}
 
-	user, err := s.user.UserByCharacterID(ctx, characterID)
+	user, err := s.UserRepository.UserByCharacterID(ctx, characterID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
@@ -137,6 +155,24 @@ func (s *Service) UserFromToken(ctx context.Context, token jwt.Token) (*skillz.U
 	}
 
 	return user, nil
+
+}
+
+func (s *Service) ValidateToken(ctx context.Context, user *skillz.User) error {
+
+	updated, err := s.auth.ValidateToken(ctx, user)
+	if err != nil {
+		return err
+	}
+
+	if updated {
+		err = s.UserRepository.UpdateUser(ctx, user)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 
 }
 

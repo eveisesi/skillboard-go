@@ -2,24 +2,23 @@ package main
 
 import (
 	"context"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/eveisesi/skillz"
+	"github.com/eveisesi/skillz/internal/alliance"
 	"github.com/eveisesi/skillz/internal/auth"
 	"github.com/eveisesi/skillz/internal/cache"
 	"github.com/eveisesi/skillz/internal/character"
+	"github.com/eveisesi/skillz/internal/corporation"
 	"github.com/eveisesi/skillz/internal/esi"
 	"github.com/eveisesi/skillz/internal/etag"
 	"github.com/eveisesi/skillz/internal/mysql"
 	"github.com/eveisesi/skillz/internal/server"
 	"github.com/eveisesi/skillz/internal/user"
-	"github.com/eveisesi/skillz/pkg/roundtripper"
 	"github.com/urfave/cli/v2"
-	"golang.org/x/oauth2"
 )
 
 func serverCommand(_ *cli.Context) error {
@@ -31,38 +30,19 @@ func serverCommand(_ *cli.Context) error {
 
 	cache := cache.New(redisClient)
 
-	etagRepo := mysql.NewETagRepository(mysqlClient, "etags")
-	characterRepo := mysql.NewCharacterRepository(mysqlClient, "characters", "character_corporation_history")
-	userRepo := mysql.NewUserRepository(mysqlClient, "users")
-
-	httpClient := &http.Client{
-		Transport: roundtripper.UserAgent(cfg.UserAgent, http.DefaultTransport),
-		Timeout:   time.Second * 5,
-	}
-
-	oauth2Config := &oauth2.Config{
-		ClientID:     cfg.Eve.ClientID,
-		ClientSecret: cfg.Eve.ClientSecret,
-		Scopes: []string{
-			"esi-skills.read_skills.v1",
-			"esi-skills.read_skillqueue.v1",
-			"esi-clones.read_clones.v1",
-			"esi-universe.read_structures.v1",
-			"esi-characters.read_standings.v1",
-			"esi-clones.read_implants.v1",
-		},
-		Endpoint: oauth2.Endpoint{
-			AuthURL:  "https://login.eveonline.com/v2/oauth/authorize",
-			TokenURL: "https://login.eveonline.com/v2/oauth/token",
-		},
-		RedirectURL: "http://localhost:54400/auth/callback",
-	}
+	etagRepo := mysql.NewETagRepository(mysqlClient)
+	characterRepo := mysql.NewCharacterRepository(mysqlClient)
+	corporationRepo := mysql.NewCorporationRepository(mysqlClient)
+	allianceRepo := mysql.NewAllianceRepository(mysqlClient)
+	userRepo := mysql.NewUserRepository(mysqlClient)
 
 	etag := etag.New(cache, etagRepo)
-	esi := esi.New(httpClient, redisClient, etag)
-	auth := auth.New(httpClient, oauth2Config, cache, cfg.Eve.JWKSURI)
+	esi := esi.New(httpClient(), redisClient, etag)
+	auth := auth.New(httpClient(), oauth2Config(), cache, cfg.Eve.JWKSURI)
 	character := character.New(cache, esi, etag, characterRepo)
-	user := user.New(auth, character, userRepo)
+	corporation := corporation.New(cache, esi, etag, corporationRepo)
+	alliance := alliance.New(cache, esi, etag, allianceRepo)
+	user := user.New(auth, alliance, character, corporation, userRepo)
 	server := server.New(cfg.Server.Port, env, logger, auth, character, user)
 	errChan := make(chan error, 1)
 	go func() {

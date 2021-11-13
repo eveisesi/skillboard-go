@@ -28,6 +28,10 @@ func (s *Service) GetAlliance(ctx context.Context, allianceID uint, mods ...Modi
 		return alliance, errors.Wrap(err, "failed to execute request to ESI for Character data")
 	}
 
+	if out.Status == http.StatusNotModified {
+		return nil, nil
+	}
+
 	if alliance.ID == 0 {
 		alliance.ID = allianceID
 	}

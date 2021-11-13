@@ -84,9 +84,11 @@ const (
 var Resolvers = endpointResolvers{
 	GetCharacter:                   resolverFuncs["characterID"](GetCharacter),
 	GetCharacterCorporationHistory: resolverFuncs["characterID"](GetCharacterCorporationHistory),
+	GetCharacterClones:             resolverFuncs["characterID"](GetCharacterClones),
+	GetCharacterImplants:           resolverFuncs["characterID"](GetCharacterImplants),
 	GetCorporation:                 resolverFuncs["corporationID"](GetCorporation),
 	GetCorporationAllianceHistory:  resolverFuncs["corporationID"](GetCorporationAllianceHistory),
-	GetAlliance:                    resolverFuncs["corporationID"](GetAlliance),
+	GetAlliance:                    resolverFuncs["allianceID"](GetAlliance),
 }
 
 var ErrNilParams = errors.New("received nil for params")
@@ -102,6 +104,8 @@ func (e ErrInvalidParameter) Error() string {
 var endpoints = endpointMap{
 	GetAlliance:                    "/v4/alliances/%d/",
 	GetCharacter:                   "/v5/characters/%d/",
+	GetCharacterClones:             "/v4/characters/%d/clones",
+	GetCharacterImplants:           "/v2/characters/%d/implants",
 	GetCharacterCorporationHistory: "/v1/characters/%d/corporationhistory/",
 	GetCorporation:                 "/v5/corporations/%d/",
 	GetCorporationAllianceHistory:  "/v3/corporations/%d/alliancehistory/",

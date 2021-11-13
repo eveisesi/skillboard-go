@@ -32,32 +32,32 @@ const (
 
 var _ skillz.CloneRepository = new(CloneRepository)
 
-func NewCloneRepository(db QueryExecContext, meta, death, jump, implants string) *CloneRepository {
+func NewCloneRepository(db QueryExecContext) *CloneRepository {
 	return &CloneRepository{
 		db: db,
 		meta: tableConf{
-			table: meta,
+			table: "character_clone_meta",
 			columns: []string{
 				MetaLastCloneJumpDate, MetaLastStationChangeDate,
 				ColumnCharacterID, ColumnCreatedAt, ColumnUpdatedAt,
 			},
 		},
 		death: tableConf{
-			table: death,
+			table: "character_home_clone",
 			columns: []string{
 				DeathLocationID, DeathLocationType,
 				ColumnCharacterID, ColumnCreatedAt, ColumnUpdatedAt,
 			},
 		},
 		jump: tableConf{
-			table: jump,
+			table: "character_jump_clones",
 			columns: []string{
 				JumpJumpCloneID, JumpLocationID, JumpLocationType, JumpImplants,
 				ColumnCharacterID, ColumnCreatedAt,
 			},
 		},
 		implants: tableConf{
-			table: implants,
+			table: "character_implants",
 			columns: []string{
 				ImplantsImplantID,
 				ColumnCharacterID, ColumnCreatedAt,
@@ -82,7 +82,7 @@ func (r *CloneRepository) CharacterCloneMeta(ctx context.Context, characterID ui
 
 }
 
-func (r *CloneRepository) CreateCloneMeta(ctx context.Context, meta *skillz.CharacterCloneMeta) error {
+func (r *CloneRepository) CreateCharacterCloneMeta(ctx context.Context, meta *skillz.CharacterCloneMeta) error {
 
 	now := time.Now()
 	meta.CreatedAt = now
@@ -103,7 +103,7 @@ func (r *CloneRepository) CreateCloneMeta(ctx context.Context, meta *skillz.Char
 	return errors.Wrapf(err, prefixFormat, cloneRepository, "CreateCloneMeta")
 }
 
-func (r *CloneRepository) UpdateCloneMeta(ctx context.Context, meta *skillz.CharacterCloneMeta) error {
+func (r *CloneRepository) UpdateCharacterCloneMeta(ctx context.Context, meta *skillz.CharacterCloneMeta) error {
 
 	meta.UpdatedAt = time.Now()
 

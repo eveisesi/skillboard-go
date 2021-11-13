@@ -44,7 +44,7 @@ var insertCorporationAllianceHistoryDuplicateKeyStmt string
 
 var _ skillz.CorporationRepository = new(CorporationRepository)
 
-func NewCorporationRepository(db QueryExecContext, corporation, history string) *CorporationRepository {
+func NewCorporationRepository(db QueryExecContext) *CorporationRepository {
 
 	t := make([]string, 0)
 	for _, column := range []string{
@@ -58,7 +58,7 @@ func NewCorporationRepository(db QueryExecContext, corporation, history string) 
 	return &CorporationRepository{
 		db: db,
 		corporation: tableConf{
-			table: corporation,
+			table: "corporations",
 			columns: []string{
 				CorporationID, CorporationAllianceID, CorporationCeoID,
 				CorporationCreatorID, CorporationDateFounded, CorporationFactionID,
@@ -69,7 +69,7 @@ func NewCorporationRepository(db QueryExecContext, corporation, history string) 
 			},
 		},
 		history: tableConf{
-			table: history,
+			table: "corporation_alliance_history",
 			columns: []string{
 				AllianceHistoryCorporationID, AllianceHistoryRecordID,
 				AllianceHistoryAllianceID, AllianceHistoryIsDeleteed,

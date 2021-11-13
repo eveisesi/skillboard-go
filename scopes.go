@@ -16,8 +16,8 @@ import (
 // which internal functionality to call
 
 type Processor interface {
-	Process(user *User) error
-	Scopes() []string
+	Process(ctx context.Context, user *User) error
+	Scopes() []Scope
 }
 
 type ScopeProcessors []Processor
@@ -30,6 +30,7 @@ type ScopeResolver struct {
 type Scope string
 
 const (
+	ReadClonesV1     Scope = "esi-clones.read_clones.v1"
 	ReadImplantsV1   Scope = "esi-clones.read_implants.v1"
 	ReadLocationV1   Scope = "esi-location.read_location.v1"
 	ReadOnlineV1     Scope = "esi-location.read_online.v1"
@@ -39,8 +40,8 @@ const (
 )
 
 var AllScopes = []Scope{
-	ReadImplantsV1, ReadLocationV1,
-	ReadOnlineV1, ReadShipV1,
+	ReadImplantsV1, ReadClonesV1,
+	ReadLocationV1, ReadOnlineV1, ReadShipV1,
 	ReadSkillQueueV1, ReadSkillsV1,
 }
 

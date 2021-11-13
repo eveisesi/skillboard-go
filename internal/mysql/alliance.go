@@ -28,11 +28,11 @@ const (
 
 var _ skillz.AllianceRepository = new(AllianceRepository)
 
-func NewAllianceRepository(db QueryExecContext, table string) *AllianceRepository {
+func NewAllianceRepository(db QueryExecContext) *AllianceRepository {
 	return &AllianceRepository{
 		db: db,
 		alliance: tableConf{
-			table: table,
+			table: "alliances",
 			columns: []string{
 				AllianceID, AllianceName, AllianceTicker,
 				AllianceDateFounded, AllianceCreatorID, AllianceCreatorCorporationID,

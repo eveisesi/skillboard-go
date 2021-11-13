@@ -11,8 +11,8 @@ import (
 type UserRepository interface {
 	User(ctx context.Context, id uuid.UUID) (*User, error)
 	UserByCharacterID(ctx context.Context, characterID uint64) (*User, error)
-	CreateUser(ctx context.Context, user *User) (*User, error)
-	UpdateUser(ctx context.Context, user *User) (*User, error)
+	CreateUser(ctx context.Context, user *User) error
+	UpdateUser(ctx context.Context, user *User) error
 }
 
 type User struct {

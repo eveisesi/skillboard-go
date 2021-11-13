@@ -41,7 +41,7 @@ var insertCharacterCorpHistoryDuplicateKeyStmt string
 
 var _ skillz.CharacterRepository = new(CharacterRepository)
 
-func NewCharacterRepository(db QueryExecContext, character, history string) *CharacterRepository {
+func NewCharacterRepository(db QueryExecContext) *CharacterRepository {
 
 	t := make([]string, 0)
 	for _, column := range []string{
@@ -55,7 +55,7 @@ func NewCharacterRepository(db QueryExecContext, character, history string) *Cha
 	return &CharacterRepository{
 		db: db,
 		character: tableConf{
-			table: character,
+			table: "characters",
 			columns: []string{
 				CharacterID, CharacterName, CharacterCorporationID,
 				CharacterAllianceID, CharacterFactionID, CharacterSecurityStatus,
@@ -65,7 +65,7 @@ func NewCharacterRepository(db QueryExecContext, character, history string) *Cha
 			},
 		},
 		history: tableConf{
-			table: history,
+			table: "character_corporation_history",
 			columns: []string{
 				HistoryCharacterID, HistoryRecordID, HistoryCorporationID,
 				HistoryIsDeleted, HistoryStartDate, ColumnCreatedAt,

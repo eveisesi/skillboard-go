@@ -29,6 +29,10 @@ func (s *Service) GetCorporation(ctx context.Context, corporationID uint, mods .
 		return corporation, errors.Wrap(err, "failed to execute request to ESI for Corporation Data")
 	}
 
+	if out.Status == http.StatusNotModified {
+		return nil, nil
+	}
+
 	if corporation.ID == 0 {
 		corporation.ID = corporationID
 	}
@@ -45,6 +49,10 @@ func (s *Service) GetCorporationAllianceHistory(ctx context.Context, corporation
 	err := s.request(ctx, http.MethodGet, endpoint, nil, http.StatusOK, out, mods...)
 	if err != nil {
 		return history, errors.Wrap(err, "failed to execute request to ESI for Corporation Data")
+	}
+
+	if out.Status == http.StatusNotModified {
+		return nil, nil
 	}
 
 	return history, nil

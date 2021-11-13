@@ -7,13 +7,18 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (s *Service) Etag(ctx context.Context, endpointID EndpointID, params *Params) (*skillz.Etag, error) {
+type etags interface {
+	Etag(ctx context.Context, endpointID EndpointID, params *Params) (string, *skillz.Etag, error)
+}
+
+func (s *Service) Etag(ctx context.Context, endpointID EndpointID, params *Params) (string, *skillz.Etag, error) {
 
 	etagID, err := Resolvers[endpointID](params)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to generate etag ID")
+		return "", nil, errors.Wrap(err, "failed to generate etag ID")
 	}
 
-	return s.etag.Etag(ctx, etagID)
+	etag, err := s.etag.Etag(ctx, etagID)
+	return etagID, etag, err
 
 }

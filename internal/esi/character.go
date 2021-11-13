@@ -11,12 +11,13 @@ import (
 
 type CharacterAPI interface {
 	characters
+	etags
 	modifiers
 }
 
 type characters interface {
 	GetCharacter(ctx context.Context, characterID uint64, mods ...ModifierFunc) (*skillz.Character, error)
-	GetCharacterHistory(ctx context.Context, characterID uint64) ([]*skillz.CharacterCorporationHistory, error)
+	GetCharacterHistory(ctx context.Context, characterID uint64, mods ...ModifierFunc) ([]*skillz.CharacterCorporationHistory, error)
 }
 
 func isCharacterValid(character *skillz.Character) bool {
@@ -34,6 +35,10 @@ func (s *Service) GetCharacter(ctx context.Context, characterID uint64, mods ...
 		return character, errors.Wrap(err, "failed to execute request to ESI for Character data")
 	}
 
+	if out.Status == http.StatusNotModified {
+		return nil, nil
+	}
+
 	if !isCharacterValid(character) {
 		return nil, errors.New("invalid character returned from ESI")
 	}
@@ -46,13 +51,17 @@ func (s *Service) GetCharacter(ctx context.Context, characterID uint64, mods ...
 
 }
 
-func (s *Service) GetCharacterHistory(ctx context.Context, characterID uint64) ([]*skillz.CharacterCorporationHistory, error) {
+func (s *Service) GetCharacterHistory(ctx context.Context, characterID uint64, mods ...ModifierFunc) ([]*skillz.CharacterCorporationHistory, error) {
 
 	var out = new(out)
 	var history = make([]*skillz.CharacterCorporationHistory, 0, 256)
 	out.Data = &history
 	endpoint := fmt.Sprintf("/v2/characters/%d/corporationhistory/", characterID)
-	err := s.request(ctx, http.MethodGet, endpoint, nil, http.StatusOK, out)
+	err := s.request(ctx, http.MethodGet, endpoint, nil, http.StatusOK, out, mods...)
+
+	if out.Status == http.StatusNotModified {
+		return nil, nil
+	}
 
 	for _, record := range history {
 		record.CharacterID = characterID

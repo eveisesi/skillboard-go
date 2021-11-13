@@ -74,25 +74,29 @@ func (s *Service) Corporation(ctx context.Context, corporationID uint) (*skillz.
 		mods = append(mods, s.esi.AddIfNoneMatchHeader(ctx, etag.Etag))
 	}
 
-	corporation, err = s.esi.GetCorporation(ctx, corporationID, mods...)
+	updateCorporation, err := s.esi.GetCorporation(ctx, corporationID, mods...)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to fetch corporation from ESI")
 	}
 
+	if updateCorporation == nil {
+		return corporation, nil
+	}
+
 	switch exists {
 	case true:
-		err = s.corporation.UpdateCorporation(ctx, corporation)
+		err = s.corporation.UpdateCorporation(ctx, updateCorporation)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to save corporation to data store")
 		}
 	case false:
-		err = s.corporation.CreateCorporation(ctx, corporation)
+		err = s.corporation.CreateCorporation(ctx, updateCorporation)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to save corporation to data store")
 		}
 
 	}
 
-	return corporation, s.cache.SetCorporation(ctx, corporation, time.Hour)
+	return updateCorporation, s.cache.SetCorporation(ctx, updateCorporation, time.Hour)
 
 }

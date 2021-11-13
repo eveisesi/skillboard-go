@@ -2,7 +2,6 @@ package mysql
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
@@ -32,11 +31,11 @@ const (
 
 var _ skillz.UserRepository = new(UserRepository)
 
-func NewUserRepository(db QueryExecContext, table string) *UserRepository {
+func NewUserRepository(db QueryExecContext) *UserRepository {
 	return &UserRepository{
 		db: db,
 		users: tableConf{
-			table: table,
+			table: "users",
 			columns: []string{
 				UserID, UserCharacterID,
 				UserAccessToken, UserRefreshToken,
@@ -59,8 +58,6 @@ func (r *UserRepository) User(ctx context.Context, id uuid.UUID) (*skillz.User, 
 	if err != nil {
 		return nil, errors.Wrapf(err, errorFFormat, userRepository, "User", "failed to generate sql")
 	}
-
-	fmt.Println(query)
 
 	var user = new(skillz.User)
 	err = r.db.GetContext(ctx, user, query, args...)
@@ -85,7 +82,7 @@ func (r *UserRepository) UserByCharacterID(ctx context.Context, characterID uint
 
 }
 
-func (r *UserRepository) CreateUser(ctx context.Context, user *skillz.User) (*skillz.User, error) {
+func (r *UserRepository) CreateUser(ctx context.Context, user *skillz.User) error {
 
 	now := time.Now()
 	user.CreatedAt = now
@@ -107,15 +104,15 @@ func (r *UserRepository) CreateUser(ctx context.Context, user *skillz.User) (*sk
 		ColumnUpdatedAt:       user.UpdatedAt,
 	}).ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, userRepository, "CreateUser", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, userRepository, "CreateUser", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return user, errors.Wrapf(err, prefixFormat, userRepository, "CreateUser")
+	return errors.Wrapf(err, prefixFormat, userRepository, "CreateUser")
 
 }
 
-func (r *UserRepository) UpdateUser(ctx context.Context, user *skillz.User) (*skillz.User, error) {
+func (r *UserRepository) UpdateUser(ctx context.Context, user *skillz.User) error {
 
 	user.UpdatedAt = time.Now()
 
@@ -133,10 +130,10 @@ func (r *UserRepository) UpdateUser(ctx context.Context, user *skillz.User) (*sk
 		ColumnUpdatedAt:       user.UpdatedAt,
 	}).Where(sq.Eq{UserID: user.ID}).ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, userRepository, "UpdateUser", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, userRepository, "UpdateUser", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return user, errors.Wrapf(err, prefixFormat, userRepository, "UpdateUser")
+	return errors.Wrapf(err, prefixFormat, userRepository, "UpdateUser")
 
 }

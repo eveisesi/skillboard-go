@@ -22,10 +22,10 @@ const (
 	ETagCachedUntil = "cached_until"
 )
 
-func NewETagRepository(db QueryExecContext, table string) *ETagRepository {
+func NewETagRepository(db QueryExecContext) *ETagRepository {
 	return &ETagRepository{
 		db:    db,
-		table: table,
+		table: "etags",
 		columns: []string{
 			ETagPath, ETagETag, ETagCachedUntil, ColumnCreatedAt, ColumnUpdatedAt,
 		},

@@ -29,6 +29,16 @@ func init() {
 			Description: "Starts the GraphQL API",
 			Action:      serverCommand,
 		},
+		{
+			Name:        "processor",
+			Description: "Start the Job Processor",
+			Action:      processorCommand,
+		},
+
+		{
+			Name:   "test",
+			Action: testCommand,
+		},
 	}
 
 	buildConfig()
