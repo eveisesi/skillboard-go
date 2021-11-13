@@ -67,7 +67,9 @@ const (
 	GetCategories
 	GetCategory
 	GetConstellation
+	GetConstellations
 	GetFactions
+	GetGroups
 	GetGroup
 	GetMoon
 	GetPlanet
@@ -109,6 +111,23 @@ var endpoints = endpointMap{
 	GetCharacterCorporationHistory: "/v1/characters/%d/corporationhistory/",
 	GetCorporation:                 "/v5/corporations/%d/",
 	GetCorporationAllianceHistory:  "/v3/corporations/%d/alliancehistory/",
+
+	GetBloodlines: "/v1/universe/bloodlines/",
+	GetRaces:      "/v1/universe/races/",
+
+	GetRegions:        "/v1/universe/regions/",
+	GetRegion:         "/v1/universe/region/%d/",
+	GetConstellations: "/v1/universe/constellations/",
+	GetConstellation:  "/v1/universe/constellations/%d/",
+	GetSolarSystem:    "/v4/unvierse/system/%d/",
+	GetStation:        "/v2/universe/stations/%d/",
+	GetStructure:      "/v2/unvierse/structures/%d/",
+
+	GetCategories: "/v1/universe/categories/",
+	GetCategory:   "/v1/universe/categories/%d/",
+	GetGroups:     "/v1/universe/groups/",
+	GetGroup:      "/v1/universe/groups/%d/",
+	GetType:       "/v3/universe/types/%d/",
 }
 
 var resolverFuncs = map[string]func(endpoint EndpointID) resolverFunc{
