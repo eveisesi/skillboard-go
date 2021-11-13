@@ -55,7 +55,7 @@ func (s *Service) Alliance(ctx context.Context, allianceID uint) (*skillz.Allian
 
 	etag, err := s.etag.Etag(ctx, etagID)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to fetche tag for expiry check")
+		return nil, errors.Wrap(err, "failed to fetch etag for expiry check")
 	}
 
 	alliance, err = s.alliance.Alliance(ctx, allianceID)

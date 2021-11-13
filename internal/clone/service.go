@@ -175,7 +175,7 @@ func (s *Service) Implants(ctx context.Context, user *skillz.User) ([]*skillz.Ch
 
 	etagID, etag, err := s.esi.Etag(ctx, esi.GetCharacterImplants, &esi.Params{CharacterID: null.Uint64From(user.CharacterID)})
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to fetche tag for expiry check")
+		return nil, errors.Wrap(err, "failed to fetch etag for expiry check")
 	}
 
 	implants, err = s.clones.CharacterImplants(ctx, user.CharacterID)

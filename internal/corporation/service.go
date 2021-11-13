@@ -55,7 +55,7 @@ func (s *Service) Corporation(ctx context.Context, corporationID uint) (*skillz.
 
 	etag, err := s.etag.Etag(ctx, etagID)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to fetche tag for expiry check")
+		return nil, errors.Wrap(err, "failed to fetch etag for expiry check")
 	}
 
 	corporation, err = s.corporation.Corporation(ctx, corporationID)

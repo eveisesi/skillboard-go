@@ -50,7 +50,7 @@ func (s *Service) Character(ctx context.Context, characterID uint64) (*skillz.Ch
 
 	etagID, etag, err := s.esi.Etag(ctx, esi.GetCharacter, &esi.Params{CharacterID: null.Uint64From(characterID)})
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to fetche tag for expiry check")
+		return nil, errors.Wrap(err, "failed to fetch etag for expiry check")
 	}
 
 	character, err = s.character.Character(ctx, characterID)
