@@ -39,7 +39,7 @@ const (
 
 var insertCharacterCorpHistoryDuplicateKeyStmt string
 
-var _ skillz.CharacterRepository = new(CharacterRepository)
+var _ skillz.CharacterRepository = (*CharacterRepository)(nil)
 
 func NewCharacterRepository(db QueryExecContext) *CharacterRepository {
 

@@ -42,7 +42,7 @@ const (
 
 var insertCorporationAllianceHistoryDuplicateKeyStmt string
 
-var _ skillz.CorporationRepository = new(CorporationRepository)
+var _ skillz.CorporationRepository = (*CorporationRepository)(nil)
 
 func NewCorporationRepository(db QueryExecContext) *CorporationRepository {
 

@@ -30,7 +30,7 @@ const (
 	ImplantsImplantID string = "implant_id"
 )
 
-var _ skillz.CloneRepository = new(CloneRepository)
+var _ skillz.CloneRepository = (*CloneRepository)(nil)
 
 func NewCloneRepository(db QueryExecContext) *CloneRepository {
 	return &CloneRepository{

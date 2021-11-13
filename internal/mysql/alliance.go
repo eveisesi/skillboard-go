@@ -26,7 +26,7 @@ const (
 	AllianceIsClosed              string = "is_closed"
 )
 
-var _ skillz.AllianceRepository = new(AllianceRepository)
+var _ skillz.AllianceRepository = (*AllianceRepository)(nil)
 
 func NewAllianceRepository(db QueryExecContext) *AllianceRepository {
 	return &AllianceRepository{

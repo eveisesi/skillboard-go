@@ -43,7 +43,7 @@ const (
 	AttributesAccruedRemapCooldownDate string = "accrued_remap_cooldown_date"
 )
 
-var _ skillz.CharacterSkillRepository = new(SkillRepository)
+var _ skillz.CharacterSkillRepository = (*SkillRepository)(nil)
 
 func NewSkillRepository(db QueryExecContext) *SkillRepository {
 

@@ -8,105 +8,60 @@ import (
 )
 
 type UniverseRepository interface {
-	bloodlineRepository
-	categoryRepository
-	constellationRepository
-	factionRepository
-	groupRepository
-	raceRepository
-	regionRepository
-	solarSystemRepository
-	stationRepository
-	structureRepository
-	typeRepository
-}
+	Bloodline(ctx context.Context, bloodlineID uint) (*Bloodline, error)
+	Bloodlines(ctx context.Context) ([]*Bloodline, error)
+	CreateBloodline(ctx context.Context, bloodline *Bloodline) error
+	UpdateBloodline(ctx context.Context, bloodline *Bloodline) error
 
-type bloodlineRepository interface {
-	Bloodline(ctx context.Context, id uint) (*Bloodline, error)
-	Bloodlines(ctx context.Context, operators ...*Operator) ([]*Bloodline, error)
-	CreateBloodline(ctx context.Context, bloodline *Bloodline) (*Bloodline, error)
-	UpdateBloodline(ctx context.Context, id uint, bloodline *Bloodline) (*Bloodline, error)
-	DeleteBloodline(ctx context.Context, id uint) (bool, error)
-}
+	Category(ctx context.Context, categoryID uint) (*Category, error)
+	Categories(ctx context.Context) ([]*Category, error)
+	CreateCategory(ctx context.Context, category *Category) error
+	UpdateCategory(ctx context.Context, category *Category) error
 
-type categoryRepository interface {
-	Category(ctx context.Context, id uint) (*Category, error)
-	Categories(ctx context.Context, operators ...*Operator) ([]*Category, error)
-	CreateCategory(ctx context.Context, group *Category) (*Category, error)
-	UpdateCategory(ctx context.Context, id uint, category *Category) (*Category, error)
-	DeleteCategory(ctx context.Context, id uint) (bool, error)
-}
+	Constellation(ctx context.Context, constellationID uint) (*Constellation, error)
+	Constellations(ctx context.Context) ([]*Constellation, error)
+	CreateConstellation(ctx context.Context, constellation *Constellation) error
+	UpdateConstellation(ctx context.Context, constellation *Constellation) error
 
-type constellationRepository interface {
-	Constellation(ctx context.Context, id uint) (*Constellation, error)
-	Constellations(ctx context.Context, operators ...*Operator) ([]*Constellation, error)
-	CreateConstellation(ctx context.Context, constellation *Constellation) (*Constellation, error)
-	UpdateConstellation(ctx context.Context, id uint, constellation *Constellation) (*Constellation, error)
-	DeleteConstellation(ctx context.Context, id uint) (bool, error)
-}
+	Faction(ctx context.Context, factionID uint) (*Faction, error)
+	Factions(ctx context.Context) ([]*Faction, error)
+	CreateFaction(ctx context.Context, faction *Faction) error
+	UpdateFaction(ctx context.Context, faction *Faction) error
 
-type factionRepository interface {
-	Faction(ctx context.Context, id uint) (*Faction, error)
-	Factions(ctx context.Context, operators ...*Operator) ([]*Faction, error)
-	CreateFaction(ctx context.Context, faction *Faction) (*Faction, error)
-	UpdateFaction(ctx context.Context, id uint, faction *Faction) (*Faction, error)
-	DeleteFaction(ctx context.Context, id uint) (bool, error)
-}
-
-type groupRepository interface {
-	Group(ctx context.Context, id uint) (*Group, error)
+	Group(ctx context.Context, groupID uint) (*Group, error)
 	Groups(ctx context.Context, operators ...*Operator) ([]*Group, error)
-	CreateGroup(ctx context.Context, group *Group) (*Group, error)
-	UpdateGroup(ctx context.Context, id uint, group *Group) (*Group, error)
-	DeleteGroup(ctx context.Context, id uint) (bool, error)
-}
+	CreateGroup(ctx context.Context, group *Group) error
+	UpdateGroup(ctx context.Context, group *Group) error
 
-type raceRepository interface {
-	Race(ctx context.Context, id uint) (*Race, error)
+	Race(ctx context.Context, raceID uint) (*Race, error)
 	Races(ctx context.Context, operators ...*Operator) ([]*Race, error)
-	CreateRace(ctx context.Context, race *Race) (*Race, error)
-	UpdateRace(ctx context.Context, id uint, race *Race) (*Race, error)
-	DeleteRace(ctx context.Context, id uint) (bool, error)
-}
+	CreateRace(ctx context.Context, race *Race) error
+	UpdateRace(ctx context.Context, race *Race) error
 
-type regionRepository interface {
-	Region(ctx context.Context, id uint) (*Region, error)
-	Regions(ctx context.Context, operators ...*Operator) ([]*Region, error)
-	CreateRegion(ctx context.Context, region *Region) (*Region, error)
-	UpdateRegion(ctx context.Context, id uint, region *Region) (*Region, error)
-	DeleteRegion(ctx context.Context, id uint) (bool, error)
-}
+	Region(ctx context.Context, regionID uint) (*Region, error)
+	Regions(ctx context.Context) ([]*Region, error)
+	CreateRegion(ctx context.Context, region *Region) error
+	UpdateRegion(ctx context.Context, region *Region) error
 
-type solarSystemRepository interface {
-	SolarSystem(ctx context.Context, id uint) (*SolarSystem, error)
+	SolarSystem(ctx context.Context, solarSystemID uint) (*SolarSystem, error)
 	SolarSystems(ctx context.Context, operators ...*Operator) ([]*SolarSystem, error)
-	CreateSolarSystem(ctx context.Context, solarSystem *SolarSystem) (*SolarSystem, error)
-	UpdateSolarSystem(ctx context.Context, id uint, solarSystem *SolarSystem) (*SolarSystem, error)
-	DeleteSolarSystem(ctx context.Context, id uint) (bool, error)
-}
+	CreateSolarSystem(ctx context.Context, solarSystem *SolarSystem) error
+	UpdateSolarSystem(ctx context.Context, solarSystem *SolarSystem) error
 
-type stationRepository interface {
-	Station(ctx context.Context, id uint) (*Station, error)
+	Station(ctx context.Context, stationID uint) (*Station, error)
 	Stations(ctx context.Context, operators ...*Operator) ([]*Station, error)
 	CreateStation(ctx context.Context, station *Station) (*Station, error)
-	UpdateStation(ctx context.Context, id uint, solarSystem *Station) (*Station, error)
-	DeleteStation(ctx context.Context, id uint) (bool, error)
-}
+	UpdateStation(ctx context.Context, id uint, station *Station) (*Station, error)
 
-type structureRepository interface {
-	Structure(ctx context.Context, id uint64) (*Structure, error)
-	Structures(ctx context.Context, operators ...*Operator) ([]*Structure, error)
-	CreateStructure(ctx context.Context, solarSystem *Structure) (*Structure, error)
-	UpdateStructure(ctx context.Context, id uint64, struture *Structure) (*Structure, error)
-	DeleteStructure(ctx context.Context, id uint64) (bool, error)
-}
+	Structure(ctx context.Context, structureID uint64) (*Structure, error)
+	Structures(ctx context.Context) ([]*Structure, error)
+	CreateStructure(ctx context.Context, structure *Structure) (*Structure, error)
+	UpdateStructure(ctx context.Context, id uint64, structure *Structure) (*Structure, error)
 
-type typeRepository interface {
-	Type(ctx context.Context, id uint) (*Type, error)
-	Types(ctx context.Context, operators ...*Operator) ([]*Type, error)
-	CreateType(ctx context.Context, item *Type) (*Type, error)
-	UpdateType(ctx context.Context, id uint, item *Type) (*Type, error)
-	DeleteType(ctx context.Context, id uint) (bool, error)
+	Type(ctx context.Context, typeID uint) (*Type, error)
+	Types(ctx context.Context) ([]*Type, error)
+	CreateType(ctx context.Context, item *Type) error
+	UpdateType(ctx context.Context, item *Type) error
 }
 
 type Bloodline struct {

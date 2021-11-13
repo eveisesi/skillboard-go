@@ -29,7 +29,7 @@ const (
 	UserLastLogin         = "last_login"
 )
 
-var _ skillz.UserRepository = new(UserRepository)
+var _ skillz.UserRepository = (*UserRepository)(nil)
 
 func NewUserRepository(db QueryExecContext) *UserRepository {
 	return &UserRepository{

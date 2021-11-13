@@ -100,6 +100,8 @@ const (
 	TypesVolume         string = "volume"
 )
 
+var _ skillz.UniverseRepository = (*UniverseRepository)(nil)
+
 func NewUniverseRepository(db QueryExecContext) *UniverseRepository {
 	return &UniverseRepository{
 		db: db,

@@ -22,6 +22,8 @@ const (
 	ETagCachedUntil = "cached_until"
 )
 
+var _ skillz.EtagRepository = (*ETagRepository)(nil)
+
 func NewETagRepository(db QueryExecContext) *ETagRepository {
 	return &ETagRepository{
 		db:    db,
