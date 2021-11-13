@@ -9,10 +9,12 @@ import (
 	"time"
 
 	"github.com/eveisesi/skillz"
+	"github.com/eveisesi/skillz/internal"
 	"github.com/eveisesi/skillz/internal/alliance"
 	"github.com/eveisesi/skillz/internal/auth"
 	"github.com/eveisesi/skillz/internal/character"
 	"github.com/eveisesi/skillz/internal/corporation"
+	"github.com/go-redis/redis/v8"
 	"github.com/gofrs/uuid"
 	"github.com/lestrrat-go/jwx/jwt"
 	"github.com/pkg/errors"
@@ -26,6 +28,8 @@ type API interface {
 }
 
 type Service struct {
+	redis *redis.Client
+
 	auth        auth.API
 	character   character.API
 	corporation corporation.API
@@ -37,6 +41,7 @@ type Service struct {
 var _ API = new(Service)
 
 func New(
+	redis *redis.Client,
 	auth auth.API,
 	alliance alliance.API,
 	character character.API,
@@ -44,7 +49,7 @@ func New(
 	user skillz.UserRepository,
 ) *Service {
 	return &Service{
-
+		redis:          redis,
 		alliance:       alliance,
 		auth:           auth,
 		character:      character,
@@ -118,9 +123,17 @@ func (s *Service) Login(ctx context.Context, code, state string) error {
 	case true:
 		user.ID = uuid.Must(uuid.NewV4())
 		err = s.UserRepository.CreateUser(ctx, user)
+		if err != nil {
+			return fmt.Errorf("failed to create user in data store: %w", err)
+		}
 	case false:
 		err = s.UserRepository.UpdateUser(ctx, user)
+		if err != nil {
+			return fmt.Errorf("failed to update user in data store: %w", err)
+		}
 	}
+
+	err = s.redis.ZAdd(ctx, internal.UpdateQueue, &redis.Z{Member: user.ID.String(), Score: 0}).Err()
 
 	return err
 
@@ -149,9 +162,21 @@ func (s *Service) UserFromToken(ctx context.Context, token jwt.Token) (*skillz.U
 		}
 	}
 
-	_, err = s.character.Character(ctx, characterID)
+	character, err := s.character.Character(ctx, characterID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to fetch user's character")
+	}
+
+	corporation, err := s.corporation.Corporation(ctx, character.CorporationID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to fetch user's corporation")
+	}
+
+	if corporation.AllianceID.Valid {
+		_, err := s.alliance.Alliance(ctx, corporation.AllianceID.Uint)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to fetch corporation's alliance")
+		}
 	}
 
 	return user, nil

@@ -6,3 +6,7 @@ gqlgen:
 processor:
 	go mod tidy
 	go run ./cmd/skillz/*.go processor
+
+server:
+	go mod tidy
+	go run ./cmd/skillz/*.go server

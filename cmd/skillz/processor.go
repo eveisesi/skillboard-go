@@ -36,7 +36,7 @@ func processorCommand(c *cli.Context) error {
 
 	auth := auth.New(httpClient(), oauth2Config(), cache, cfg.Eve.JWKSURI)
 
-	user := user.New(auth, alliance, character, corporation, userRepo)
+	user := user.New(redisClient, auth, alliance, character, corporation, userRepo)
 	clone := clone.New(cache, etag, esi, cloneRepo)
 
 	return processor.New(logger, redisClient, user, skillz.ScopeProcessors{

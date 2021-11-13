@@ -17,7 +17,7 @@ type UserRepository interface {
 
 type User struct {
 	ID                uuid.UUID   `db:"id" json:"id"`
-	CharacterID       uint64      `db:"character_id,omitempty" json:"main_id"`
+	CharacterID       uint64      `db:"character_id,omitempty" json:"character_id"`
 	AccessToken       string      `db:"access_token" json:"access_token"`
 	RefreshToken      string      `db:"refresh_token" json:"refresh_token"`
 	Expires           time.Time   `db:"expires," json:"expires"`

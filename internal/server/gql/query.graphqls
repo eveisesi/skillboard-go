@@ -1,5 +1,6 @@
 type Query {
     auth: AuthAttempt!
+    user(id: UUID!): User!
 }
 
 type AuthAttempt @goModel(model: "github.com/eveisesi/skillz.AuthAttempt") {
@@ -9,8 +10,68 @@ type AuthAttempt @goModel(model: "github.com/eveisesi/skillz.AuthAttempt") {
     url: String!
 }
 
+type Alliance @goModel(model: "github.com/eveisesi/skillz.Alliance") {
+    id: Uint!
+    name: String!
+    ticker: String!
+    dateFounded: Time!
+    creatorID: Uint!
+    creatorCorporationID: Uint!
+    executorCorporationID: Uint!
+    factionID: Uint
+    isClosed: Boolean!
+}
+
+type Character @goModel(model: "github.com/eveisesi/skillz.Character") {
+    id: Uint64!
+    name: String!
+    corporationID: Uint!
+    allianceID: Uint
+    factionID: Uint
+    securityStatus: Float
+    gender: String!
+    birthday: Time!
+    title: String
+    bloodlineID: Uint!
+    raceID: Uint!
+
+    corporation: Corporation
+}
+
+type Corporation @goModel(model: "github.com/eveisesi/skillz.Corporation") {
+    id: Uint!
+    allianceID: Uint
+    ceoID: Uint!
+    creatorID: Uint!
+    dateFounded: Time
+    factionID: Uint
+    homeStationID: Uint
+    memberCount: Uint!
+    name: String!
+    shares: Uint64!
+    taxRate: Float!
+    ticker: String!
+    url: String
+    warEligible: Boolean!
+
+    alliance: Alliance
+}
+
+type User @goModel(model: "github.com/eveisesi/skillz.User") {
+    id: UUID!
+    characterID: Uint64!
+    expires: Time!
+    ownerHash: String!
+    scopes: [String!]
+    lastLogin: Time
+
+    character: Character!
+}
+
 directive @goModel(model: String) on OBJECT
 directive @goField(forceResolver: Boolean, name: String) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION
+
 scalar Time
 scalar Uint
 scalar Uint64
+scalar UUID

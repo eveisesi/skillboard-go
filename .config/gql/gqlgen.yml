@@ -70,3 +70,6 @@ models:
         model:
             - github.com/99designs/gqlgen/graphql.Time
             - github.com/eveisesi/skillz/internal/server/gql/scalar/null.Time
+    UUID:
+        model:
+            - github.com/eveisesi/skillz/internal/server/gql/scalar.UUID

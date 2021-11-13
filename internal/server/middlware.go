@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/eveisesi/skillz/internal"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/sirupsen/logrus"
 )
@@ -40,24 +41,25 @@ func (s *server) authorization(next http.Handler) http.Handler {
 			return
 		}
 
-		var prefixes = []string{`bearer `, `Bearer `}
-		for _, prefix := range prefixes {
-			authHeader = strings.TrimPrefix(authHeader, prefix)
+		if authHeader != "" {
+			var prefixes = []string{`bearer `, `Bearer `}
+			for _, prefix := range prefixes {
+				authHeader = strings.TrimPrefix(authHeader, prefix)
+			}
+			token, err := s.auth.ParseAndVerifyToken(ctx, authHeader)
+			if err != nil {
+				s.writeError(ctx, w, http.StatusUnauthorized, fmt.Errorf("failed to validate token: %w", err))
+				return
+			}
+
+			_, err = s.user.UserFromToken(ctx, token)
+			if err != nil {
+				s.writeError(ctx, w, http.StatusBadRequest, err)
+				return
+			}
+
+			ctx = internal.ContextWithToken(ctx, token)
 		}
-		// token, err := s.auth.ParseAndVerifyToken(ctx, authHeader)
-		// if err != nil {
-		// 	s.writeError(ctx, w, http.StatusUnauthorized, fmt.Errorf("failed to validate token: %w", err))
-		// 	return
-		// }
-
-		// user, err := s.user.UserFromToken(ctx, token)
-		// if err != nil {
-		// 	s.writeError(ctx, w, http.StatusBadRequest, err)
-		// 	return
-		// }
-
-		// ctx = context.WithValue(ctx, internal.CtxUser, user)
-		// ctx = context.WithValue(ctx, internal.CtxToken, token)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 

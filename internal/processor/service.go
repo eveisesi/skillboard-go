@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/eveisesi/skillz"
+	"github.com/eveisesi/skillz/internal"
 	"github.com/eveisesi/skillz/internal/user"
 	"github.com/go-redis/redis/v8"
 	"github.com/gofrs/uuid"
@@ -27,11 +28,6 @@ func New(logger *logrus.Logger, redisClient *redis.Client, user user.API, scopes
 		scopes: scopes,
 	}
 }
-
-const (
-	UpdateQueue   = "skillz::queue::update"
-	UpdatingQueue = "skillz::queue::updating"
-)
 
 func (s *Service) Run() error {
 
@@ -61,7 +57,7 @@ func (s *Service) Run() error {
 	for {
 		var entry = logrus.NewEntry(s.logger)
 		var ctx context.Context = context.Background()
-		result, err := s.redis.BZPopMin(ctx, 0, UpdateQueue).Result()
+		result, err := s.redis.BZPopMin(ctx, 0, internal.UpdateQueue).Result()
 		if err != nil && !errors.Is(err, redis.Nil) {
 			return err
 		}
@@ -80,7 +76,7 @@ func (s *Service) Run() error {
 			continue
 		}
 
-		_, err = s.redis.ZAdd(ctx, UpdatingQueue, &result.Z).Result()
+		_, err = s.redis.ZAdd(ctx, internal.UpdatingQueue, &result.Z).Result()
 		if err != nil {
 			return err
 		}
@@ -91,7 +87,7 @@ func (s *Service) Run() error {
 			continue
 		}
 
-		_, err = s.redis.ZRem(ctx, UpdatingQueue, result.Member).Result()
+		_, err = s.redis.ZRem(ctx, internal.UpdatingQueue, result.Member).Result()
 		if err != nil {
 			return err
 		}

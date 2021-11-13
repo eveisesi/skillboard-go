@@ -9,25 +9,33 @@ import (
 	"github.com/eveisesi/skillz/internal/cache"
 	"github.com/eveisesi/skillz/internal/esi"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/null"
 )
 
 type API interface {
+	Bloodline(ctx context.Context, bloodlineID uint) (*skillz.Bloodline, error)
+	Category(ctx context.Context, categoryID uint) (*skillz.Category, error)
+	Constellation(ctx context.Context, constellationID uint) (*skillz.Constellation, error)
+	Faction(ctx context.Context, id uint) (*skillz.Faction, error)
+	Group(ctx context.Context, groupID uint) (*skillz.Group, error)
+	Race(ctx context.Context, id uint) (*skillz.Race, error)
+	Region(ctx context.Context, regionID uint) (*skillz.Region, error)
+	SolarSystem(ctx context.Context, solarSystemID uint) (*skillz.SolarSystem, error)
+	Station(ctx context.Context, stationID uint) (*skillz.Station, error)
+	Structure(ctx context.Context, structureID uint64) (*skillz.Structure, error)
+	Type(ctx context.Context, itemID uint) (*skillz.Type, error)
 }
 
 type Service struct {
-	logger *logrus.Logger
-
 	cache cache.UniverseAPI
 	esi   esi.UniverseAPI
 
 	universe skillz.UniverseRepository
 }
 
-func New(logger *logrus.Logger, cache cache.UniverseAPI, esi esi.UniverseAPI, universe skillz.UniverseRepository) *Service {
+func New(cache cache.UniverseAPI, esi esi.UniverseAPI, universe skillz.UniverseRepository) *Service {
 	return &Service{
-		logger:   logger,
+
 		cache:    cache,
 		esi:      esi,
 		universe: universe,

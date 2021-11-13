@@ -12,11 +12,14 @@ import (
 	"github.com/eveisesi/skillz/internal/auth"
 	"github.com/eveisesi/skillz/internal/cache"
 	"github.com/eveisesi/skillz/internal/character"
+	"github.com/eveisesi/skillz/internal/clone"
 	"github.com/eveisesi/skillz/internal/corporation"
 	"github.com/eveisesi/skillz/internal/esi"
 	"github.com/eveisesi/skillz/internal/etag"
 	"github.com/eveisesi/skillz/internal/mysql"
 	"github.com/eveisesi/skillz/internal/server"
+	"github.com/eveisesi/skillz/internal/server/gql/dataloaders"
+	"github.com/eveisesi/skillz/internal/universe"
 	"github.com/eveisesi/skillz/internal/user"
 	"github.com/urfave/cli/v2"
 )
@@ -30,10 +33,12 @@ func serverCommand(_ *cli.Context) error {
 
 	cache := cache.New(redisClient)
 
-	etagRepo := mysql.NewETagRepository(mysqlClient)
-	characterRepo := mysql.NewCharacterRepository(mysqlClient)
-	corporationRepo := mysql.NewCorporationRepository(mysqlClient)
 	allianceRepo := mysql.NewAllianceRepository(mysqlClient)
+	characterRepo := mysql.NewCharacterRepository(mysqlClient)
+	clonesRepo := mysql.NewCloneRepository(mysqlClient)
+	corporationRepo := mysql.NewCorporationRepository(mysqlClient)
+	etagRepo := mysql.NewETagRepository(mysqlClient)
+	universeRepo := mysql.NewUniverseRepository(mysqlClient)
 	userRepo := mysql.NewUserRepository(mysqlClient)
 
 	etag := etag.New(cache, etagRepo)
@@ -42,8 +47,11 @@ func serverCommand(_ *cli.Context) error {
 	character := character.New(cache, esi, etag, characterRepo)
 	corporation := corporation.New(cache, esi, etag, corporationRepo)
 	alliance := alliance.New(cache, esi, etag, allianceRepo)
-	user := user.New(auth, alliance, character, corporation, userRepo)
-	server := server.New(cfg.Server.Port, env, logger, auth, character, user)
+	user := user.New(redisClient, auth, alliance, character, corporation, userRepo)
+	clone := clone.New(cache, etag, esi, clonesRepo)
+	universe := universe.New(cache, esi, universeRepo)
+	dataloaders := dataloaders.New(time.Millisecond*250, 100, character, corporation, alliance, clone, universe)
+	server := server.New(cfg.Server.Port, env, logger, alliance, auth, character, corporation, dataloaders, user)
 	errChan := make(chan error, 1)
 	go func() {
 		errChan <- server.Run()

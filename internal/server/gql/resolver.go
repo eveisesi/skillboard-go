@@ -1,8 +1,11 @@
 package resolvers
 
 import (
+	"github.com/eveisesi/skillz/internal/alliance"
 	"github.com/eveisesi/skillz/internal/auth"
 	"github.com/eveisesi/skillz/internal/character"
+	"github.com/eveisesi/skillz/internal/corporation"
+	"github.com/eveisesi/skillz/internal/server/gql/dataloaders"
 	"github.com/eveisesi/skillz/internal/user"
 )
 
@@ -11,19 +14,28 @@ import (
 // It serves as dependency injection for your app, add any dependencies you require here.
 
 type Resolver struct {
-	auth      auth.API
-	character character.API
-	user      user.API
+	auth        auth.API
+	alliance    alliance.API
+	character   character.API
+	corporation corporation.API
+	dataloaders dataloaders.API
+	user        user.API
 }
 
 func New(
+	alliance alliance.API,
 	auth auth.API,
 	character character.API,
+	corporation corporation.API,
+	dataloaders dataloaders.API,
 	user user.API,
 ) *Resolver {
 	return &Resolver{
-		auth:      auth,
-		character: character,
-		user:      user,
+		alliance:    alliance,
+		auth:        auth,
+		character:   character,
+		corporation: corporation,
+		dataloaders: dataloaders,
+		user:        user,
 	}
 }

@@ -10,9 +10,12 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/eveisesi/skillz"
+	"github.com/eveisesi/skillz/internal/alliance"
 	"github.com/eveisesi/skillz/internal/auth"
 	"github.com/eveisesi/skillz/internal/character"
+	"github.com/eveisesi/skillz/internal/corporation"
 	resolvers "github.com/eveisesi/skillz/internal/server/gql"
+	"github.com/eveisesi/skillz/internal/server/gql/dataloaders"
 	"github.com/eveisesi/skillz/internal/server/gql/generated"
 	"github.com/eveisesi/skillz/internal/user"
 	"github.com/go-chi/chi/v5"
@@ -25,11 +28,13 @@ type server struct {
 	port   uint
 	env    skillz.Environment
 	logger *logrus.Logger
-	// loaders dataloaders.Service
 
-	auth      auth.API
-	character character.API
-	user      user.API
+	alliance    alliance.API
+	auth        auth.API
+	character   character.API
+	corporation corporation.API
+	dataloaders dataloaders.API
+	user        user.API
 
 	server *http.Server
 }
@@ -38,24 +43,26 @@ func New(
 
 	port uint,
 	env skillz.Environment,
-	// newrelic *newrelic.Application,
 	logger *logrus.Logger,
-	// loaders dataloaders.Service,
 
+	alliance alliance.API,
 	auth auth.API,
 	character character.API,
+	corporation corporation.API,
+	dataloaders dataloaders.API,
 	user user.API,
-
 ) *server {
 
 	s := &server{
-		port:      port,
-		env:       env,
-		logger:    logger,
-		auth:      auth,
-		character: character,
-		user:      user,
-		// loaders:     loaders,
+		port:        port,
+		env:         env,
+		logger:      logger,
+		alliance:    alliance,
+		auth:        auth,
+		character:   character,
+		corporation: corporation,
+		dataloaders: dataloaders,
+		user:        user,
 	}
 
 	s.server = &http.Server{
@@ -67,20 +74,10 @@ func New(
 }
 
 func (s *server) Run() error {
-	// defer wg.Done()
 	entry := s.logger.WithField("service", "server")
 	entry.Infof("Starting on Port %d", s.port)
 
 	return s.server.ListenAndServe()
-	// if err != nil {
-	// 	entry.WithError(err).Fatal("failed to start server")
-	// }
-
-	// entry.Infof("Server is running on Port %d", s.port)
-
-	// <-done
-	// entry.Info("attempting to gracefully shutdown server")
-
 }
 
 func (s *server) Shutdown(ctx context.Context) error {
@@ -111,7 +108,14 @@ func (s *server) buildRouter() *chi.Mux {
 		handler := handler.New(
 			generated.NewExecutableSchema(
 				generated.Config{
-					Resolvers: resolvers.New(s.auth, s.character, s.user),
+					Resolvers: resolvers.New(
+						s.alliance,
+						s.auth,
+						s.character,
+						s.corporation,
+						s.dataloaders,
+						s.user,
+					),
 				},
 			),
 		)

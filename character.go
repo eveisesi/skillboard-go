@@ -36,8 +36,8 @@ type Character struct {
 	Title          null.String  `db:"title,omitempty" json:"title,omitempty"`
 	BloodlineID    uint         `db:"bloodline_id" json:"bloodline_id"`
 	RaceID         uint         `db:"race_id" json:"race_id"`
-	CreatedAt      time.Time    `db:"created_at" json:"created_at"`
-	UpdatedAt      time.Time    `db:"updated_at" json:"updated_at"`
+	CreatedAt      time.Time    `db:"created_at" json:"-"`
+	UpdatedAt      time.Time    `db:"updated_at" json:"-"`
 }
 
 type CharacterCorporationHistory struct {
