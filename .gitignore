@@ -1,3 +1,4 @@
 .env
 redis.conf
 logs/*.log
+cmd/skillz/underscore.go
