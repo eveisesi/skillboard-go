@@ -3,7 +3,6 @@ package cache
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/eveisesi/skillz"
@@ -26,10 +25,10 @@ func (s *Service) JSONWebKeySet(ctx context.Context) ([]byte, error) {
 
 	result, err := s.redis.Get(ctx, key).Bytes()
 	if err != nil && !errors.Is(err, redis.Nil) {
-		return nil, err
+		return nil, errors.Wrapf(err, errorFFormat, authAPI, "JSONWebKeySet", "failed to fetch results from cache")
 	}
 
-	if len(result) == 0 {
+	if errors.Is(err, redis.Nil) {
 		return nil, nil
 	}
 
@@ -39,50 +38,37 @@ func (s *Service) JSONWebKeySet(ctx context.Context) ([]byte, error) {
 
 func (s *Service) SaveJSONWebKeySet(ctx context.Context, jwks []byte) error {
 	key := generateKey(keyAuthJWKS)
-	_, err := s.redis.Set(ctx, key, jwks, time.Hour*6).Result()
-	return err
+	err := s.redis.Set(ctx, key, jwks, time.Hour*6).Err()
+	return errors.Wrapf(err, errorFFormat, authAPI, "SaveJSONWebKeySet", "failed to write cache")
 }
 
 func (s *Service) AuthAttempt(ctx context.Context, state string) (*skillz.AuthAttempt, error) {
 
 	key := generateKey(keyAuthAttempt, state)
-
 	result, err := s.redis.Get(ctx, key).Bytes()
 	if err != nil && !errors.Is(err, redis.Nil) {
-		return nil, err
+		return nil, errors.Wrapf(err, errorFFormat, authAPI, "AuthAttempt", "failed to fetch results from cache")
 	}
 
-	if len(result) == 0 {
+	if errors.Is(err, redis.Nil) {
 		return nil, nil
 	}
 
 	var attempt = new(skillz.AuthAttempt)
 	err = json.Unmarshal(result, attempt)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal data onto result struct")
-	}
-
-	return attempt, nil
+	return attempt, errors.Wrapf(err, errorFFormat, authAPI, "AuthAttempt", "failed to decode json to structure")
 
 }
 
 func (s *Service) CreateAuthAttempt(ctx context.Context, attempt *skillz.AuthAttempt) error {
 
-	if attempt.State == "" {
-		return fmt.Errorf("empty state provided")
-	}
-
 	b, err := json.Marshal(attempt)
 	if err != nil {
-		return fmt.Errorf("failed to cache auth attempt: %w", err)
+		return errors.Wrapf(err, errorFFormat, authAPI, "CreateAuthAttempt", "failed to encode struct as json")
 	}
 
 	key := generateKey(keyAuthAttempt, attempt.State)
+	err = s.redis.Set(ctx, key, b, time.Minute*5).Err()
+	return errors.Wrapf(err, errorFFormat, authAPI, "CreateAuthAttempt", "failed to write cache")
 
-	_, err = s.redis.Set(ctx, key, b, time.Minute*5).Result()
-	if err != nil {
-		return errors.Wrap(err, "failed to create auth attempt")
-	}
-
-	return nil
 }

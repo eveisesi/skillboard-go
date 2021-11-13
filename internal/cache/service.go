@@ -3,7 +3,6 @@ package cache
 import (
 	"crypto/sha256"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/go-redis/redis/v8"
@@ -13,6 +12,20 @@ type Service struct {
 	redis *redis.Client
 }
 
+const (
+	allianceAPI    string = "AllianceAPI"
+	authAPI        string = "AuthAPI"
+	characterAPI   string = "CharacterAPI"
+	cloneAPI       string = "CloneAPI"
+	corporationAPI string = "CorporationAPI"
+	etagAPI        string = "EtagAPI"
+	universeAPI    string = "UniverseAPI"
+)
+
+const (
+	errorFFormat string = "[%s.%s] %s"
+)
+
 func New(redis *redis.Client) *Service {
 	return &Service{
 		redis: redis,
@@ -21,14 +34,6 @@ func New(redis *redis.Client) *Service {
 
 func generateKey(args ...string) string {
 	return strings.Join(append([]string{"skillz"}, args...), "::")
-}
-
-func hashUint64(i uint64) string {
-	return hash(strconv.FormatUint(i, 10))
-}
-
-func hashUint(i uint) string {
-	return hash(strconv.FormatUint(uint64(i), 10))
 }
 
 func hash(s string) string {

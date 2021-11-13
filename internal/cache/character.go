@@ -3,6 +3,7 @@ package cache
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 	"time"
 
 	"github.com/eveisesi/skillz"
@@ -21,11 +22,10 @@ const (
 
 func (s *Service) Character(ctx context.Context, characterID uint64) (*skillz.Character, error) {
 
-	key := generateKey(characterKeyPrefix, hashUint64(characterID))
-
+	key := generateKey(characterKeyPrefix, strconv.FormatUint(characterID, 10))
 	result, err := s.redis.Get(ctx, key).Bytes()
 	if err != nil && !errors.Is(err, redis.Nil) {
-		return nil, err
+		return nil, errors.Wrapf(err, errorFFormat, characterAPI, "Character", "failed to fetch results from cache")
 	}
 
 	if errors.Is(err, redis.Nil) {
@@ -34,7 +34,7 @@ func (s *Service) Character(ctx context.Context, characterID uint64) (*skillz.Ch
 
 	var character = new(skillz.Character)
 	err = json.Unmarshal(result, character)
-	return character, errors.Wrapf(err, "failed to decode cached character to structure")
+	return character, errors.Wrapf(err, errorFFormat, characterAPI, "Character", "failed to decode json to structure")
 
 }
 
@@ -42,12 +42,11 @@ func (s *Service) SetCharacter(ctx context.Context, character *skillz.Character,
 
 	data, err := json.Marshal(character)
 	if err != nil {
-		return errors.Wrap(err, "failed to encode character to json")
+		return errors.Wrapf(err, errorFFormat, characterAPI, "SetCharacter", "failed to encode struct as json")
 	}
 
-	key := generateKey(characterKeyPrefix, hashUint64(character.ID))
-
+	key := generateKey(characterKeyPrefix, strconv.FormatUint(character.ID, 10))
 	err = s.redis.Set(ctx, key, data, expires).Err()
-	return errors.Wrap(err, "failed to cache character")
+	return errors.Wrapf(err, errorFFormat, characterAPI, "SetCharacter", "failed to write cache")
 
 }

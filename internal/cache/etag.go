@@ -25,7 +25,7 @@ func (s *Service) EtagByPath(ctx context.Context, path string) (*skillz.Etag, er
 
 	result, err := s.redis.Get(ctx, key).Bytes()
 	if err != nil && !errors.Is(err, redis.Nil) {
-		return nil, err
+		return nil, errors.Wrapf(err, errorFFormat, etagAPI, "EtagByPath", "failed to fetch results from cache")
 	}
 
 	if errors.Is(err, redis.Nil) {
@@ -34,8 +34,7 @@ func (s *Service) EtagByPath(ctx context.Context, path string) (*skillz.Etag, er
 
 	etag := new(skillz.Etag)
 	err = json.Unmarshal(result, etag)
-
-	return etag, errors.Wrap(err, "failed to decode cached etag to structure")
+	return etag, errors.Wrapf(err, errorFFormat, universeAPI, "Bloodline", "failed to decode json to structure")
 
 }
 
@@ -43,12 +42,11 @@ func (s *Service) SetEtag(ctx context.Context, etag *skillz.Etag, expires time.D
 
 	data, err := json.Marshal(etag)
 	if err != nil {
-		return errors.Wrap(err, "failed to encode etag to json")
+		return errors.Wrapf(err, errorFFormat, universeAPI, "SetBloodline", "failed to encode struct as json")
 	}
 
-	return errors.Wrap(
-		s.redis.Set(ctx, generateKey(etagKeyPrefix, hash(etag.Path)), data, expires).Err(),
-		"failed to cache etag",
-	)
+	key := generateKey(etagKeyPrefix, hash(etag.Path))
+	err = s.redis.Set(ctx, key, data, expires).Err()
+	return errors.Wrapf(err, errorFFormat, universeAPI, "SetRace", "failed to write cache")
 
 }

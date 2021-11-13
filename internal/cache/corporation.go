@@ -3,6 +3,7 @@ package cache
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 	"time"
 
 	"github.com/eveisesi/skillz"
@@ -21,11 +22,11 @@ const (
 
 func (s *Service) Corporation(ctx context.Context, corporationID uint) (*skillz.Corporation, error) {
 
-	key := generateKey(corporationKeyPrefix, hashUint(corporationID))
+	key := generateKey(corporationKeyPrefix, strconv.FormatUint(uint64(corporationID), 10))
 
 	result, err := s.redis.Get(ctx, key).Bytes()
 	if err != nil && !errors.Is(err, redis.Nil) {
-		return nil, err
+		return nil, errors.Wrapf(err, errorFFormat, corporationAPI, "Corporation", "failed to fetch results from cache")
 	}
 
 	if errors.Is(err, redis.Nil) {
@@ -34,7 +35,7 @@ func (s *Service) Corporation(ctx context.Context, corporationID uint) (*skillz.
 
 	var corporation = new(skillz.Corporation)
 	err = json.Unmarshal(result, corporation)
-	return corporation, errors.Wrapf(err, "failed to decode cached corporation to structure")
+	return corporation, errors.Wrapf(err, errorFFormat, corporationAPI, "Corporation", "failed to decode json to structure")
 
 }
 
@@ -42,12 +43,11 @@ func (s *Service) SetCorporation(ctx context.Context, corporation *skillz.Corpor
 
 	data, err := json.Marshal(corporation)
 	if err != nil {
-		return errors.Wrap(err, "failed to encode corporation to json")
+		return errors.Wrapf(err, errorFFormat, corporationAPI, "SetCorporation", "failed to encode struct as json")
 	}
 
-	key := generateKey(corporationKeyPrefix, hashUint(corporation.ID))
-
+	key := generateKey(corporationKeyPrefix, strconv.FormatUint(uint64(corporation.ID), 10))
 	err = s.redis.Set(ctx, key, data, expires).Err()
-	return errors.Wrap(err, "failed to cache corporation")
+	return errors.Wrapf(err, errorFFormat, corporationAPI, "SetCorporation", "failed to write cache")
 
 }

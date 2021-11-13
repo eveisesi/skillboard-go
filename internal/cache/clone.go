@@ -3,6 +3,7 @@ package cache
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 	"time"
 
 	"github.com/eveisesi/skillz"
@@ -24,11 +25,10 @@ const (
 
 func (s *Service) CharacterClones(ctx context.Context, characterID uint64) (*skillz.CharacterCloneMeta, error) {
 
-	key := generateKey(characterClonesKeyPrefix, hashUint64(characterID))
-
+	key := generateKey(characterClonesKeyPrefix, strconv.FormatUint(characterID, 10))
 	result, err := s.redis.Get(ctx, key).Bytes()
 	if err != nil && !errors.Is(err, redis.Nil) {
-		return nil, err
+		return nil, errors.Wrapf(err, errorFFormat, cloneAPI, "CharacterClones", "failed to fetch results from cache")
 	}
 
 	if errors.Is(err, redis.Nil) {
@@ -37,30 +37,29 @@ func (s *Service) CharacterClones(ctx context.Context, characterID uint64) (*ski
 
 	var clones = new(skillz.CharacterCloneMeta)
 	err = json.Unmarshal(result, clones)
-	return clones, errors.Wrapf(err, "failed to decode cached clones to structure")
+	return clones, errors.Wrapf(err, errorFFormat, cloneAPI, "CharacterClones", "failed to decode json to structure")
+
 }
 
 func (s *Service) SetCharacterClones(ctx context.Context, characterID uint64, clones *skillz.CharacterCloneMeta, expires time.Duration) error {
 
 	data, err := json.Marshal(clones)
 	if err != nil {
-		return errors.Wrap(err, "failed to encode character clones to json")
+		return errors.Wrapf(err, errorFFormat, cloneAPI, "SetCharacterClones", "failed to encode struct as json")
 	}
 
-	key := generateKey(characterClonesKeyPrefix, hashUint64(characterID))
-
+	key := generateKey(characterClonesKeyPrefix, strconv.FormatUint(characterID, 10))
 	err = s.redis.Set(ctx, key, data, expires).Err()
-	return errors.Wrap(err, "failed to cache character clones")
+	return errors.Wrapf(err, errorFFormat, cloneAPI, "SetCharacterClones", "failed to write cache")
 
 }
 
 func (s *Service) CharacterImplants(ctx context.Context, characterID uint64) ([]*skillz.CharacterImplant, error) {
 
-	key := generateKey(characterImplantsKeyPrefix, hashUint64(characterID))
-
+	key := generateKey(characterImplantsKeyPrefix, strconv.FormatUint(characterID, 10))
 	result, err := s.redis.Get(ctx, key).Bytes()
 	if err != nil && !errors.Is(err, redis.Nil) {
-		return nil, err
+		return nil, errors.Wrapf(err, errorFFormat, cloneAPI, "CharacterImplants", "failed to fetch results from cache")
 	}
 
 	if errors.Is(err, redis.Nil) {
@@ -69,7 +68,7 @@ func (s *Service) CharacterImplants(ctx context.Context, characterID uint64) ([]
 
 	var implants = make([]*skillz.CharacterImplant, 0, 10)
 	err = json.Unmarshal(result, &implants)
-	return implants, errors.Wrapf(err, "failed to decode cached implants to structure")
+	return implants, errors.Wrapf(err, errorFFormat, cloneAPI, "CharacterImplants", "failed to decode json to structure")
 
 }
 
@@ -77,12 +76,11 @@ func (s *Service) SetCharacterImplants(ctx context.Context, characterID uint64, 
 
 	data, err := json.Marshal(implants)
 	if err != nil {
-		return errors.Wrap(err, "failed to encode character implants to json")
+		return errors.Wrapf(err, errorFFormat, cloneAPI, "SetCharacterImplants", "failed to encode struct as json")
 	}
 
-	key := generateKey(characterImplantsKeyPrefix, hashUint64(characterID))
-
+	key := generateKey(characterImplantsKeyPrefix, strconv.FormatUint(characterID, 10))
 	err = s.redis.Set(ctx, key, data, expires).Err()
-	return errors.Wrap(err, "failed to cache character implants")
+	return errors.Wrapf(err, errorFFormat, cloneAPI, "SetCharacterImplants", "failed to write cache")
 
 }

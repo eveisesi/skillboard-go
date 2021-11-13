@@ -3,6 +3,7 @@ package cache
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 	"time"
 
 	"github.com/eveisesi/skillz"
@@ -21,11 +22,11 @@ const (
 
 func (s *Service) Alliance(ctx context.Context, allianceID uint) (*skillz.Alliance, error) {
 
-	key := generateKey(allianceKeyPrefix, hashUint(allianceID))
+	key := generateKey(allianceKeyPrefix, strconv.Itoa(int(allianceID)))
 
 	result, err := s.redis.Get(ctx, key).Bytes()
 	if err != nil && !errors.Is(err, redis.Nil) {
-		return nil, err
+		return nil, errors.Wrapf(err, errorFFormat, allianceAPI, "Alliance", "failed to fetch results from cache")
 	}
 
 	if errors.Is(err, redis.Nil) {
@@ -34,7 +35,7 @@ func (s *Service) Alliance(ctx context.Context, allianceID uint) (*skillz.Allian
 
 	var alliance = new(skillz.Alliance)
 	err = json.Unmarshal(result, alliance)
-	return alliance, errors.Wrapf(err, "failed to decode cached alliance to structure")
+	return alliance, errors.Wrapf(err, errorFFormat, allianceAPI, "Alliance", "failed to decode json to structure")
 
 }
 
@@ -42,12 +43,11 @@ func (s *Service) SetAlliance(ctx context.Context, alliance *skillz.Alliance, ex
 
 	data, err := json.Marshal(alliance)
 	if err != nil {
-		return errors.Wrap(err, "failed to encode alliance to json")
+		return errors.Wrapf(err, errorFFormat, allianceAPI, "SetAlliance", "failed to encode struct as json")
 	}
 
-	key := generateKey(allianceKeyPrefix, hashUint(alliance.ID))
-
+	key := generateKey(allianceKeyPrefix, strconv.Itoa(int(alliance.ID)))
 	err = s.redis.Set(ctx, key, data, expires).Err()
-	return errors.Wrap(err, "failed to cache alliance")
+	return errors.Wrapf(err, errorFFormat, allianceAPI, "SetAlliance", "failed to write cache")
 
 }
