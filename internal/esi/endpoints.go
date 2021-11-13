@@ -175,4 +175,79 @@ var resolverFuncs = map[string]func(endpoint EndpointID) resolverFunc{
 
 		}
 	},
+	"categoryID": func(endpoint EndpointID) resolverFunc {
+		return func(params *Params) (string, error) {
+			if params == nil {
+				return "", ErrNilParams
+			}
+			if !params.CategoryID.Valid {
+				return "", ErrInvalidParameter{"categoryID"}
+			}
+
+			path := endpoints[endpoint]
+
+			return hash(fmt.Sprintf(path, params.CategoryID.Uint)), nil
+
+		}
+	},
+	"groupID": func(endpoint EndpointID) resolverFunc {
+		return func(params *Params) (string, error) {
+			if params == nil {
+				return "", ErrNilParams
+			}
+			if !params.GroupID.Valid {
+				return "", ErrInvalidParameter{"groupID"}
+			}
+
+			path := endpoints[endpoint]
+
+			return hash(fmt.Sprintf(path, params.GroupID.Uint)), nil
+
+		}
+	},
+	"regionID": func(endpoint EndpointID) resolverFunc {
+		return func(params *Params) (string, error) {
+			if params == nil {
+				return "", ErrNilParams
+			}
+			if !params.RegionID.Valid {
+				return "", ErrInvalidParameter{"regionID"}
+			}
+
+			path := endpoints[endpoint]
+
+			return hash(fmt.Sprintf(path, params.RegionID.Uint)), nil
+
+		}
+	},
+	"constellationID": func(endpoint EndpointID) resolverFunc {
+		return func(params *Params) (string, error) {
+			if params == nil {
+				return "", ErrNilParams
+			}
+			if !params.ConstellationID.Valid {
+				return "", ErrInvalidParameter{"constellationID"}
+			}
+
+			path := endpoints[endpoint]
+
+			return hash(fmt.Sprintf(path, params.ConstellationID.Uint)), nil
+
+		}
+	},
+	"solarSystemID": func(endpoint EndpointID) resolverFunc {
+		return func(params *Params) (string, error) {
+			if params == nil {
+				return "", ErrNilParams
+			}
+			if !params.SolarSystemID.Valid {
+				return "", ErrInvalidParameter{"solarSystemID"}
+			}
+
+			path := endpoints[endpoint]
+
+			return hash(fmt.Sprintf(path, params.SolarSystemID.Uint)), nil
+
+		}
+	},
 }
