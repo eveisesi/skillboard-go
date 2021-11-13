@@ -50,13 +50,13 @@ type UniverseRepository interface {
 
 	Station(ctx context.Context, stationID uint) (*Station, error)
 	Stations(ctx context.Context, operators ...*Operator) ([]*Station, error)
-	CreateStation(ctx context.Context, station *Station) (*Station, error)
-	UpdateStation(ctx context.Context, id uint, station *Station) (*Station, error)
+	CreateStation(ctx context.Context, station *Station) error
+	UpdateStation(ctx context.Context, station *Station) error
 
 	Structure(ctx context.Context, structureID uint64) (*Structure, error)
 	Structures(ctx context.Context) ([]*Structure, error)
-	CreateStructure(ctx context.Context, structure *Structure) (*Structure, error)
-	UpdateStructure(ctx context.Context, id uint64, structure *Structure) (*Structure, error)
+	CreateStructure(ctx context.Context, structure *Structure) error
+	UpdateStructure(ctx context.Context, structure *Structure) error
 
 	Type(ctx context.Context, typeID uint) (*Type, error)
 	Types(ctx context.Context) ([]*Type, error)

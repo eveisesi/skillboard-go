@@ -917,7 +917,7 @@ func (r *UniverseRepository) Stations(ctx context.Context, operators ...*skillz.
 
 }
 
-func (r *UniverseRepository) CreateStation(ctx context.Context, station *skillz.Station) (*skillz.Station, error) {
+func (r *UniverseRepository) CreateStation(ctx context.Context, station *skillz.Station) error {
 
 	now := time.Now()
 	station.CreatedAt = now
@@ -939,23 +939,20 @@ func (r *UniverseRepository) CreateStation(ctx context.Context, station *skillz.
 			ColumnUpdatedAt:                 station.UpdatedAt,
 		}).ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, universeRepository, "CreateStation", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, universeRepository, "CreateStation", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	if err != nil {
-		return nil, errors.Wrapf(err, prefixFormat, universeRepository, "CreateStation")
-	}
-
-	return r.Station(ctx, station.ID)
+	return errors.Wrapf(err, prefixFormat, universeRepository, "CreateStation")
 
 }
 
-func (r *UniverseRepository) UpdateStation(ctx context.Context, id uint, station *skillz.Station) (*skillz.Station, error) {
+func (r *UniverseRepository) UpdateStation(ctx context.Context, station *skillz.Station) error {
+
+	station.UpdatedAt = time.Now()
 
 	query, args, err := sq.Update(r.stations.table).
 		SetMap(map[string]interface{}{
-			StationID:                       station.ID,
 			StationName:                     station.Name,
 			StationSystemID:                 station.SystemID,
 			StationTypeID:                   station.TypeID,
@@ -965,20 +962,15 @@ func (r *UniverseRepository) UpdateStation(ctx context.Context, id uint, station
 			StationOfficeRentalCost:         station.OfficeRentalCost,
 			StationReprocessingEfficiency:   station.ReprocessingEfficiency,
 			StationReprocessingStationsTake: station.ReprocessingStationsTake,
-			ColumnCreatedAt:                 station.CreatedAt,
 			ColumnUpdatedAt:                 station.UpdatedAt,
 		}).
-		Where(sq.Eq{"id": id}).ToSql()
+		Where(sq.Eq{StationID: station.ID}).ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, universeRepository, "UpdateStation", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, universeRepository, "UpdateStation", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	if err != nil {
-		return nil, errors.Wrapf(err, prefixFormat, universeRepository, "UpdateStation")
-	}
-
-	return r.Station(ctx, id)
+	return errors.Wrapf(err, prefixFormat, universeRepository, "UpdateStation")
 
 }
 
@@ -1014,7 +1006,7 @@ func (r *UniverseRepository) Structures(ctx context.Context) ([]*skillz.Structur
 
 }
 
-func (r *UniverseRepository) CreateStructure(ctx context.Context, structure *skillz.Structure) (*skillz.Structure, error) {
+func (r *UniverseRepository) CreateStructure(ctx context.Context, structure *skillz.Structure) error {
 
 	now := time.Now()
 	structure.CreatedAt = now
@@ -1031,21 +1023,20 @@ func (r *UniverseRepository) CreateStructure(ctx context.Context, structure *ski
 			ColumnUpdatedAt:        structure.UpdatedAt,
 		}).ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, universeRepository, "CreateStructure", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, universeRepository, "CreateStructure", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return nil, errors.Wrapf(err, prefixFormat, universeRepository, "CreateStructure")
+	return errors.Wrapf(err, prefixFormat, universeRepository, "CreateStructure")
 
 }
 
-func (r *UniverseRepository) UpdateStructure(ctx context.Context, id uint64, structure *skillz.Structure) (*skillz.Structure, error) {
+func (r *UniverseRepository) UpdateStructure(ctx context.Context, structure *skillz.Structure) error {
 
 	structure.UpdatedAt = time.Now()
 
 	query, args, err := sq.Update(r.structures.table).
 		SetMap(map[string]interface{}{
-			StructureID:            structure.ID,
 			StructureName:          structure.Name,
 			StructureOwnerID:       structure.OwnerID,
 			StructureSolarSystemID: structure.SolarSystemID,
@@ -1053,11 +1044,11 @@ func (r *UniverseRepository) UpdateStructure(ctx context.Context, id uint64, str
 			ColumnUpdatedAt:        structure.UpdatedAt,
 		}).Where(sq.Eq{StructureID: structure.ID}).ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, universeRepository, "UpdateStructure", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, universeRepository, "UpdateStructure", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return nil, errors.Wrapf(err, prefixFormat, universeRepository, "UpdateStructure")
+	return errors.Wrapf(err, prefixFormat, universeRepository, "UpdateStructure")
 
 }
 
