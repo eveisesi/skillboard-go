@@ -94,12 +94,12 @@ func (s *Service) request(ctx context.Context, method, path string, body io.Read
 	out.Status = res.StatusCode
 	out.Headers = res.Header
 
-	if out.Status >= http.StatusBadRequest {
-		data, err := io.ReadAll(res.Body)
-		if err != nil {
-			return errors.Wrapf(err, "expected status %d, got %d: unable to parse request body", expected, res.StatusCode)
-		}
+	data, err := io.ReadAll(res.Body)
+	if err != nil {
+		return errors.Wrapf(err, "expected status %d, got %d: unable to parse request body", expected, res.StatusCode)
+	}
 
+	if out.Status >= http.StatusBadRequest {
 		return errors.Errorf("expected status %d, got %d: %s", expected, res.StatusCode, string(data))
 	}
 
@@ -114,9 +114,9 @@ func (s *Service) request(ctx context.Context, method, path string, body io.Read
 		return nil
 	}
 
-	err = json.NewDecoder(res.Body).Decode(out.Data)
+	err = json.Unmarshal(data, out.Data)
 	if err != nil {
-		return errors.Wrap(err, "failed to decode request body to json")
+		return errors.Wrapf(err, "failed to decode request body to json: %s", string(data))
 	}
 
 	return nil

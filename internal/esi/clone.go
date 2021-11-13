@@ -17,7 +17,7 @@ type CloneAPI interface {
 
 type clones interface {
 	GetCharacterClones(ctx context.Context, characterID uint64, mods ...ModifierFunc) (*skillz.CharacterCloneMeta, error)
-	GetCharacterImplants(ctx context.Context, characterID uint64, mods ...ModifierFunc) ([]*skillz.CharacterImplant, error)
+	GetCharacterImplants(ctx context.Context, characterID uint64, mods ...ModifierFunc) (*CharacterImplantsOk, error)
 }
 
 func (s *Service) GetCharacterClones(ctx context.Context, characterID uint64, mods ...ModifierFunc) (*skillz.CharacterCloneMeta, error) {
@@ -28,7 +28,11 @@ func (s *Service) GetCharacterClones(ctx context.Context, characterID uint64, mo
 	endpoint := fmt.Sprintf(endpoints[GetCharacterClones], characterID)
 	err := s.request(ctx, http.MethodGet, endpoint, nil, http.StatusOK, out, mods...)
 
-	if clones != nil {
+	if out.Status == http.StatusNotModified {
+		return nil, nil
+	}
+
+	if err == nil {
 		clones.CharacterID = characterID
 		clones.HomeLocation.CharacterID = characterID
 		for _, clone := range clones.JumpClones {
@@ -36,34 +40,38 @@ func (s *Service) GetCharacterClones(ctx context.Context, characterID uint64, mo
 		}
 	}
 
-	if out.Status == http.StatusNotModified {
-		return nil, nil
-	}
-
 	return clones, errors.Wrap(err, "failed to execute request to ESI for Character data")
 
 }
 
-func (s *Service) GetCharacterImplants(ctx context.Context, characterID uint64, mods ...ModifierFunc) ([]*skillz.CharacterImplant, error) {
+type CharacterImplantsOk struct {
+	Implants []*skillz.CharacterImplant
+	Updated  bool
+}
+
+func (s *Service) GetCharacterImplants(ctx context.Context, characterID uint64, mods ...ModifierFunc) (*CharacterImplantsOk, error) {
 
 	// var implants = make([]*skillz.CharacterImplant, 0, 10)
 	var implantIDs = make([]uint, 0, 10)
 	var out = new(out)
 	out.Data = &implantIDs
-	endpoint := fmt.Sprintf(endpoints[GetCharacterClones], characterID)
+	endpoint := fmt.Sprintf(endpoints[GetCharacterImplants], characterID)
 	err := s.request(ctx, http.MethodGet, endpoint, nil, http.StatusOK, out, mods...)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to exec request to ESI for character implants")
 	}
 
-	if out.Status == http.StatusNotModified {
-		return nil, nil
+	var implants = &CharacterImplantsOk{
+		Implants: make([]*skillz.CharacterImplant, 0, 10),
+		Updated:  out.Status == http.StatusOK,
 	}
 
-	var implants = make([]*skillz.CharacterImplant, 0, 10)
+	if out.Status == http.StatusNotModified {
+		return implants, nil
+	}
 
 	for _, id := range implantIDs {
-		implants = append(implants, &skillz.CharacterImplant{
+		implants.Implants = append(implants.Implants, &skillz.CharacterImplant{
 			CharacterID: characterID,
 			ImplantID:   id,
 		})

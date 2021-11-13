@@ -165,14 +165,14 @@ func (s *Service) ValidateToken(ctx context.Context, user *skillz.User) error {
 		return err
 	}
 
-	if updated {
-		err = s.UserRepository.UpdateUser(ctx, user)
-		if err != nil {
-			return err
-		}
+	fmt.Println("user.ValidateToken ::", updated)
+	if !updated {
+
+		return nil
+
 	}
 
-	return nil
+	return s.UserRepository.UpdateUser(ctx, user)
 
 }
 

@@ -13,6 +13,7 @@ import (
 
 type modifiers interface {
 	AddIfNoneMatchHeader(ctx context.Context, etag string) ModifierFunc
+	AddAuthorizationHeader(ctx context.Context, token string) ModifierFunc
 	CacheEtag(ctx context.Context, hash string) ModifierFunc
 }
 
@@ -30,6 +31,22 @@ func (s *Service) AddIfNoneMatchHeader(ctx context.Context, etag string) Modifie
 		}
 
 		req.Header.Set(headers.IfNoneMatch, etag)
+		return nil
+	}
+}
+
+func (s *Service) AddAuthorizationHeader(ctx context.Context, token string) ModifierFunc {
+	return func(req *http.Request, res *http.Response) error {
+		if req == nil {
+			return nil
+		}
+
+		fmt.Println("esi.Service :: AddAuthorizationHeader Modifier :: Token :: ", len(token))
+		if token == "" {
+			return nil
+		}
+
+		req.Header.Set(headers.Authorization, fmt.Sprintf("Bearer %s", token))
 		return nil
 	}
 }

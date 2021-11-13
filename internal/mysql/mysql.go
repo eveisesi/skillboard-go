@@ -18,6 +18,7 @@ const (
 	corporationRepository string = "CorporationRepository"
 	etagRepository        string = "ETagRepository"
 	skillsRepository      string = "SkillsRepository"
+	universeRepository    string = "UniverseRepository"
 	userRepository        string = "UserRepository"
 )
 

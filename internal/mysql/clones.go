@@ -59,8 +59,7 @@ func NewCloneRepository(db QueryExecContext) *CloneRepository {
 		implants: tableConf{
 			table: "character_implants",
 			columns: []string{
-				ImplantsImplantID,
-				ColumnCharacterID, ColumnCreatedAt,
+				ColumnCharacterID, ImplantsImplantID, ColumnCreatedAt,
 			},
 		},
 	}
@@ -247,8 +246,10 @@ func (r *CloneRepository) CharacterImplants(ctx context.Context, characterID uin
 func (r *CloneRepository) CreateCharacterImplants(ctx context.Context, implants []*skillz.CharacterImplant) error {
 
 	i := sq.Insert(r.implants.table).Columns(r.implants.columns...)
+	now := time.Now()
 	for _, implant := range implants {
-		i.Values(implant.CharacterID, implant.ImplantID, implant.CreatedAt)
+		implant.CreatedAt = now
+		i = i.Values(implant.CharacterID, implant.ImplantID, implant.CreatedAt)
 	}
 
 	query, args, err := i.ToSql()
