@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/eveisesi/skillz"
+	"github.com/eveisesi/skillz/internal"
 	"github.com/eveisesi/skillz/internal/cache"
 	"github.com/eveisesi/skillz/internal/esi"
 	"github.com/pkg/errors"
@@ -97,7 +98,7 @@ func (s *Service) Category(ctx context.Context, categoryID uint) (*skillz.Catego
 			return nil, err
 		}
 
-		if updatedCategory == nil {
+		if updatedCategory != nil {
 			switch exists {
 			case true:
 				err = s.universe.UpdateCategory(ctx, updatedCategory)
@@ -154,7 +155,7 @@ func (s *Service) Constellation(ctx context.Context, constellationID uint) (*ski
 			return nil, err
 		}
 
-		if updatedConstellation == nil {
+		if updatedConstellation != nil {
 			switch exists {
 			case true:
 				err = s.universe.UpdateConstellation(ctx, updatedConstellation)
@@ -231,7 +232,7 @@ func (s *Service) Group(ctx context.Context, groupID uint) (*skillz.Group, error
 			return nil, err
 		}
 
-		if updatedGroup == nil {
+		if updatedGroup != nil {
 			switch exists {
 			case true:
 				err = s.universe.UpdateGroup(ctx, updatedGroup)
@@ -310,7 +311,7 @@ func (s *Service) Region(ctx context.Context, regionID uint) (*skillz.Region, er
 			return nil, err
 		}
 
-		if updatedRegion == nil {
+		if updatedRegion != nil {
 			switch exists {
 			case true:
 				err = s.universe.UpdateRegion(ctx, updatedRegion)
@@ -367,7 +368,7 @@ func (s *Service) SolarSystem(ctx context.Context, solarSystemID uint) (*skillz.
 			return nil, err
 		}
 
-		if updatedSolarSystem == nil {
+		if updatedSolarSystem != nil {
 			switch exists {
 			case true:
 				err = s.universe.UpdateSolarSystem(ctx, updatedSolarSystem)
@@ -424,7 +425,7 @@ func (s *Service) Station(ctx context.Context, stationID uint) (*skillz.Station,
 			return nil, err
 		}
 
-		if updatedStation == nil {
+		if updatedStation != nil {
 			switch exists {
 			case true:
 				err = s.universe.UpdateStation(ctx, updatedStation)
@@ -471,8 +472,13 @@ func (s *Service) Structure(ctx context.Context, structureID uint64) (*skillz.St
 	}
 
 	exists := err == nil
-	if !exists || etag == nil || etag.CachedUntil.Unix() < time.Now().Add(-1*time.Minute).Unix() {
-		mods := append(make([]esi.ModifierFunc, 0, 2), s.esi.CacheEtag(ctx, etagID))
+	if !exists {
+		user := internal.UserFromContext(ctx)
+		if user == nil {
+			return nil, errors.Wrap(err, "failed to resolve structure id, no user available to query esi with")
+		}
+
+		mods := append(make([]esi.ModifierFunc, 0, 2), s.esi.CacheEtag(ctx, etagID), s.esi.AddAuthorizationHeader(ctx, user.AccessToken))
 		if etag != nil && etag.Etag != "" {
 			mods = append(mods, s.esi.AddIfNoneMatchHeader(ctx, etag.Etag))
 		}
@@ -482,7 +488,7 @@ func (s *Service) Structure(ctx context.Context, structureID uint64) (*skillz.St
 			return nil, err
 		}
 
-		if updatedStructure == nil {
+		if updatedStructure != nil {
 			switch exists {
 			case true:
 				err = s.universe.UpdateStructure(ctx, updatedStructure)
@@ -539,7 +545,7 @@ func (s *Service) Type(ctx context.Context, itemID uint) (*skillz.Type, error) {
 			return nil, err
 		}
 
-		if updatedType == nil {
+		if updatedType != nil {
 			switch exists {
 			case true:
 				err = s.universe.UpdateType(ctx, updatedType)

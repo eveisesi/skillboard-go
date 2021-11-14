@@ -1,0 +1,20 @@
+type Corporation @goModel(model: "github.com/eveisesi/skillz.Corporation") {
+    id: Uint!
+    allianceID: Uint
+    ceoID: Uint!
+    creatorID: Uint!
+    dateFounded: Time
+    factionID: Uint
+    homeStationID: Uint
+    memberCount: Uint!
+    name: String!
+    shares: Uint64!
+    taxRate: Float!
+    ticker: String!
+    url: String
+    warEligible: Boolean!
+}
+
+extend type Character {
+    corporation: Corporation!
+}

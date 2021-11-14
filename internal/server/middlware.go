@@ -36,12 +36,13 @@ func (s *server) authorization(next http.Handler) http.Handler {
 		var ctx = r.Context()
 
 		authHeader := r.Header.Get("authorization")
-		if !strings.HasPrefix(strings.ToLower(authHeader), "bearer ") {
-			s.writeError(ctx, w, http.StatusUnauthorized, fmt.Errorf("missing or invalid token"))
-			return
-		}
 
 		if authHeader != "" {
+			if !strings.HasPrefix(strings.ToLower(authHeader), "bearer ") {
+				s.writeError(ctx, w, http.StatusUnauthorized, fmt.Errorf("missing or invalid token"))
+				return
+			}
+
 			var prefixes = []string{`bearer `, `Bearer `}
 			for _, prefix := range prefixes {
 				authHeader = strings.TrimPrefix(authHeader, prefix)
@@ -52,13 +53,14 @@ func (s *server) authorization(next http.Handler) http.Handler {
 				return
 			}
 
-			_, err = s.user.UserFromToken(ctx, token)
+			user, err := s.user.UserFromToken(ctx, token)
 			if err != nil {
 				s.writeError(ctx, w, http.StatusBadRequest, err)
 				return
 			}
 
 			ctx = internal.ContextWithToken(ctx, token)
+			ctx = internal.ContextWithUser(ctx, user)
 		}
 
 		next.ServeHTTP(w, r.WithContext(ctx))

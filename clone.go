@@ -39,21 +39,44 @@ type CharacterCloneMeta struct {
 	JumpClones   []*CharacterJumpClone `json:"jump_clones"`
 }
 
+type CloneLocationType string
+
+const (
+	CloneLocationTypeStation   CloneLocationType = "station"
+	CloneLocationTypeStructure CloneLocationType = "structure"
+)
+
+var AllCloneLocationTypes = []CloneLocationType{CloneLocationTypeStation, CloneLocationTypeStructure}
+
+func (c CloneLocationType) Valid() bool {
+	for _, t := range AllCloneLocationTypes {
+		if c == t {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (c CloneLocationType) String() string {
+	return string(c)
+}
+
 type CharacterDeathClone struct {
-	CharacterID  uint64    `db:"character_id" json:"character_id"`
-	LocationID   uint64    `db:"location_id" json:"location_id"`
-	LocationType string    `db:"location_type" json:"location_type"`
-	CreatedAt    time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt    time.Time `db:"updated_at" json:"updated_at"`
+	CharacterID  uint64            `db:"character_id" json:"character_id"`
+	LocationID   uint64            `db:"location_id" json:"location_id"`
+	LocationType CloneLocationType `db:"location_type" json:"location_type"`
+	CreatedAt    time.Time         `db:"created_at" json:"created_at"`
+	UpdatedAt    time.Time         `db:"updated_at" json:"updated_at"`
 }
 
 type CharacterJumpClone struct {
-	CharacterID  uint64    `db:"character_id" json:"character_id"`
-	JumpCloneID  uint      `db:"jump_clone_id" json:"jump_clone_id"`
-	LocationID   uint64    `db:"location_id" json:"location_id"`
-	LocationType string    `db:"location_type" json:"location_type"`
-	Implants     SliceUint `db:"implants" json:"implants"`
-	CreatedAt    time.Time `db:"created_at" json:"created_at"`
+	CharacterID  uint64            `db:"character_id" json:"character_id"`
+	JumpCloneID  uint              `db:"jump_clone_id" json:"jump_clone_id"`
+	LocationID   uint64            `db:"location_id" json:"location_id"`
+	LocationType CloneLocationType `db:"location_type" json:"location_type"`
+	Implants     SliceUint         `db:"implants" json:"implants"`
+	CreatedAt    time.Time         `db:"created_at" json:"created_at"`
 }
 
 type CharacterImplant struct {

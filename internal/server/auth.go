@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+
+	"github.com/go-http-utils/headers"
 )
 
 func (s *server) handleGetAuthCallback(w http.ResponseWriter, r *http.Request) {
@@ -23,8 +25,8 @@ func (s *server) handleGetAuthCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set(headers.ContentType, "text/html")
 	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "text/html")
 	_, _ = w.Write([]byte(`
 		<!DOCTYPE html>
 		<html>

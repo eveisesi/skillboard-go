@@ -60,38 +60,37 @@ func (s *Service) Character(ctx context.Context, characterID uint64) (*skillz.Ch
 
 	exists := err == nil
 
-	if exists && etag != nil && etag.CachedUntil.Unix() > time.Now().Add(time.Minute).Unix() {
-		return character, nil
-	}
-
-	mods := append(make([]esi.ModifierFunc, 0, 2), s.esi.CacheEtag(ctx, etagID))
-	if etag != nil && etag.Etag != "" {
-		mods = append(mods, s.esi.AddIfNoneMatchHeader(ctx, etag.Etag))
-	}
-
-	updatedCharacter, err := s.esi.GetCharacter(ctx, characterID, mods...)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to fetch character from ESI")
-	}
-
-	if updatedCharacter == nil {
-		return character, nil
-	}
-
-	switch exists {
-	case true:
-		err = s.character.UpdateCharacter(ctx, updatedCharacter)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to save character to data store")
-		}
-	case false:
-		err = s.character.CreateCharacter(ctx, updatedCharacter)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to save character to data store")
+	if !exists || etag == nil || etag.CachedUntil.Unix() < time.Now().Add(-1*time.Minute).Unix() {
+		mods := append(make([]esi.ModifierFunc, 0, 2), s.esi.CacheEtag(ctx, etagID))
+		if etag != nil && etag.Etag != "" {
+			mods = append(mods, s.esi.AddIfNoneMatchHeader(ctx, etag.Etag))
 		}
 
+		updatedCharacter, err := s.esi.GetCharacter(ctx, characterID, mods...)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to fetch character from ESI")
+		}
+
+		if updatedCharacter != nil {
+			switch exists {
+			case true:
+				err = s.character.UpdateCharacter(ctx, updatedCharacter)
+				if err != nil {
+					return nil, errors.Wrap(err, "failed to save character to data store")
+				}
+			case false:
+				err = s.character.CreateCharacter(ctx, updatedCharacter)
+				if err != nil {
+					return nil, errors.Wrap(err, "failed to save character to data store")
+				}
+
+			}
+
+			character = updatedCharacter
+		}
+
 	}
 
-	return updatedCharacter, s.cache.SetCharacter(ctx, updatedCharacter, time.Hour)
+	return character, s.cache.SetCharacter(ctx, character, time.Hour)
 
 }

@@ -17,6 +17,7 @@ import (
 type API interface {
 	skillz.Processor
 	Clones(ctx context.Context, user *skillz.User) (*skillz.CharacterCloneMeta, error)
+	Implants(ctx context.Context, user *skillz.User) ([]*skillz.CharacterImplant, error)
 }
 
 type Service struct {
@@ -211,8 +212,6 @@ func (s *Service) Implants(ctx context.Context, user *skillz.User) ([]*skillz.Ch
 		}
 	}
 
-	err = s.cache.SetCharacterImplants(ctx, user.CharacterID, implants, time.Hour)
-
-	return implants, err
+	return implants, s.cache.SetCharacterImplants(ctx, user.CharacterID, implants, time.Hour)
 
 }

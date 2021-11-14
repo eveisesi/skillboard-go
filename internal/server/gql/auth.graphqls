@@ -1,0 +1,6 @@
+type AuthAttempt @goModel(model: "github.com/eveisesi/skillz.AuthAttempt") {
+    status: String!
+    state: String
+    token: String
+    url: String!
+}

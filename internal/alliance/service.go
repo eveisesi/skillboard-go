@@ -65,38 +65,36 @@ func (s *Service) Alliance(ctx context.Context, allianceID uint) (*skillz.Allian
 
 	exists := err == nil
 
-	if err == nil && etag != nil && etag.CachedUntil.Unix() > time.Now().Add(time.Minute).Unix() {
-		return alliance, nil
-	}
-
-	mods := append(make([]esi.ModifierFunc, 0, 2), s.esi.CacheEtag(ctx, etagID))
-	if etag != nil && etag.Etag != "" {
-		mods = append(mods, s.esi.AddIfNoneMatchHeader(ctx, etag.Etag))
-	}
-
-	updatedAlliance, err := s.esi.GetAlliance(ctx, allianceID, mods...)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to fetch alliance from ESI")
-	}
-
-	if updatedAlliance == nil {
-		return alliance, nil
-	}
-
-	switch exists {
-	case true:
-		err = s.alliance.UpdateAlliance(ctx, updatedAlliance)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to save alliance to data store")
+	if !exists || etag == nil || etag.CachedUntil.Unix() < time.Now().Add(-1*time.Minute).Unix() {
+		mods := append(make([]esi.ModifierFunc, 0, 2), s.esi.CacheEtag(ctx, etagID))
+		if etag != nil && etag.Etag != "" {
+			mods = append(mods, s.esi.AddIfNoneMatchHeader(ctx, etag.Etag))
 		}
-	case false:
-		err = s.alliance.CreateAlliance(ctx, updatedAlliance)
+
+		updatedAlliance, err := s.esi.GetAlliance(ctx, allianceID, mods...)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to save alliance to data store")
+			return nil, errors.Wrap(err, "failed to fetch alliance from ESI")
+		}
+
+		if updatedAlliance != nil {
+			switch exists {
+			case true:
+				err = s.alliance.UpdateAlliance(ctx, updatedAlliance)
+				if err != nil {
+					return nil, errors.Wrap(err, "failed to save alliance to data store")
+				}
+			case false:
+				err = s.alliance.CreateAlliance(ctx, updatedAlliance)
+				if err != nil {
+					return nil, errors.Wrap(err, "failed to save alliance to data store")
+				}
+
+			}
+			alliance = updatedAlliance
 		}
 
 	}
 
-	return updatedAlliance, s.cache.SetAlliance(ctx, updatedAlliance, time.Hour)
+	return alliance, s.cache.SetAlliance(ctx, alliance, time.Hour)
 
 }

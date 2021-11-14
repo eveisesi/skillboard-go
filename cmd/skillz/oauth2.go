@@ -6,17 +6,16 @@ import (
 )
 
 func oauth2Config() *oauth2.Config {
+
+	scopes := make([]string, 0, len(skillz.AllScopes))
+	for _, scope := range skillz.AllScopes {
+		scopes = append(scopes, scope.String())
+	}
+
 	return &oauth2.Config{
 		ClientID:     cfg.Eve.ClientID,
 		ClientSecret: cfg.Eve.ClientSecret,
-		Scopes: []string{
-			skillz.ReadSkillsV1.String(),
-			skillz.ReadSkillQueueV1.String(),
-			skillz.ReadClonesV1.String(),
-			// "esi-universe.read_structures.v1",
-			// "esi-characters.read_standings.v1",
-			skillz.ReadClonesV1.String(),
-		},
+		Scopes:       scopes,
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  "https://login.eveonline.com/v2/oauth/authorize",
 			TokenURL: "https://login.eveonline.com/v2/oauth/token",

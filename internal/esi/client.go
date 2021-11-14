@@ -103,15 +103,15 @@ func (s *Service) request(ctx context.Context, method, path string, body io.Read
 		return errors.Errorf("expected status %d, got %d: %s", expected, res.StatusCode, string(data))
 	}
 
+	if out.Status == http.StatusNotModified {
+		return nil
+	}
+
 	for _, mod := range mods {
 		err = mod(nil, res)
 		if err != nil {
 			return err
 		}
-	}
-
-	if out.Status == http.StatusNotModified {
-		return nil
 	}
 
 	err = json.Unmarshal(data, out.Data)

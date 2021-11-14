@@ -65,38 +65,36 @@ func (s *Service) Corporation(ctx context.Context, corporationID uint) (*skillz.
 
 	exists := err == nil
 
-	if err == nil && etag != nil && etag.CachedUntil.Unix() > time.Now().Add(time.Minute).Unix() {
-		return corporation, nil
-	}
-
-	mods := append(make([]esi.ModifierFunc, 0, 2), s.esi.CacheEtag(ctx, etagID))
-	if etag != nil && etag.Etag != "" {
-		mods = append(mods, s.esi.AddIfNoneMatchHeader(ctx, etag.Etag))
-	}
-
-	updateCorporation, err := s.esi.GetCorporation(ctx, corporationID, mods...)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to fetch corporation from ESI")
-	}
-
-	if updateCorporation == nil {
-		return corporation, nil
-	}
-
-	switch exists {
-	case true:
-		err = s.corporation.UpdateCorporation(ctx, updateCorporation)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to save corporation to data store")
+	if !exists || etag == nil || etag.CachedUntil.Unix() < time.Now().Add(-1*time.Minute).Unix() {
+		mods := append(make([]esi.ModifierFunc, 0, 2), s.esi.CacheEtag(ctx, etagID))
+		if etag != nil && etag.Etag != "" {
+			mods = append(mods, s.esi.AddIfNoneMatchHeader(ctx, etag.Etag))
 		}
-	case false:
-		err = s.corporation.CreateCorporation(ctx, updateCorporation)
+
+		updateCorporation, err := s.esi.GetCorporation(ctx, corporationID, mods...)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to save corporation to data store")
+			return nil, errors.Wrap(err, "failed to fetch corporation from ESI")
+		}
+
+		if updateCorporation != nil {
+			switch exists {
+			case true:
+				err = s.corporation.UpdateCorporation(ctx, updateCorporation)
+				if err != nil {
+					return nil, errors.Wrap(err, "failed to save corporation to data store")
+				}
+			case false:
+				err = s.corporation.CreateCorporation(ctx, updateCorporation)
+				if err != nil {
+					return nil, errors.Wrap(err, "failed to save corporation to data store")
+				}
+
+			}
+			corporation = updateCorporation
 		}
 
 	}
 
-	return updateCorporation, s.cache.SetCorporation(ctx, updateCorporation, time.Hour)
+	return corporation, s.cache.SetCorporation(ctx, corporation, time.Hour)
 
 }

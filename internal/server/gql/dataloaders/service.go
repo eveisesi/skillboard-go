@@ -13,8 +13,18 @@ import (
 
 type API interface {
 	AllianceLoader() *generated.AllianceLoader
+	CategoryLoader() *generated.CategoryLoader
 	CharacterLoader() *generated.CharacterLoader
+	CloneLoader() *generated.CloneLoader
 	CorporationLoader() *generated.CorporationLoader
+	ConstellationLoader() *generated.ConstellationLoader
+	ImplantLoader() *generated.ImplantLoader
+	GroupLoader() *generated.GroupLoader
+	RegionLoader() *generated.RegionLoader
+	SolarSystemLoader() *generated.SolarSystemLoader
+	StationLoader() *generated.StationLoader
+	StructureLoader() *generated.StructureLoader
+	TypeLoader() *generated.TypeLoader
 }
 
 type Service struct {

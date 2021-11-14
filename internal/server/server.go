@@ -19,8 +19,6 @@ import (
 	"github.com/eveisesi/skillz/internal/server/gql/generated"
 	"github.com/eveisesi/skillz/internal/user"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-http-utils/headers"
 	"github.com/sirupsen/logrus"
 )
 
@@ -90,7 +88,7 @@ func (s *server) buildRouter() *chi.Mux {
 	r.Use(
 		s.requestLogger(s.logger),
 		s.cors,
-		middleware.SetHeader(headers.ContentType, "application/json"),
+		// middleware.SetHeader(headers.ContentType, "application/json"),
 	)
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -102,7 +100,7 @@ func (s *server) buildRouter() *chi.Mux {
 	r.Get("/playground", playground.Handler("GraphQL playground", "/graphql"))
 
 	r.Group(func(r chi.Router) {
-		// r.Use(s.authorization)
+		r.Use(s.authorization)
 
 		// ##### GraphQL Handler #####
 		handler := handler.New(
@@ -116,6 +114,9 @@ func (s *server) buildRouter() *chi.Mux {
 						s.dataloaders,
 						s.user,
 					),
+					Directives: generated.DirectiveRoot{
+						IsAuthed: resolvers.IsAuthed,
+					},
 				},
 			),
 		)

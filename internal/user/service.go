@@ -133,6 +133,10 @@ func (s *Service) Login(ctx context.Context, code, state string) error {
 		}
 	}
 
+	attempt.Token.SetValid(user.AccessToken)
+
+	s.auth.UpdateAuthAttempt(ctx, attempt)
+
 	err = s.redis.ZAdd(ctx, internal.UpdateQueue, &redis.Z{Member: user.ID.String(), Score: 0}).Err()
 
 	return err
@@ -189,14 +193,9 @@ func (s *Service) ValidateToken(ctx context.Context, user *skillz.User) error {
 	if err != nil {
 		return err
 	}
-
-	fmt.Println("user.ValidateToken ::", updated)
 	if !updated {
-
 		return nil
-
 	}
-
 	return s.UserRepository.UpdateUser(ctx, user)
 
 }

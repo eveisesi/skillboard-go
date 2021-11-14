@@ -103,6 +103,8 @@ func (s *Service) GetCategory(ctx context.Context, categoryID uint, mods ...Modi
 		return nil, nil
 	}
 
+	category.ID = categoryID
+
 	return category, nil
 
 }
@@ -139,6 +141,8 @@ func (s *Service) GetGroup(ctx context.Context, groupID uint, mods ...ModifierFu
 		return nil, nil
 	}
 
+	group.ID = groupID
+
 	return group, nil
 
 }
@@ -156,6 +160,8 @@ func (s *Service) GetType(ctx context.Context, typeID uint, mods ...ModifierFunc
 	if out.Status == http.StatusNotModified {
 		return nil, nil
 	}
+
+	item.ID = typeID
 
 	return item, nil
 
@@ -195,6 +201,8 @@ func (s *Service) GetRegion(ctx context.Context, regionID uint, mods ...Modifier
 		return nil, nil
 	}
 
+	region.ID = regionID
+
 	return region, nil
 
 }
@@ -231,6 +239,8 @@ func (s *Service) GetConstellation(ctx context.Context, constellationID uint, mo
 		return nil, nil
 	}
 
+	constellation.ID = constellationID
+
 	return constellation, nil
 
 }
@@ -248,6 +258,8 @@ func (s *Service) GetSolarSystem(ctx context.Context, solarSystemID uint, mods .
 	if out.Status == http.StatusNotModified {
 		return nil, nil
 	}
+
+	system.ID = solarSystemID
 
 	return system, nil
 
@@ -267,6 +279,8 @@ func (s *Service) GetStructure(ctx context.Context, structureID uint64, mods ...
 		return nil, nil
 	}
 
+	structure.ID = structureID
+
 	return structure, nil
 
 }
@@ -284,6 +298,8 @@ func (s *Service) GetStation(ctx context.Context, stationID uint, mods ...Modifi
 	if out.Status == http.StatusNotModified {
 		return nil, nil
 	}
+
+	station.ID = stationID
 
 	return station, nil
 

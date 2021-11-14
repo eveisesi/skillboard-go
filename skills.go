@@ -38,7 +38,7 @@ type memberSkillQueueRepository interface {
 }
 
 type CharacterAttributes struct {
-	CharacterID              uint      `db:"member_id" json:"member_id"`
+	CharacterID              uint64    `db:"member_id" json:"member_id"`
 	Charisma                 uint      `db:"charisma" json:"charisma"`
 	Intelligence             uint      `db:"intelligence" json:"intelligence"`
 	Memory                   uint      `db:"memory" json:"memory"`
@@ -52,7 +52,7 @@ type CharacterAttributes struct {
 }
 
 type CharacterSkillQueue struct {
-	CharacterID     uint      `db:"member_id" json:"member_id" deep:"-"`
+	CharacterID     uint64    `db:"member_id" json:"member_id" deep:"-"`
 	QueuePosition   uint      `db:"queue_position" json:"queue_position"`
 	SkillID         uint      `db:"skill_id" json:"skill_id"`
 	FinishedLevel   uint      `db:"finished_level" json:"finished_level"`
@@ -65,15 +65,17 @@ type CharacterSkillQueue struct {
 }
 
 type CharacterSkillMeta struct {
-	CharacterID   uint      `db:"member_id" json:"member_id" deep:"-"`
+	CharacterID   uint64    `db:"member_id" json:"member_id" deep:"-"`
 	TotalSP       uint      `db:"total_sp" json:"total_sp"`
 	UnallocatedSP null.Int  `db:"unallocated_sp,omitempty" json:"unallocated_sp,omitempty"`
 	CreatedAt     time.Time `db:"created_at" json:"created_at" deep:"-"`
 	UpdatedAt     time.Time `db:"updated_at" json:"updated_at" deep:"-"`
+
+	Skills []*CharacterSkill `json:"skills"`
 }
 
 type CharacterSkill struct {
-	CharacterID        uint      `db:"member_id" json:"member_id" deep:"-"`
+	CharacterID        uint64    `db:"member_id" json:"member_id" deep:"-"`
 	ActiveSkillLevel   uint      `db:"active_skill_level" json:"active_skill_level"`
 	SkillID            uint      `db:"skill_id" json:"skill_id"`
 	SkillpointsInSkill uint      `db:"skillpoints_in_skill" json:"skillpoints_in_skill"`

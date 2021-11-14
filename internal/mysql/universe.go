@@ -425,7 +425,7 @@ func (r *UniverseRepository) Constellation(ctx context.Context, constellationID 
 	}
 
 	var constellation = new(skillz.Constellation)
-	err = r.db.SelectContext(ctx, constellation, query, args...)
+	err = r.db.GetContext(ctx, constellation, query, args...)
 	return constellation, errors.Wrapf(err, prefixFormat, universeRepository, "Constellation")
 
 }
@@ -673,6 +673,7 @@ func (r *UniverseRepository) Race(ctx context.Context, raceID uint) (*skillz.Rac
 	var race = new(skillz.Race)
 	err = r.db.GetContext(ctx, race, query, args...)
 	return race, errors.Wrapf(err, prefixFormat, universeRepository, "Race")
+
 }
 
 func (r *UniverseRepository) Races(ctx context.Context, operators ...*skillz.Operator) ([]*skillz.Race, error) {
@@ -746,6 +747,7 @@ func (r *UniverseRepository) Region(ctx context.Context, regionID uint) (*skillz
 	var region = new(skillz.Region)
 	err = r.db.GetContext(ctx, region, query, args...)
 	return region, errors.Wrapf(err, prefixFormat, universeRepository, "Region")
+
 }
 
 func (r *UniverseRepository) Regions(ctx context.Context) ([]*skillz.Region, error) {
@@ -1064,7 +1066,7 @@ func (r *UniverseRepository) Type(ctx context.Context, typeID uint) (*skillz.Typ
 	}
 
 	var item = new(skillz.Type)
-	err = r.db.SelectContext(ctx, item, query, args...)
+	err = r.db.GetContext(ctx, item, query, args...)
 	return item, errors.Wrapf(err, prefixFormat, universeRepository, "Type")
 
 }

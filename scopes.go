@@ -37,12 +37,13 @@ const (
 	ReadShipV1       Scope = "esi-location.read_ship_type.v1"
 	ReadSkillQueueV1 Scope = "esi-skills.read_skillqueue.v1"
 	ReadSkillsV1     Scope = "esi-skills.read_skills.v1"
+	ReadStructuresV1 Scope = "esi-universe.read_structures.v1"
 )
 
 var AllScopes = []Scope{
 	ReadImplantsV1, ReadClonesV1,
 	ReadLocationV1, ReadOnlineV1, ReadShipV1,
-	ReadSkillQueueV1, ReadSkillsV1,
+	ReadSkillQueueV1, ReadSkillsV1, ReadStructuresV1,
 }
 
 func (s Scope) String() string {
