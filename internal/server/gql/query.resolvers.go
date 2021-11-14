@@ -7,8 +7,8 @@ import (
 	"context"
 
 	"github.com/eveisesi/skillz"
+	"github.com/eveisesi/skillz/internal"
 	"github.com/eveisesi/skillz/internal/server/gql/generated"
-	"github.com/gofrs/uuid"
 )
 
 func (r *queryResolver) Auth(ctx context.Context, state *string) (*skillz.AuthAttempt, error) {
@@ -18,8 +18,12 @@ func (r *queryResolver) Auth(ctx context.Context, state *string) (*skillz.AuthAt
 	return r.auth.InitializeAttempt(ctx)
 }
 
-func (r *queryResolver) User(ctx context.Context, id uuid.UUID) (*skillz.User, error) {
-	return r.user.User(ctx, id)
+func (r *queryResolver) User(ctx context.Context) (*skillz.User, error) {
+	return internal.UserFromContext(ctx), nil
+}
+
+func (r *queryResolver) Character(ctx context.Context, id uint64) (*skillz.Character, error) {
+	return r.character.Character(ctx, id)
 }
 
 func (r *userResolver) Scopes(ctx context.Context, obj *skillz.User) ([]string, error) {

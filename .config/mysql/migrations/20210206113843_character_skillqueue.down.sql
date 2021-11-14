@@ -1,1 +1,1 @@
-DROP TABLE `member_skillqueue`;
+DROP TABLE `character_skillqueue`;

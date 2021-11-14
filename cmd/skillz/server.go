@@ -19,6 +19,7 @@ import (
 	"github.com/eveisesi/skillz/internal/mysql"
 	"github.com/eveisesi/skillz/internal/server"
 	"github.com/eveisesi/skillz/internal/server/gql/dataloaders"
+	"github.com/eveisesi/skillz/internal/skill"
 	"github.com/eveisesi/skillz/internal/universe"
 	"github.com/eveisesi/skillz/internal/user"
 	"github.com/urfave/cli/v2"
@@ -38,6 +39,7 @@ func serverCommand(_ *cli.Context) error {
 	clonesRepo := mysql.NewCloneRepository(mysqlClient)
 	corporationRepo := mysql.NewCorporationRepository(mysqlClient)
 	etagRepo := mysql.NewETagRepository(mysqlClient)
+	skillsRepo := mysql.NewSkillRepository(mysqlClient)
 	universeRepo := mysql.NewUniverseRepository(mysqlClient)
 	userRepo := mysql.NewUserRepository(mysqlClient)
 
@@ -49,9 +51,10 @@ func serverCommand(_ *cli.Context) error {
 	alliance := alliance.New(cache, esi, etag, allianceRepo)
 	user := user.New(redisClient, auth, alliance, character, corporation, userRepo)
 	clone := clone.New(cache, etag, esi, clonesRepo)
+	skill := skill.New(cache, esi, skillsRepo)
 	universe := universe.New(cache, esi, universeRepo)
 	dataloaders := dataloaders.New(time.Millisecond*250, 100, character, corporation, alliance, clone, universe)
-	server := server.New(cfg.Server.Port, env, logger, alliance, auth, character, corporation, dataloaders, user)
+	server := server.New(cfg.Server.Port, env, logger, alliance, auth, character, clone, corporation, dataloaders, skill, user)
 	errChan := make(chan error, 1)
 	go func() {
 		errChan <- server.Run()

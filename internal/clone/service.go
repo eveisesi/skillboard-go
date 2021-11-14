@@ -30,7 +30,7 @@ type Service struct {
 	scopes []skillz.Scope
 }
 
-var _ API = new(Service)
+var _ API = (*Service)(nil)
 
 func New(cache cache.CloneAPI, etag etag.API, esi esi.CloneAPI, clones skillz.CloneRepository) *Service {
 	return &Service{

@@ -2,6 +2,8 @@ package mysql
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
@@ -77,14 +79,13 @@ func NewSkillRepository(db QueryExecContext) *SkillRepository {
 			},
 		},
 		queue: tableConf{
-			table: "character_skill_queue",
+			table: "character_skillqueue",
 			columns: []string{
 				QueueQueuePosition, QueueSkillID,
 				QueueFinishedLevel, QueueTrainingStartSP,
 				QueueLevelStartSP, QueueLevelEndSP,
 				QueueStartDate, QueueFinishDate,
 				ColumnCharacterID, ColumnCreatedAt,
-				ColumnUpdatedAt,
 			},
 		},
 	}
@@ -107,6 +108,32 @@ func (r *SkillRepository) CharacterAttributes(ctx context.Context, characterID u
 
 }
 
+// var characterSkillsOnDuplicateKeyStmt = fmt.Sprintf(
+// 	"ON DUPLICATE KEY UPDATE %[1]s = VALUES(%[1]s), %[2]s = VALUES(%[2]s), %[3]s = VALUES(%[3]s), %[4]s = VALUES(%[4]s)",
+// 	SkillsActiveSkillLevel, SkillsSkillpointsInSkill, SkillsTrainedSkillLevel, ColumnUpdatedAt,
+// )
+
+var characterSkillAttributesDuplicateKeyStmt = func() string {
+	var stmt = "ON DUPLICATE KEY UPDATE %s"
+	columns := []string{
+		AttributesCharisma,
+		AttributesIntelligence,
+		AttributesMemory,
+		AttributesPerception,
+		AttributesWillpower,
+		AttributesBonusRemaps,
+		AttributesLastRemapDate,
+		AttributesAccruedRemapCooldownDate,
+		ColumnUpdatedAt,
+	}
+	stmts := make([]string, 0, len(columns))
+	for _, column := range columns {
+		stmts = append(stmts, fmt.Sprintf("%[1]s = VALUES(%[1]s)", column))
+	}
+
+	return fmt.Sprintf(stmt, strings.Join(stmts, ","))
+}()
+
 func (r *SkillRepository) CreateCharacterAttributes(ctx context.Context, attributes *skillz.CharacterAttributes) error {
 
 	now := time.Now()
@@ -125,7 +152,9 @@ func (r *SkillRepository) CreateCharacterAttributes(ctx context.Context, attribu
 		ColumnCharacterID:                  attributes.CharacterID,
 		ColumnCreatedAt:                    attributes.CreatedAt,
 		ColumnUpdatedAt:                    attributes.UpdatedAt,
-	}).ToSql()
+	}).
+		Suffix(characterSkillAttributesDuplicateKeyStmt).
+		ToSql()
 	if err != nil {
 		return errors.Wrapf(err, errorFFormat, skillsRepository, "CreateCharacterAttributes", "failed to generate sql")
 	}
@@ -192,7 +221,7 @@ func (r *SkillRepository) CreateCharacterSkillMeta(ctx context.Context, meta *sk
 	meta.CreatedAt = now
 	meta.UpdatedAt = now
 
-	query, args, err := sq.Insert(r.attributes.table).SetMap(map[string]interface{}{
+	query, args, err := sq.Insert(r.meta.table).SetMap(map[string]interface{}{
 		MetaTotalSP:       meta.TotalSP,
 		MetaUnallocatedSP: meta.UnallocatedSP,
 		ColumnCharacterID: meta.CharacterID,
@@ -212,7 +241,7 @@ func (r *SkillRepository) UpdateCharacterSkillMeta(ctx context.Context, meta *sk
 
 	meta.UpdatedAt = time.Now()
 
-	query, args, err := sq.Update(r.attributes.table).SetMap(map[string]interface{}{
+	query, args, err := sq.Update(r.meta.table).SetMap(map[string]interface{}{
 		MetaTotalSP:       meta.TotalSP,
 		MetaUnallocatedSP: meta.UnallocatedSP,
 
@@ -229,7 +258,7 @@ func (r *SkillRepository) UpdateCharacterSkillMeta(ctx context.Context, meta *sk
 
 func (r *SkillRepository) DeleteCharacterSkillMeta(ctx context.Context, characterID uint64) error {
 
-	query, args, err := sq.Delete(r.attributes.table).Where(sq.Eq{ColumnCharacterID: characterID}).ToSql()
+	query, args, err := sq.Delete(r.meta.table).Where(sq.Eq{ColumnCharacterID: characterID}).ToSql()
 	if err != nil {
 		return errors.Wrapf(err, errorFFormat, skillsRepository, "DeleteCharacterSkillMeta", "failed to generate sql")
 	}
@@ -255,6 +284,11 @@ func (r *SkillRepository) CharacterSkills(ctx context.Context, characterID uint6
 
 }
 
+var characterSkillsOnDuplicateKeyStmt = fmt.Sprintf(
+	"ON DUPLICATE KEY UPDATE %[1]s = VALUES(%[1]s), %[2]s = VALUES(%[2]s), %[3]s = VALUES(%[3]s), %[4]s = VALUES(%[4]s)",
+	SkillsActiveSkillLevel, SkillsSkillpointsInSkill, SkillsTrainedSkillLevel, ColumnUpdatedAt,
+)
+
 func (r *SkillRepository) CreateCharacterSkills(ctx context.Context, skills []*skillz.CharacterSkill) error {
 
 	now := time.Now()
@@ -274,6 +308,8 @@ func (r *SkillRepository) CreateCharacterSkills(ctx context.Context, skills []*s
 			skill.UpdatedAt,
 		)
 	}
+
+	i = i.Suffix(characterSkillsOnDuplicateKeyStmt)
 
 	query, args, err := i.ToSql()
 	if err != nil {

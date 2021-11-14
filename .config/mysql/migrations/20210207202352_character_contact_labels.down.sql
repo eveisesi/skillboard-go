@@ -1,1 +1,1 @@
-DROP TABLE `member_contact_labels`;
+DROP TABLE `character_contact_labels`;

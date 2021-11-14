@@ -48,6 +48,8 @@ type ResolverRoot interface {
 	CharacterDeathClone() CharacterDeathCloneResolver
 	CharacterImplant() CharacterImplantResolver
 	CharacterJumpClone() CharacterJumpCloneResolver
+	CharacterSkill() CharacterSkillResolver
+	CharacterSkillQueue() CharacterSkillQueueResolver
 	Constellation() ConstellationResolver
 	Corporation() CorporationResolver
 	Group() GroupResolver
@@ -91,6 +93,7 @@ type ComplexityRoot struct {
 
 	Character struct {
 		AllianceID     func(childComplexity int) int
+		Attributes     func(childComplexity int) int
 		Birthday       func(childComplexity int) int
 		BloodlineID    func(childComplexity int) int
 		Clone          func(childComplexity int) int
@@ -101,9 +104,23 @@ type ComplexityRoot struct {
 		ID             func(childComplexity int) int
 		Implants       func(childComplexity int) int
 		Name           func(childComplexity int) int
+		Queue          func(childComplexity int) int
 		RaceID         func(childComplexity int) int
 		SecurityStatus func(childComplexity int) int
+		Skills         func(childComplexity int) int
 		Title          func(childComplexity int) int
+	}
+
+	CharacterAttributes struct {
+		AccruedRemapCooldownDate func(childComplexity int) int
+		BonusRemaps              func(childComplexity int) int
+		CharacterID              func(childComplexity int) int
+		Charisma                 func(childComplexity int) int
+		Intelligence             func(childComplexity int) int
+		LastRemapDate            func(childComplexity int) int
+		Memory                   func(childComplexity int) int
+		Perception               func(childComplexity int) int
+		Willpower                func(childComplexity int) int
 	}
 
 	CharacterClone struct {
@@ -134,6 +151,39 @@ type ComplexityRoot struct {
 		Location     func(childComplexity int) int
 		LocationID   func(childComplexity int) int
 		LocationType func(childComplexity int) int
+	}
+
+	CharacterSkill struct {
+		ActiveSkillLevel   func(childComplexity int) int
+		CharacterID        func(childComplexity int) int
+		Info               func(childComplexity int) int
+		SkillID            func(childComplexity int) int
+		SkillpointsInSkill func(childComplexity int) int
+		TrainedSkillLevel  func(childComplexity int) int
+	}
+
+	CharacterSkillMeta struct {
+		CharacterID   func(childComplexity int) int
+		TotalSP       func(childComplexity int) int
+		UnallocatedSP func(childComplexity int) int
+	}
+
+	CharacterSkillQueue struct {
+		CharacterID     func(childComplexity int) int
+		FinishDate      func(childComplexity int) int
+		FinishedLevel   func(childComplexity int) int
+		Info            func(childComplexity int) int
+		LevelEndSp      func(childComplexity int) int
+		LevelStartSp    func(childComplexity int) int
+		QueuePosition   func(childComplexity int) int
+		SkillID         func(childComplexity int) int
+		StartDate       func(childComplexity int) int
+		TrainingStartSp func(childComplexity int) int
+	}
+
+	CharacterSkills struct {
+		Meta   func(childComplexity int) int
+		Skills func(childComplexity int) int
 	}
 
 	Constellation struct {
@@ -170,8 +220,9 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Auth func(childComplexity int, state *string) int
-		User func(childComplexity int, id uuid.UUID) int
+		Auth      func(childComplexity int, state *string) int
+		Character func(childComplexity int, id uint64) int
+		User      func(childComplexity int) int
 	}
 
 	Region struct {
@@ -247,6 +298,9 @@ type CharacterResolver interface {
 	Clone(ctx context.Context, obj *skillz.Character) (*skillz.CharacterCloneMeta, error)
 	Implants(ctx context.Context, obj *skillz.Character) ([]*skillz.CharacterImplant, error)
 	Corporation(ctx context.Context, obj *skillz.Character) (*skillz.Corporation, error)
+	Skills(ctx context.Context, obj *skillz.Character) (*model.CharacterSkills, error)
+	Queue(ctx context.Context, obj *skillz.Character) ([]*skillz.CharacterSkillQueue, error)
+	Attributes(ctx context.Context, obj *skillz.Character) (*skillz.CharacterAttributes, error)
 }
 type CharacterCloneResolver interface {
 	Jump(ctx context.Context, obj *skillz.CharacterCloneMeta) ([]*skillz.CharacterJumpClone, error)
@@ -264,6 +318,12 @@ type CharacterJumpCloneResolver interface {
 	LocationType(ctx context.Context, obj *skillz.CharacterJumpClone) (string, error)
 	Location(ctx context.Context, obj *skillz.CharacterJumpClone) (model.LocationInfo, error)
 }
+type CharacterSkillResolver interface {
+	Info(ctx context.Context, obj *skillz.CharacterSkill) (*skillz.Type, error)
+}
+type CharacterSkillQueueResolver interface {
+	Info(ctx context.Context, obj *skillz.CharacterSkillQueue) (*skillz.Type, error)
+}
 type ConstellationResolver interface {
 	Region(ctx context.Context, obj *skillz.Constellation) (*skillz.Region, error)
 }
@@ -275,7 +335,8 @@ type GroupResolver interface {
 }
 type QueryResolver interface {
 	Auth(ctx context.Context, state *string) (*skillz.AuthAttempt, error)
-	User(ctx context.Context, id uuid.UUID) (*skillz.User, error)
+	User(ctx context.Context) (*skillz.User, error)
+	Character(ctx context.Context, id uint64) (*skillz.Character, error)
 }
 type SolarSystemResolver interface {
 	Constellation(ctx context.Context, obj *skillz.SolarSystem) (*skillz.Constellation, error)
@@ -429,6 +490,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Character.AllianceID(childComplexity), true
 
+	case "Character.attributes":
+		if e.complexity.Character.Attributes == nil {
+			break
+		}
+
+		return e.complexity.Character.Attributes(childComplexity), true
+
 	case "Character.birthday":
 		if e.complexity.Character.Birthday == nil {
 			break
@@ -499,6 +567,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Character.Name(childComplexity), true
 
+	case "Character.queue":
+		if e.complexity.Character.Queue == nil {
+			break
+		}
+
+		return e.complexity.Character.Queue(childComplexity), true
+
 	case "Character.raceID":
 		if e.complexity.Character.RaceID == nil {
 			break
@@ -513,12 +588,82 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Character.SecurityStatus(childComplexity), true
 
+	case "Character.skills":
+		if e.complexity.Character.Skills == nil {
+			break
+		}
+
+		return e.complexity.Character.Skills(childComplexity), true
+
 	case "Character.title":
 		if e.complexity.Character.Title == nil {
 			break
 		}
 
 		return e.complexity.Character.Title(childComplexity), true
+
+	case "CharacterAttributes.accruedRemapCooldownDate":
+		if e.complexity.CharacterAttributes.AccruedRemapCooldownDate == nil {
+			break
+		}
+
+		return e.complexity.CharacterAttributes.AccruedRemapCooldownDate(childComplexity), true
+
+	case "CharacterAttributes.bonusRemaps":
+		if e.complexity.CharacterAttributes.BonusRemaps == nil {
+			break
+		}
+
+		return e.complexity.CharacterAttributes.BonusRemaps(childComplexity), true
+
+	case "CharacterAttributes.characterID":
+		if e.complexity.CharacterAttributes.CharacterID == nil {
+			break
+		}
+
+		return e.complexity.CharacterAttributes.CharacterID(childComplexity), true
+
+	case "CharacterAttributes.charisma":
+		if e.complexity.CharacterAttributes.Charisma == nil {
+			break
+		}
+
+		return e.complexity.CharacterAttributes.Charisma(childComplexity), true
+
+	case "CharacterAttributes.intelligence":
+		if e.complexity.CharacterAttributes.Intelligence == nil {
+			break
+		}
+
+		return e.complexity.CharacterAttributes.Intelligence(childComplexity), true
+
+	case "CharacterAttributes.lastRemapDate":
+		if e.complexity.CharacterAttributes.LastRemapDate == nil {
+			break
+		}
+
+		return e.complexity.CharacterAttributes.LastRemapDate(childComplexity), true
+
+	case "CharacterAttributes.memory":
+		if e.complexity.CharacterAttributes.Memory == nil {
+			break
+		}
+
+		return e.complexity.CharacterAttributes.Memory(childComplexity), true
+
+	case "CharacterAttributes.perception":
+		if e.complexity.CharacterAttributes.Perception == nil {
+			break
+		}
+
+		return e.complexity.CharacterAttributes.Perception(childComplexity), true
+
+	case "CharacterAttributes.willpower":
+		if e.complexity.CharacterAttributes.Willpower == nil {
+			break
+		}
+
+		return e.complexity.CharacterAttributes.Willpower(childComplexity), true
 
 	case "CharacterClone.characterID":
 		if e.complexity.CharacterClone.CharacterID == nil {
@@ -645,6 +790,153 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.CharacterJumpClone.LocationType(childComplexity), true
+
+	case "CharacterSkill.activeSkillLevel":
+		if e.complexity.CharacterSkill.ActiveSkillLevel == nil {
+			break
+		}
+
+		return e.complexity.CharacterSkill.ActiveSkillLevel(childComplexity), true
+
+	case "CharacterSkill.characterID":
+		if e.complexity.CharacterSkill.CharacterID == nil {
+			break
+		}
+
+		return e.complexity.CharacterSkill.CharacterID(childComplexity), true
+
+	case "CharacterSkill.info":
+		if e.complexity.CharacterSkill.Info == nil {
+			break
+		}
+
+		return e.complexity.CharacterSkill.Info(childComplexity), true
+
+	case "CharacterSkill.skillID":
+		if e.complexity.CharacterSkill.SkillID == nil {
+			break
+		}
+
+		return e.complexity.CharacterSkill.SkillID(childComplexity), true
+
+	case "CharacterSkill.skillpointsInSkill":
+		if e.complexity.CharacterSkill.SkillpointsInSkill == nil {
+			break
+		}
+
+		return e.complexity.CharacterSkill.SkillpointsInSkill(childComplexity), true
+
+	case "CharacterSkill.trainedSkillLevel":
+		if e.complexity.CharacterSkill.TrainedSkillLevel == nil {
+			break
+		}
+
+		return e.complexity.CharacterSkill.TrainedSkillLevel(childComplexity), true
+
+	case "CharacterSkillMeta.characterID":
+		if e.complexity.CharacterSkillMeta.CharacterID == nil {
+			break
+		}
+
+		return e.complexity.CharacterSkillMeta.CharacterID(childComplexity), true
+
+	case "CharacterSkillMeta.totalSp":
+		if e.complexity.CharacterSkillMeta.TotalSP == nil {
+			break
+		}
+
+		return e.complexity.CharacterSkillMeta.TotalSP(childComplexity), true
+
+	case "CharacterSkillMeta.unallocatedSp":
+		if e.complexity.CharacterSkillMeta.UnallocatedSP == nil {
+			break
+		}
+
+		return e.complexity.CharacterSkillMeta.UnallocatedSP(childComplexity), true
+
+	case "CharacterSkillQueue.characterID":
+		if e.complexity.CharacterSkillQueue.CharacterID == nil {
+			break
+		}
+
+		return e.complexity.CharacterSkillQueue.CharacterID(childComplexity), true
+
+	case "CharacterSkillQueue.finishDate":
+		if e.complexity.CharacterSkillQueue.FinishDate == nil {
+			break
+		}
+
+		return e.complexity.CharacterSkillQueue.FinishDate(childComplexity), true
+
+	case "CharacterSkillQueue.finishedLevel":
+		if e.complexity.CharacterSkillQueue.FinishedLevel == nil {
+			break
+		}
+
+		return e.complexity.CharacterSkillQueue.FinishedLevel(childComplexity), true
+
+	case "CharacterSkillQueue.info":
+		if e.complexity.CharacterSkillQueue.Info == nil {
+			break
+		}
+
+		return e.complexity.CharacterSkillQueue.Info(childComplexity), true
+
+	case "CharacterSkillQueue.levelEndSp":
+		if e.complexity.CharacterSkillQueue.LevelEndSp == nil {
+			break
+		}
+
+		return e.complexity.CharacterSkillQueue.LevelEndSp(childComplexity), true
+
+	case "CharacterSkillQueue.levelStartSp":
+		if e.complexity.CharacterSkillQueue.LevelStartSp == nil {
+			break
+		}
+
+		return e.complexity.CharacterSkillQueue.LevelStartSp(childComplexity), true
+
+	case "CharacterSkillQueue.queuePosition":
+		if e.complexity.CharacterSkillQueue.QueuePosition == nil {
+			break
+		}
+
+		return e.complexity.CharacterSkillQueue.QueuePosition(childComplexity), true
+
+	case "CharacterSkillQueue.skillID":
+		if e.complexity.CharacterSkillQueue.SkillID == nil {
+			break
+		}
+
+		return e.complexity.CharacterSkillQueue.SkillID(childComplexity), true
+
+	case "CharacterSkillQueue.startDate":
+		if e.complexity.CharacterSkillQueue.StartDate == nil {
+			break
+		}
+
+		return e.complexity.CharacterSkillQueue.StartDate(childComplexity), true
+
+	case "CharacterSkillQueue.trainingStartSp":
+		if e.complexity.CharacterSkillQueue.TrainingStartSp == nil {
+			break
+		}
+
+		return e.complexity.CharacterSkillQueue.TrainingStartSp(childComplexity), true
+
+	case "CharacterSkills.meta":
+		if e.complexity.CharacterSkills.Meta == nil {
+			break
+		}
+
+		return e.complexity.CharacterSkills.Meta(childComplexity), true
+
+	case "CharacterSkills.skills":
+		if e.complexity.CharacterSkills.Skills == nil {
+			break
+		}
+
+		return e.complexity.CharacterSkills.Skills(childComplexity), true
 
 	case "Constellation.id":
 		if e.complexity.Constellation.ID == nil {
@@ -826,17 +1118,24 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Auth(childComplexity, args["state"].(*string)), true
 
+	case "Query.character":
+		if e.complexity.Query.Character == nil {
+			break
+		}
+
+		args, err := ec.field_Query_character_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Character(childComplexity, args["id"].(uint64)), true
+
 	case "Query.user":
 		if e.complexity.Query.User == nil {
 			break
 		}
 
-		args, err := ec.field_Query_user_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.User(childComplexity, args["id"].(uuid.UUID)), true
+		return e.complexity.Query.User(childComplexity), true
 
 	case "Region.id":
 		if e.complexity.Region.ID == nil {
@@ -1308,7 +1607,8 @@ extend type Character {
 `, BuiltIn: false},
 	{Name: "internal/server/gql/query.graphqls", Input: `type Query {
     auth(state: String): AuthAttempt!
-    user(id: UUID!): User!
+    user: User! @isAuthed
+    character(id: Uint64!): Character
 }
 
 type User @goModel(model: "github.com/eveisesi/skillz.User") {
@@ -1322,12 +1622,65 @@ type User @goModel(model: "github.com/eveisesi/skillz.User") {
 
 directive @goModel(model: String) on OBJECT
 directive @goField(forceResolver: Boolean, name: String) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION
-directive @isAuthed on OBJECT
+directive @isAuthed on OBJECT | FIELD_DEFINITION
 
 scalar Time
 scalar Uint
 scalar Uint64
 scalar UUID
+`, BuiltIn: false},
+	{Name: "internal/server/gql/skill.graphqls", Input: `extend type Character {
+    skills: CharacterSkills!
+    queue: [CharacterSkillQueue]!
+    attributes: CharacterAttributes!
+}
+
+type CharacterSkills {
+    meta: CharacterSkillMeta
+    skills: [CharacterSkill]!
+}
+
+type CharacterSkillMeta @goModel(model: "github.com/eveisesi/skillz.CharacterSkillMeta") {
+    characterID: Uint64!
+    totalSp: Uint!
+    unallocatedSp: Uint
+}
+
+type CharacterAttributes @goModel(model: "github.com/eveisesi/skillz.CharacterAttributes") {
+    characterID: Uint64!
+    charisma: Uint!
+    intelligence: Uint!
+    memory: Uint!
+    perception: Uint!
+    willpower: Uint!
+    bonusRemaps: Uint
+    lastRemapDate: Time
+    accruedRemapCooldownDate: Time
+}
+
+type CharacterSkillQueue @goModel(model: "github.com/eveisesi/skillz.CharacterSkillQueue") {
+    characterID: Uint64!
+    queuePosition: Uint!
+    skillID: Uint!
+    finishedLevel: Uint!
+    trainingStartSp: Uint
+    levelStartSp: Uint
+    levelEndSp: Uint
+    startDate: Time
+    finishDate: Time
+
+    info: Type!
+}
+
+type CharacterSkill @goModel(model: "github.com/eveisesi/skillz.CharacterSkill") {
+    characterID: Uint64!
+    activeSkillLevel: Uint!
+    skillID: Uint!
+    skillpointsInSkill: Uint!
+    trainedSkillLevel: Uint!
+
+    info: Type!
+}
 `, BuiltIn: false},
 	{Name: "internal/server/gql/universe.graphqls", Input: `type Structure @goModel(model: "github.com/eveisesi/skillz.Structure") {
     id: Uint64!
@@ -1450,13 +1803,13 @@ func (ec *executionContext) field_Query_auth_args(ctx context.Context, rawArgs m
 	return args, nil
 }
 
-func (ec *executionContext) field_Query_user_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Query_character_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 uuid.UUID
+	var arg0 uint64
 	if tmp, ok := rawArgs["id"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-		arg0, err = ec.unmarshalNUUID2githubᚗcomᚋgofrsᚋuuidᚐUUID(ctx, tmp)
+		arg0, err = ec.unmarshalNUint642uint64(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -2549,6 +2902,417 @@ func (ec *executionContext) _Character_corporation(ctx context.Context, field gr
 	return ec.marshalNCorporation2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐCorporation(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Character_skills(ctx context.Context, field graphql.CollectedField, obj *skillz.Character) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Character",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Character().Skills(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.CharacterSkills)
+	fc.Result = res
+	return ec.marshalNCharacterSkills2ᚖgithubᚗcomᚋeveisesiᚋskillzᚋinternalᚋserverᚋgqlᚋmodelᚐCharacterSkills(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Character_queue(ctx context.Context, field graphql.CollectedField, obj *skillz.Character) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Character",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Character().Queue(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*skillz.CharacterSkillQueue)
+	fc.Result = res
+	return ec.marshalNCharacterSkillQueue2ᚕᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacterSkillQueue(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Character_attributes(ctx context.Context, field graphql.CollectedField, obj *skillz.Character) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Character",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Character().Attributes(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*skillz.CharacterAttributes)
+	fc.Result = res
+	return ec.marshalNCharacterAttributes2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacterAttributes(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CharacterAttributes_characterID(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterAttributes) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CharacterAttributes",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CharacterID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uint64)
+	fc.Result = res
+	return ec.marshalNUint642uint64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CharacterAttributes_charisma(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterAttributes) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CharacterAttributes",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Charisma, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uint)
+	fc.Result = res
+	return ec.marshalNUint2uint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CharacterAttributes_intelligence(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterAttributes) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CharacterAttributes",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Intelligence, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uint)
+	fc.Result = res
+	return ec.marshalNUint2uint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CharacterAttributes_memory(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterAttributes) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CharacterAttributes",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Memory, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uint)
+	fc.Result = res
+	return ec.marshalNUint2uint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CharacterAttributes_perception(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterAttributes) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CharacterAttributes",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Perception, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uint)
+	fc.Result = res
+	return ec.marshalNUint2uint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CharacterAttributes_willpower(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterAttributes) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CharacterAttributes",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Willpower, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uint)
+	fc.Result = res
+	return ec.marshalNUint2uint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CharacterAttributes_bonusRemaps(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterAttributes) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CharacterAttributes",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.BonusRemaps, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(null.Uint)
+	fc.Result = res
+	return ec.marshalOUint2githubᚗcomᚋvolatiletechᚋnullᚐUint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CharacterAttributes_lastRemapDate(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterAttributes) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CharacterAttributes",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LastRemapDate, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(null.Time)
+	fc.Result = res
+	return ec.marshalOTime2githubᚗcomᚋvolatiletechᚋnullᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CharacterAttributes_accruedRemapCooldownDate(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterAttributes) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CharacterAttributes",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.AccruedRemapCooldownDate, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(null.Time)
+	fc.Result = res
+	return ec.marshalOTime2githubᚗcomᚋvolatiletechᚋnullᚐTime(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _CharacterClone_characterID(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterCloneMeta) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -3205,6 +3969,720 @@ func (ec *executionContext) _CharacterJumpClone_location(ctx context.Context, fi
 	res := resTmp.(model.LocationInfo)
 	fc.Result = res
 	return ec.marshalOLocationInfo2githubᚗcomᚋeveisesiᚋskillzᚋinternalᚋserverᚋgqlᚋmodelᚐLocationInfo(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CharacterSkill_characterID(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterSkill) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CharacterSkill",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CharacterID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uint64)
+	fc.Result = res
+	return ec.marshalNUint642uint64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CharacterSkill_activeSkillLevel(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterSkill) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CharacterSkill",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ActiveSkillLevel, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uint)
+	fc.Result = res
+	return ec.marshalNUint2uint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CharacterSkill_skillID(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterSkill) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CharacterSkill",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SkillID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uint)
+	fc.Result = res
+	return ec.marshalNUint2uint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CharacterSkill_skillpointsInSkill(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterSkill) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CharacterSkill",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SkillpointsInSkill, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uint)
+	fc.Result = res
+	return ec.marshalNUint2uint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CharacterSkill_trainedSkillLevel(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterSkill) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CharacterSkill",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TrainedSkillLevel, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uint)
+	fc.Result = res
+	return ec.marshalNUint2uint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CharacterSkill_info(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterSkill) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CharacterSkill",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.CharacterSkill().Info(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*skillz.Type)
+	fc.Result = res
+	return ec.marshalNType2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐType(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CharacterSkillMeta_characterID(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterSkillMeta) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CharacterSkillMeta",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CharacterID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uint64)
+	fc.Result = res
+	return ec.marshalNUint642uint64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CharacterSkillMeta_totalSp(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterSkillMeta) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CharacterSkillMeta",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalSP, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uint)
+	fc.Result = res
+	return ec.marshalNUint2uint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CharacterSkillMeta_unallocatedSp(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterSkillMeta) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CharacterSkillMeta",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UnallocatedSP, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(null.Uint)
+	fc.Result = res
+	return ec.marshalOUint2githubᚗcomᚋvolatiletechᚋnullᚐUint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CharacterSkillQueue_characterID(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterSkillQueue) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CharacterSkillQueue",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CharacterID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uint64)
+	fc.Result = res
+	return ec.marshalNUint642uint64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CharacterSkillQueue_queuePosition(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterSkillQueue) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CharacterSkillQueue",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.QueuePosition, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uint)
+	fc.Result = res
+	return ec.marshalNUint2uint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CharacterSkillQueue_skillID(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterSkillQueue) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CharacterSkillQueue",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SkillID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uint)
+	fc.Result = res
+	return ec.marshalNUint2uint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CharacterSkillQueue_finishedLevel(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterSkillQueue) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CharacterSkillQueue",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FinishedLevel, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uint)
+	fc.Result = res
+	return ec.marshalNUint2uint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CharacterSkillQueue_trainingStartSp(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterSkillQueue) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CharacterSkillQueue",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TrainingStartSp, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(null.Uint)
+	fc.Result = res
+	return ec.marshalOUint2githubᚗcomᚋvolatiletechᚋnullᚐUint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CharacterSkillQueue_levelStartSp(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterSkillQueue) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CharacterSkillQueue",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LevelStartSp, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(null.Uint)
+	fc.Result = res
+	return ec.marshalOUint2githubᚗcomᚋvolatiletechᚋnullᚐUint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CharacterSkillQueue_levelEndSp(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterSkillQueue) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CharacterSkillQueue",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LevelEndSp, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(null.Uint)
+	fc.Result = res
+	return ec.marshalOUint2githubᚗcomᚋvolatiletechᚋnullᚐUint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CharacterSkillQueue_startDate(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterSkillQueue) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CharacterSkillQueue",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StartDate, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(null.Time)
+	fc.Result = res
+	return ec.marshalOTime2githubᚗcomᚋvolatiletechᚋnullᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CharacterSkillQueue_finishDate(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterSkillQueue) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CharacterSkillQueue",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FinishDate, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(null.Time)
+	fc.Result = res
+	return ec.marshalOTime2githubᚗcomᚋvolatiletechᚋnullᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CharacterSkillQueue_info(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterSkillQueue) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CharacterSkillQueue",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.CharacterSkillQueue().Info(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*skillz.Type)
+	fc.Result = res
+	return ec.marshalNType2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐType(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CharacterSkills_meta(ctx context.Context, field graphql.CollectedField, obj *model.CharacterSkills) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CharacterSkills",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Meta, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*skillz.CharacterSkillMeta)
+	fc.Result = res
+	return ec.marshalOCharacterSkillMeta2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacterSkillMeta(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CharacterSkills_skills(ctx context.Context, field graphql.CollectedField, obj *model.CharacterSkills) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CharacterSkills",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Skills, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*skillz.CharacterSkill)
+	fc.Result = res
+	return ec.marshalNCharacterSkill2ᚕᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacterSkill(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Constellation_id(ctx context.Context, field graphql.CollectedField, obj *skillz.Constellation) (ret graphql.Marshaler) {
@@ -4087,16 +5565,29 @@ func (ec *executionContext) _Query_user(ctx context.Context, field graphql.Colle
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Query_user_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().User(rctx, args["id"].(uuid.UUID))
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().User(rctx)
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.IsAuthed == nil {
+				return nil, errors.New("directive isAuthed is not implemented")
+			}
+			return ec.directives.IsAuthed(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*skillz.User); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/eveisesi/skillz.User`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4111,6 +5602,45 @@ func (ec *executionContext) _Query_user(ctx context.Context, field graphql.Colle
 	res := resTmp.(*skillz.User)
 	fc.Result = res
 	return ec.marshalNUser2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_character(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_character_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Character(rctx, args["id"].(uint64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*skillz.Character)
+	fc.Result = res
+	return ec.marshalOCharacter2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacter(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -7124,6 +8654,106 @@ func (ec *executionContext) _Character(ctx context.Context, sel ast.SelectionSet
 				}
 				return res
 			})
+		case "skills":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Character_skills(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "queue":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Character_queue(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "attributes":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Character_attributes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var characterAttributesImplementors = []string{"CharacterAttributes"}
+
+func (ec *executionContext) _CharacterAttributes(ctx context.Context, sel ast.SelectionSet, obj *skillz.CharacterAttributes) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, characterAttributesImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CharacterAttributes")
+		case "characterID":
+			out.Values[i] = ec._CharacterAttributes_characterID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "charisma":
+			out.Values[i] = ec._CharacterAttributes_charisma(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "intelligence":
+			out.Values[i] = ec._CharacterAttributes_intelligence(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "memory":
+			out.Values[i] = ec._CharacterAttributes_memory(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "perception":
+			out.Values[i] = ec._CharacterAttributes_perception(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "willpower":
+			out.Values[i] = ec._CharacterAttributes_willpower(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "bonusRemaps":
+			out.Values[i] = ec._CharacterAttributes_bonusRemaps(ctx, field, obj)
+		case "lastRemapDate":
+			out.Values[i] = ec._CharacterAttributes_lastRemapDate(ctx, field, obj)
+		case "accruedRemapCooldownDate":
+			out.Values[i] = ec._CharacterAttributes_accruedRemapCooldownDate(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -7373,6 +9003,196 @@ func (ec *executionContext) _CharacterJumpClone(ctx context.Context, sel ast.Sel
 	return out
 }
 
+var characterSkillImplementors = []string{"CharacterSkill"}
+
+func (ec *executionContext) _CharacterSkill(ctx context.Context, sel ast.SelectionSet, obj *skillz.CharacterSkill) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, characterSkillImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CharacterSkill")
+		case "characterID":
+			out.Values[i] = ec._CharacterSkill_characterID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "activeSkillLevel":
+			out.Values[i] = ec._CharacterSkill_activeSkillLevel(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "skillID":
+			out.Values[i] = ec._CharacterSkill_skillID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "skillpointsInSkill":
+			out.Values[i] = ec._CharacterSkill_skillpointsInSkill(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "trainedSkillLevel":
+			out.Values[i] = ec._CharacterSkill_trainedSkillLevel(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "info":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._CharacterSkill_info(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var characterSkillMetaImplementors = []string{"CharacterSkillMeta"}
+
+func (ec *executionContext) _CharacterSkillMeta(ctx context.Context, sel ast.SelectionSet, obj *skillz.CharacterSkillMeta) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, characterSkillMetaImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CharacterSkillMeta")
+		case "characterID":
+			out.Values[i] = ec._CharacterSkillMeta_characterID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "totalSp":
+			out.Values[i] = ec._CharacterSkillMeta_totalSp(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "unallocatedSp":
+			out.Values[i] = ec._CharacterSkillMeta_unallocatedSp(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var characterSkillQueueImplementors = []string{"CharacterSkillQueue"}
+
+func (ec *executionContext) _CharacterSkillQueue(ctx context.Context, sel ast.SelectionSet, obj *skillz.CharacterSkillQueue) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, characterSkillQueueImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CharacterSkillQueue")
+		case "characterID":
+			out.Values[i] = ec._CharacterSkillQueue_characterID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "queuePosition":
+			out.Values[i] = ec._CharacterSkillQueue_queuePosition(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "skillID":
+			out.Values[i] = ec._CharacterSkillQueue_skillID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "finishedLevel":
+			out.Values[i] = ec._CharacterSkillQueue_finishedLevel(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "trainingStartSp":
+			out.Values[i] = ec._CharacterSkillQueue_trainingStartSp(ctx, field, obj)
+		case "levelStartSp":
+			out.Values[i] = ec._CharacterSkillQueue_levelStartSp(ctx, field, obj)
+		case "levelEndSp":
+			out.Values[i] = ec._CharacterSkillQueue_levelEndSp(ctx, field, obj)
+		case "startDate":
+			out.Values[i] = ec._CharacterSkillQueue_startDate(ctx, field, obj)
+		case "finishDate":
+			out.Values[i] = ec._CharacterSkillQueue_finishDate(ctx, field, obj)
+		case "info":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._CharacterSkillQueue_info(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var characterSkillsImplementors = []string{"CharacterSkills"}
+
+func (ec *executionContext) _CharacterSkills(ctx context.Context, sel ast.SelectionSet, obj *model.CharacterSkills) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, characterSkillsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CharacterSkills")
+		case "meta":
+			out.Values[i] = ec._CharacterSkills_meta(ctx, field, obj)
+		case "skills":
+			out.Values[i] = ec._CharacterSkills_skills(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var constellationImplementors = []string{"Constellation"}
 
 func (ec *executionContext) _Constellation(ctx context.Context, sel ast.SelectionSet, obj *skillz.Constellation) graphql.Marshaler {
@@ -7609,6 +9429,17 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
+				return res
+			})
+		case "character":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_character(ctx, field)
 				return res
 			})
 		case "__type":
@@ -8308,6 +10139,20 @@ func (ec *executionContext) marshalNCharacter2ᚖgithubᚗcomᚋeveisesiᚋskill
 	return ec._Character(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNCharacterAttributes2githubᚗcomᚋeveisesiᚋskillzᚐCharacterAttributes(ctx context.Context, sel ast.SelectionSet, v skillz.CharacterAttributes) graphql.Marshaler {
+	return ec._CharacterAttributes(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNCharacterAttributes2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacterAttributes(ctx context.Context, sel ast.SelectionSet, v *skillz.CharacterAttributes) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._CharacterAttributes(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNCharacterDeathClone2githubᚗcomᚋeveisesiᚋskillzᚐCharacterDeathClone(ctx context.Context, sel ast.SelectionSet, v skillz.CharacterDeathClone) graphql.Marshaler {
 	return ec._CharacterDeathClone(ctx, sel, &v)
 }
@@ -8396,6 +10241,96 @@ func (ec *executionContext) marshalNCharacterJumpClone2ᚕᚖgithubᚗcomᚋevei
 	wg.Wait()
 
 	return ret
+}
+
+func (ec *executionContext) marshalNCharacterSkill2ᚕᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacterSkill(ctx context.Context, sel ast.SelectionSet, v []*skillz.CharacterSkill) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOCharacterSkill2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacterSkill(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
+}
+
+func (ec *executionContext) marshalNCharacterSkillQueue2ᚕᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacterSkillQueue(ctx context.Context, sel ast.SelectionSet, v []*skillz.CharacterSkillQueue) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOCharacterSkillQueue2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacterSkillQueue(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
+}
+
+func (ec *executionContext) marshalNCharacterSkills2githubᚗcomᚋeveisesiᚋskillzᚋinternalᚋserverᚋgqlᚋmodelᚐCharacterSkills(ctx context.Context, sel ast.SelectionSet, v model.CharacterSkills) graphql.Marshaler {
+	return ec._CharacterSkills(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNCharacterSkills2ᚖgithubᚗcomᚋeveisesiᚋskillzᚋinternalᚋserverᚋgqlᚋmodelᚐCharacterSkills(ctx context.Context, sel ast.SelectionSet, v *model.CharacterSkills) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._CharacterSkills(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNConstellation2githubᚗcomᚋeveisesiᚋskillzᚐConstellation(ctx context.Context, sel ast.SelectionSet, v skillz.Constellation) graphql.Marshaler {
@@ -8889,6 +10824,13 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return graphql.MarshalBoolean(*v)
 }
 
+func (ec *executionContext) marshalOCharacter2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacter(ctx context.Context, sel ast.SelectionSet, v *skillz.Character) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Character(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalOCharacterClone2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacterCloneMeta(ctx context.Context, sel ast.SelectionSet, v *skillz.CharacterCloneMeta) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -8908,6 +10850,27 @@ func (ec *executionContext) marshalOCharacterJumpClone2ᚖgithubᚗcomᚋeveises
 		return graphql.Null
 	}
 	return ec._CharacterJumpClone(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOCharacterSkill2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacterSkill(ctx context.Context, sel ast.SelectionSet, v *skillz.CharacterSkill) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._CharacterSkill(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOCharacterSkillMeta2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacterSkillMeta(ctx context.Context, sel ast.SelectionSet, v *skillz.CharacterSkillMeta) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._CharacterSkillMeta(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOCharacterSkillQueue2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacterSkillQueue(ctx context.Context, sel ast.SelectionSet, v *skillz.CharacterSkillQueue) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._CharacterSkillQueue(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOFloat2githubᚗcomᚋvolatiletechᚋnullᚐFloat64(ctx context.Context, v interface{}) (null.Float64, error) {

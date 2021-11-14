@@ -1,1 +1,1 @@
-DROP TABLE `member_home_clone`;
+DROP TABLE `character_home_clone`;

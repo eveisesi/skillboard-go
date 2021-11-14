@@ -13,10 +13,12 @@ import (
 	"github.com/eveisesi/skillz/internal/alliance"
 	"github.com/eveisesi/skillz/internal/auth"
 	"github.com/eveisesi/skillz/internal/character"
+	"github.com/eveisesi/skillz/internal/clone"
 	"github.com/eveisesi/skillz/internal/corporation"
 	resolvers "github.com/eveisesi/skillz/internal/server/gql"
 	"github.com/eveisesi/skillz/internal/server/gql/dataloaders"
 	"github.com/eveisesi/skillz/internal/server/gql/generated"
+	"github.com/eveisesi/skillz/internal/skill"
 	"github.com/eveisesi/skillz/internal/user"
 	"github.com/go-chi/chi/v5"
 	"github.com/sirupsen/logrus"
@@ -30,8 +32,10 @@ type server struct {
 	alliance    alliance.API
 	auth        auth.API
 	character   character.API
+	clone       clone.API
 	corporation corporation.API
 	dataloaders dataloaders.API
+	skill       skill.API
 	user        user.API
 
 	server *http.Server
@@ -46,8 +50,10 @@ func New(
 	alliance alliance.API,
 	auth auth.API,
 	character character.API,
+	clone clone.API,
 	corporation corporation.API,
 	dataloaders dataloaders.API,
+	skill skill.API,
 	user user.API,
 ) *server {
 
@@ -58,8 +64,10 @@ func New(
 		alliance:    alliance,
 		auth:        auth,
 		character:   character,
+		clone:       clone,
 		corporation: corporation,
 		dataloaders: dataloaders,
+		skill:       skill,
 		user:        user,
 	}
 
@@ -110,8 +118,10 @@ func (s *server) buildRouter() *chi.Mux {
 						s.alliance,
 						s.auth,
 						s.character,
+						s.clone,
 						s.corporation,
 						s.dataloaders,
+						s.skill,
 						s.user,
 					),
 					Directives: generated.DirectiveRoot{

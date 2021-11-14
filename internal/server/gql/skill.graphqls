@@ -1,0 +1,52 @@
+extend type Character {
+    skills: CharacterSkills!
+    queue: [CharacterSkillQueue]!
+    attributes: CharacterAttributes!
+}
+
+type CharacterSkills {
+    meta: CharacterSkillMeta
+    skills: [CharacterSkill]!
+}
+
+type CharacterSkillMeta @goModel(model: "github.com/eveisesi/skillz.CharacterSkillMeta") {
+    characterID: Uint64!
+    totalSp: Uint!
+    unallocatedSp: Uint
+}
+
+type CharacterAttributes @goModel(model: "github.com/eveisesi/skillz.CharacterAttributes") {
+    characterID: Uint64!
+    charisma: Uint!
+    intelligence: Uint!
+    memory: Uint!
+    perception: Uint!
+    willpower: Uint!
+    bonusRemaps: Uint
+    lastRemapDate: Time
+    accruedRemapCooldownDate: Time
+}
+
+type CharacterSkillQueue @goModel(model: "github.com/eveisesi/skillz.CharacterSkillQueue") {
+    characterID: Uint64!
+    queuePosition: Uint!
+    skillID: Uint!
+    finishedLevel: Uint!
+    trainingStartSp: Uint
+    levelStartSp: Uint
+    levelEndSp: Uint
+    startDate: Time
+    finishDate: Time
+
+    info: Type!
+}
+
+type CharacterSkill @goModel(model: "github.com/eveisesi/skillz.CharacterSkill") {
+    characterID: Uint64!
+    activeSkillLevel: Uint!
+    skillID: Uint!
+    skillpointsInSkill: Uint!
+    trainedSkillLevel: Uint!
+
+    info: Type!
+}

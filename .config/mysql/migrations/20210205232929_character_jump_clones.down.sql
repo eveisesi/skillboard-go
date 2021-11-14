@@ -1,1 +1,1 @@
-DROP TABLE `member_jump_clones`;
+DROP TABLE `character_jump_clones`;

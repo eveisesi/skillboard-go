@@ -1,1 +1,1 @@
-DROP TABLE `member_implants`;
+DROP TABLE `character_implants`;

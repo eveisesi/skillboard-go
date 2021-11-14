@@ -24,7 +24,6 @@ func (s *Service) AddIfNoneMatchHeader(ctx context.Context, etag string) Modifie
 		if req == nil {
 			return nil
 		}
-		fmt.Println("esi.Service :: AddIfNoneMatchHeader Modifier :: Etag :: ", etag)
 
 		if etag == "" {
 			return nil
@@ -41,7 +40,6 @@ func (s *Service) AddAuthorizationHeader(ctx context.Context, token string) Modi
 			return nil
 		}
 
-		fmt.Println("esi.Service :: AddAuthorizationHeader Modifier :: Token :: ", len(token))
 		if token == "" {
 			return nil
 		}
@@ -53,14 +51,12 @@ func (s *Service) AddAuthorizationHeader(ctx context.Context, token string) Modi
 
 func (s *Service) CacheEtag(ctx context.Context, hash string) ModifierFunc {
 	return func(req *http.Request, res *http.Response) error {
-		fmt.Println("esi.Service :: CacheEtag Modifier")
 		if res == nil {
 			return nil
 		}
 
 		duration := time.Now().Add(time.Hour)
 		if header := res.Header.Get(headers.Expires); header != "" {
-			fmt.Println("esi.Service :: CacheEtag Modifier :: ", headers.Expires)
 
 			d, err := time.Parse(headerTimestampFormat, header)
 			if err != nil {
@@ -71,7 +67,6 @@ func (s *Service) CacheEtag(ctx context.Context, hash string) ModifierFunc {
 		}
 
 		if header := res.Header.Get(headers.ETag); header != "" {
-			fmt.Println("esi.Service :: CacheEtag Modifier :: ", headers.ETag)
 			etag := &skillz.Etag{
 				Path:        hash,
 				Etag:        header,

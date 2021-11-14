@@ -2,6 +2,15 @@
 
 package model
 
+import (
+	"github.com/eveisesi/skillz"
+)
+
 type LocationInfo interface {
 	IsLocationInfo()
+}
+
+type CharacterSkills struct {
+	Meta   *skillz.CharacterSkillMeta `json:"meta"`
+	Skills []*skillz.CharacterSkill   `json:"skills"`
 }

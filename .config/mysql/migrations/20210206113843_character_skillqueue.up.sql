@@ -1,4 +1,4 @@
-CREATE TABLE `member_skillqueue` (
+CREATE TABLE `character_skillqueue` (
     `character_id` BIGINT(20) UNSIGNED NOT NULL,
     `queue_position` TINYINT UNSIGNED NOT NULL,
     `skill_id` INT UNSIGNED NOT NULL,
@@ -10,9 +10,9 @@ CREATE TABLE `member_skillqueue` (
     `level_end_sp` INT UNSIGNED NULL DEFAULT NULL,
     `created_at` DATETIME NOT NULL,
     `updated_at` DATETIME NOT NULL,
-    PRIMARY KEY (`member_id`, `queue_position`) USING BTREE,
-    INDEX `member_skillqueue_skill_id_idx` (`skill_id`),
-    INDEX `member_skillqueue_start_date_idx` (`start_date`),
-    INDEX `member_skillqueue_finish_date_idx` (`finish_date`),
-    CONSTRAINT `member_skillqueue_member_id_foreign` FOREIGN KEY (`member_id`) REFERENCES `skillz`.`users` (`character_id`) ON UPDATE CASCADE ON DELETE CASCADE
+    PRIMARY KEY (`character_id`, `queue_position`) USING BTREE,
+    INDEX `character_skillqueue_skill_id_idx` (`skill_id`),
+    INDEX `character_skillqueue_start_date_idx` (`start_date`),
+    INDEX `character_skillqueue_finish_date_idx` (`finish_date`),
+    CONSTRAINT `character_skillqueue_character_id_foreign` FOREIGN KEY (`character_id`) REFERENCES `skillz`.`users` (`character_id`) ON UPDATE CASCADE ON DELETE CASCADE
 ) COLLATE = 'utf8mb4_unicode_ci' ENGINE = InnoDB;

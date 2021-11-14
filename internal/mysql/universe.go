@@ -1123,7 +1123,6 @@ func (r *UniverseRepository) UpdateType(ctx context.Context, item *skillz.Type) 
 
 	query, args, err := sq.Update(r.types.table).
 		SetMap(map[string]interface{}{
-			TypesID:             item.ID,
 			TypesName:           item.Name,
 			TypesGroupID:        item.GroupID,
 			TypesPublished:      item.Published,
@@ -1134,7 +1133,6 @@ func (r *UniverseRepository) UpdateType(ctx context.Context, item *skillz.Type) 
 			TypesPortionSize:    item.PortionSize,
 			TypesRadius:         item.Radius,
 			TypesVolume:         item.Volume,
-			ColumnCreatedAt:     item.CreatedAt,
 			ColumnUpdatedAt:     item.UpdatedAt,
 		}).
 		Where(sq.Eq{TypesID: item.ID}).ToSql()

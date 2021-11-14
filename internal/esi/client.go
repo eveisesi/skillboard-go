@@ -50,15 +50,13 @@ type out struct {
 
 func (s *Service) request(ctx context.Context, method, path string, body io.Reader, expected int, out *out, mods ...ModifierFunc) error {
 
-	var err error
-	var res = new(http.Response)
-
 	uri, _ := url.ParseRequestURI(path)
 	uri.Scheme = "https"
 	uri.Host = esiHost
 
 	for {
-		req, err := http.NewRequestWithContext(ctx, method, uri.String(), body)
+
+		req, err := http.NewRequest(method, uri.String(), body)
 		if err != nil {
 			return errors.Wrap(err, "failed to build request")
 		}
@@ -70,56 +68,63 @@ func (s *Service) request(ctx context.Context, method, path string, body io.Read
 			}
 		}
 
-		res, err = s.client.Do(req)
+		res, err := s.client.Do(req)
 		if err != nil {
 			return errors.Wrap(err, "failed to execute request")
 		}
 
-		if res != nil && res.StatusCode >= http.StatusContinue && res.StatusCode < http.StatusInternalServerError {
-			break
+		fmt.Printf("\n%s (%d)\n\n", fmt.Sprintf("%s %s", method, path), res.StatusCode)
+
+		if res.StatusCode < http.StatusContinue || res.StatusCode > http.StatusInternalServerError {
+			time.Sleep(time.Millisecond * 500)
+			continue
 		}
 
-		// Sleep for 1/2 second
-		time.Sleep(time.Millisecond * 500)
+		out.Status = res.StatusCode
+		out.Headers = res.Header
 
-	}
-
-	defer func(requestID string, body io.ReadCloser) {
-		err := body.Close()
+		data, err := io.ReadAll(res.Body)
 		if err != nil {
-			fmt.Printf("failed to close requst body for %s\n", requestID)
+			return errors.Wrapf(err, "expected status %d, got %d: unable to parse request body", expected, res.StatusCode)
 		}
-	}(fmt.Sprintf("%s %s", method, path), res.Body)
 
-	out.Status = res.StatusCode
-	out.Headers = res.Header
+		err = res.Body.Close()
+		if err != nil {
+			if err.Error() != "context cancelled" {
+				fmt.Printf("\n\nfailed to close requst body for %s (%d): %s %s\n\n", fmt.Sprintf("%s %s", method, path), res.StatusCode, err, string(data))
+			}
+		}
 
-	data, err := io.ReadAll(res.Body)
-	if err != nil {
-		return errors.Wrapf(err, "expected status %d, got %d: unable to parse request body", expected, res.StatusCode)
-	}
+		if out.Status >= http.StatusBadRequest {
+			return errors.Errorf("expected status %d, got %d: %s", expected, res.StatusCode, string(data))
+		}
 
-	if out.Status >= http.StatusBadRequest {
-		return errors.Errorf("expected status %d, got %d: %s", expected, res.StatusCode, string(data))
-	}
+		for _, mod := range mods {
+			err = mod(nil, res)
+			if err != nil {
+				return err
+			}
+		}
 
-	if out.Status == http.StatusNotModified {
+		if out.Status == http.StatusNotModified {
+			return nil
+		}
+
+		err = json.Unmarshal(data, out.Data)
+		if err != nil {
+			return errors.Wrapf(err, "failed to decode request body to json: %s", string(data))
+		}
+
 		return nil
+
 	}
 
-	for _, mod := range mods {
-		err = mod(nil, res)
-		if err != nil {
-			return err
-		}
-	}
-
-	err = json.Unmarshal(data, out.Data)
-	if err != nil {
-		return errors.Wrapf(err, "failed to decode request body to json: %s", string(data))
-	}
-
-	return nil
+	// defer func(requestID string, body io.ReadCloser) {
+	// 	err := body.Close()
+	// 	if err != nil {
+	// 		fmt.Printf("\n\nfailed to close requst body for %s (%d): %s\n\n", requestID, res.StatusCode, err)
+	// 	}
+	// }(, res.Body)
 
 }
 

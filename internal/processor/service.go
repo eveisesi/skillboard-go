@@ -81,7 +81,7 @@ func (s *Service) Run() error {
 			return err
 		}
 
-		err = s.processUser(ctx, userID)
+		err = s.processUser(context.Background(), userID)
 		if err != nil {
 			entry.WithError(err).Error("failed to process user id")
 			continue
