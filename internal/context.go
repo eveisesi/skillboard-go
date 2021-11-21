@@ -12,7 +12,20 @@ type ctxKey int
 const (
 	ctxToken ctxKey = iota
 	ctxUser
+	ctxUpdateable
 )
+
+func UpdateableFromContext(ctx context.Context) bool {
+	if updateable, ok := ctx.Value(ctxUpdateable).(bool); ok {
+		return updateable
+	}
+
+	return false
+}
+
+func ContextWithUpdateable(ctx context.Context, updateable bool) context.Context {
+	return context.WithValue(ctx, ctxUpdateable, updateable)
+}
 
 func ContextWithToken(ctx context.Context, token jwt.Token) context.Context {
 	return context.WithValue(ctx, ctxToken, token)

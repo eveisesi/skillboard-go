@@ -1,9 +1,3 @@
-extend type Character {
-    skills: CharacterSkills!
-    queue: [CharacterSkillQueue]!
-    attributes: CharacterAttributes!
-}
-
 type CharacterSkills {
     meta: CharacterSkillMeta
     skills: [CharacterSkill]!

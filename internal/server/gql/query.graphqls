@@ -1,16 +1,9 @@
 type Query {
-    auth(state: String): AuthAttempt!
+    initializeAuth: String!
+    finalizeAuth(code: String!, state: String!): AuthAttempt!
     user: User! @isAuthed
+    userByID: User!
     character(id: Uint64!): Character
-}
-
-type User @goModel(model: "github.com/eveisesi/skillz.User") {
-    id: UUID!
-    characterID: Uint64!
-    expires: Time!
-    ownerHash: String!
-    scopes: [String!]
-    lastLogin: Time
 }
 
 directive @goModel(model: String) on OBJECT

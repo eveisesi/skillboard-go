@@ -23,6 +23,7 @@ const (
 	UserExpires           = "expires"
 	UserOwnerHash         = "owner_hash"
 	UserScopes            = "scopes"
+	UserIsNew             = "is_new"
 	UserDisabled          = "disabled"
 	UserDisabledReason    = "disabled_reason"
 	UserDisabledTimestamp = "disabled_timestamp"
@@ -40,7 +41,7 @@ func NewUserRepository(db QueryExecContext) *UserRepository {
 				UserID, UserCharacterID,
 				UserAccessToken, UserRefreshToken,
 				UserExpires, UserOwnerHash,
-				UserScopes, UserDisabled,
+				UserScopes, UserIsNew, UserDisabled,
 				UserDisabledReason, UserDisabledTimestamp,
 				UserLastLogin, ColumnCreatedAt, ColumnUpdatedAt,
 			},
@@ -123,6 +124,7 @@ func (r *UserRepository) UpdateUser(ctx context.Context, user *skillz.User) erro
 		UserExpires:           user.Expires,
 		UserOwnerHash:         user.OwnerHash,
 		UserScopes:            user.Scopes,
+		UserIsNew:             user.IsNew,
 		UserDisabled:          user.Disabled,
 		UserDisabledReason:    user.DisabledReason,
 		UserDisabledTimestamp: user.DisabledTimestamp,

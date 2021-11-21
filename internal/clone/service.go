@@ -44,17 +44,17 @@ func New(cache cache.CloneAPI, etag etag.API, esi esi.CloneAPI, clones skillz.Cl
 
 func (s *Service) Process(ctx context.Context, user *skillz.User) error {
 
-	_, err := s.Clones(ctx, user)
-	if err != nil {
-		return err
+	var err error
+	var funcs = []func(context.Context, *skillz.User) error{s.updateClones, s.updateImplants}
+
+	for _, f := range funcs {
+		err = f(ctx, user)
+		if err != nil {
+			break
+		}
 	}
 
-	_, err = s.Implants(ctx, user)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 
 }
 
@@ -73,45 +73,13 @@ func (s *Service) Clones(ctx context.Context, user *skillz.User) (*skillz.Charac
 		return clones, nil
 	}
 
-	etagID, etag, err := s.esi.Etag(ctx, esi.GetCharacterClones, &esi.Params{CharacterID: null.Uint64From(user.CharacterID)})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to fetch tag for expiry check")
-	}
-
 	clones, err = s.clones.CharacterCloneMeta(ctx, user.CharacterID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.Wrap(err, "failed to fetch character clones from data store")
 	}
 
-	exists := err == nil
-
-	if !exists || etag == nil || etag.CachedUntil.Unix() < time.Now().Add(-1*time.Minute).Unix() {
-
-		mods := append(make([]esi.ModifierFunc, 0, 3), s.esi.CacheEtag(ctx, etagID), s.esi.AddAuthorizationHeader(ctx, user.AccessToken))
-		if etag != nil && etag.Etag != "" {
-			mods = append(mods, s.esi.AddIfNoneMatchHeader(ctx, etag.Etag))
-		}
-
-		updatedClones, err := s.esi.GetCharacterClones(ctx, user.CharacterID, mods...)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to fetch character clones from ESI")
-		}
-
-		if updatedClones != nil {
-			switch exists {
-			case true:
-				err = s.updateCharacterClones(ctx, updatedClones)
-			case false:
-				err = s.insertCharacterClones(ctx, updatedClones)
-			}
-
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to process character clones")
-			}
-
-			return updatedClones, s.cache.SetCharacterClones(ctx, user.CharacterID, updatedClones, time.Hour)
-		}
-
+	if err != nil && errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
 	}
 
 	homeLocation, homeLocationErr := s.clones.CharacterDeathClone(ctx, user.CharacterID)
@@ -123,6 +91,37 @@ func (s *Service) Clones(ctx context.Context, user *skillz.User) (*skillz.Charac
 	}
 
 	return clones, s.cache.SetCharacterClones(ctx, user.CharacterID, clones, time.Hour)
+
+}
+
+func (s *Service) updateClones(ctx context.Context, user *skillz.User) error {
+
+	etagID, etag, err := s.esi.Etag(ctx, esi.GetCharacterClones, &esi.Params{CharacterID: null.Uint64From(user.CharacterID)})
+	if err != nil {
+		return errors.Wrap(err, "failed to fetch tag for expiry check")
+	}
+
+	mods := s.esi.BaseCharacterHeaders(ctx, user, etagID, etag)
+
+	updatedClones, err := s.esi.GetCharacterClones(ctx, user.CharacterID, mods...)
+	if err != nil {
+		return errors.Wrap(err, "failed to fetch character clones from ESI")
+	}
+
+	if updatedClones != nil {
+		err = s.insertCharacterClones(ctx, updatedClones)
+		if err != nil {
+			return errors.Wrap(err, "failed to process character clones")
+		}
+
+		err = s.cache.SetCharacterClones(ctx, user.CharacterID, updatedClones, time.Hour)
+		if err != nil {
+			return errors.Wrap(err, "failed to cache character clones")
+		}
+
+	}
+
+	return nil
 
 }
 
@@ -138,28 +137,17 @@ func (s *Service) insertCharacterClones(ctx context.Context, clones *skillz.Char
 		return err
 	}
 
-	return s.clones.CreateCharacterJumpClones(ctx, clones.JumpClones)
-
-}
-
-func (s *Service) updateCharacterClones(ctx context.Context, clones *skillz.CharacterCloneMeta) error {
-
-	err := s.clones.UpdateCharacterCloneMeta(ctx, clones)
-	if err != nil {
-		return err
-	}
-
-	err = s.clones.UpdateCharacterDeathClone(ctx, clones.HomeLocation)
-	if err != nil {
-		return err
-	}
-
 	err = s.clones.DeleteCharacterJumpClones(ctx, clones.CharacterID)
 	if err != nil {
 		return err
 	}
 
-	return s.clones.CreateCharacterJumpClones(ctx, clones.JumpClones)
+	err = s.clones.CreateCharacterJumpClones(ctx, clones.JumpClones)
+	if err != nil {
+		return err
+	}
+
+	return nil
 
 }
 
@@ -174,44 +162,49 @@ func (s *Service) Implants(ctx context.Context, user *skillz.User) ([]*skillz.Ch
 		return implants, nil
 	}
 
-	etagID, etag, err := s.esi.Etag(ctx, esi.GetCharacterImplants, &esi.Params{CharacterID: null.Uint64From(user.CharacterID)})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to fetch etag for expiry check")
-	}
-
 	implants, err = s.clones.CharacterImplants(ctx, user.CharacterID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.Wrap(err, "failed to fetch character implants from data store")
 	}
 
-	exists := err == nil
+	return implants, nil
 
-	if !exists || etag == nil || etag.CachedUntil.Unix() < time.Now().Add(-1*time.Minute).Unix() {
-		mods := append(make([]esi.ModifierFunc, 0, 3), s.esi.CacheEtag(ctx, etagID), s.esi.AddAuthorizationHeader(ctx, user.AccessToken))
-		if etag != nil && etag.Etag != "" {
-			mods = append(mods, s.esi.AddIfNoneMatchHeader(ctx, etag.Etag))
-		}
+}
 
-		implantsOk, err := s.esi.GetCharacterImplants(ctx, user.CharacterID, mods...)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to fetch character implants from ESI")
-		}
+func (s *Service) updateImplants(ctx context.Context, user *skillz.User) error {
 
-		if implantsOk.Updated {
-			implants = implantsOk.Implants
-
-			err = s.clones.DeleteCharacterImplants(ctx, user.CharacterID)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to update character implants")
-			}
-
-			err = s.clones.CreateCharacterImplants(ctx, implants)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to update character implants")
-			}
-		}
+	etagID, etag, err := s.esi.Etag(ctx, esi.GetCharacterImplants, &esi.Params{CharacterID: null.Uint64From(user.CharacterID)})
+	if err != nil {
+		return errors.Wrap(err, "failed to fetch etag for expiry check")
 	}
 
-	return implants, s.cache.SetCharacterImplants(ctx, user.CharacterID, implants, time.Hour)
+	mods := s.esi.BaseCharacterHeaders(ctx, user, etagID, etag)
+
+	implantsOk, err := s.esi.GetCharacterImplants(ctx, user.CharacterID, mods...)
+	if err != nil {
+		return errors.Wrap(err, "failed to fetch character implants from ESI")
+	}
+
+	if implantsOk.Updated {
+		implants := implantsOk.Implants
+
+		err = s.clones.DeleteCharacterImplants(ctx, user.CharacterID)
+		if err != nil {
+			return errors.Wrap(err, "failed to update character implants")
+		}
+
+		err = s.clones.CreateCharacterImplants(ctx, implants)
+		if err != nil {
+			return errors.Wrap(err, "failed to update character implants")
+		}
+
+		err = s.cache.SetCharacterImplants(ctx, user.CharacterID, implants, time.Hour)
+		if err != nil {
+			return errors.Wrap(err, "failed to cache character implants")
+		}
+
+	}
+
+	return nil
 
 }

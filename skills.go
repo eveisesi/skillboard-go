@@ -16,14 +16,14 @@ type CharacterSkillRepository interface {
 type memberAttributesRepository interface {
 	CharacterAttributes(ctx context.Context, characterID uint64) (*CharacterAttributes, error)
 	CreateCharacterAttributes(ctx context.Context, attributes *CharacterAttributes) error
-	UpdateCharacterAttributes(ctx context.Context, attributes *CharacterAttributes) error
+	// UpdateCharacterAttributes(ctx context.Context, attributes *CharacterAttributes) error
 	DeleteCharacterAttributes(ctx context.Context, characterID uint64) error
 }
 
 type memberSkillsRepository interface {
 	CharacterSkillMeta(ctx context.Context, characterID uint64) (*CharacterSkillMeta, error)
 	CreateCharacterSkillMeta(ctx context.Context, meta *CharacterSkillMeta) error
-	UpdateCharacterSkillMeta(ctx context.Context, meta *CharacterSkillMeta) error
+	// UpdateCharacterSkillMeta(ctx context.Context, meta *CharacterSkillMeta) error
 	DeleteCharacterSkillMeta(ctx context.Context, characterID uint64) error
 
 	CharacterSkills(ctx context.Context, characterID uint64) ([]*CharacterSkill, error)

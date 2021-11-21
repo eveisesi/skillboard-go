@@ -144,7 +144,7 @@ func NewOrderOperator(column string, sort Sort) *Operator {
 
 }
 
-func NewInOperator(column string, value interface{}) *Operator {
+func NewInOperator(column string, value []interface{}) *Operator {
 
 	return &Operator{
 		Column:    column,
@@ -164,7 +164,7 @@ func NewNotInOperator(column string, value interface{}) *Operator {
 
 }
 
-func NewLimitOperator(value int64) *Operator {
+func NewLimitOperator(value uint64) *Operator {
 	return &Operator{
 		Column:    "",
 		Operation: LimitOp,
@@ -204,7 +204,7 @@ func NewExistsOperator(column string, value bool) *Operator {
 	}
 }
 
-func NewLikeOperator(column string, value interface{}) *Operator {
+func NewLikeOperator(column string, value string) *Operator {
 	return &Operator{
 		Column:    column,
 		Operation: LikeOp,

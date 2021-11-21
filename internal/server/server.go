@@ -20,7 +20,9 @@ import (
 	"github.com/eveisesi/skillz/internal/server/gql/generated"
 	"github.com/eveisesi/skillz/internal/skill"
 	"github.com/eveisesi/skillz/internal/user"
+	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-http-utils/headers"
 	"github.com/sirupsen/logrus"
 )
 
@@ -96,14 +98,15 @@ func (s *server) buildRouter() *chi.Mux {
 	r.Use(
 		s.requestLogger(s.logger),
 		s.cors,
-		// middleware.SetHeader(headers.ContentType, "application/json"),
+		middleware.SetHeader(headers.ContentType, "application/json"),
 	)
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	r.Get("/auth/callback", s.handleGetAuthCallback)
+	r.Get("/.well-known/openid-configuration", s.GetOpenIDConfiguration)
+	r.Get("/auth/jwks", s.GetJsonWebKeySet)
 
 	r.Get("/playground", playground.Handler("GraphQL playground", "/graphql"))
 
@@ -130,16 +133,21 @@ func (s *server) buildRouter() *chi.Mux {
 				},
 			),
 		)
+
 		handler.AddTransport(transport.POST{})
+		// handler.AddTransport(transport.Websocket{
+		// 	Upgrader: websocket.Upgrader{
+		// 		CheckOrigin: func(r *http.Request) bool {
+		// 			return true
+		// 		},
+		// 	},
+		// 	KeepAlivePingInterval: 2 * time.Second,
+		// })
 
 		if s.env != skillz.Production {
 			handler.Use(extension.Introspection{})
 		}
 
-		// handler.SetQueryCache(lru.New(1000))
-		// handler.Use(extension.AutomaticPersistedQuery{
-		// 	Cache: lru.New(100),
-		// })
 		r.Handle("/graphql", handler)
 	})
 

@@ -15,6 +15,7 @@ type AuthAPI interface {
 	SaveJSONWebKeySet(ctx context.Context, jwks []byte) error
 	AuthAttempt(ctx context.Context, hash string) (*skillz.AuthAttempt, error)
 	CreateAuthAttempt(ctx context.Context, attempt *skillz.AuthAttempt) error
+	DeleteAuthAttempt(ctx context.Context, attempt *skillz.AuthAttempt) error
 }
 
 const keyAuthAttempt = "auth::attempt"
@@ -70,5 +71,13 @@ func (s *Service) CreateAuthAttempt(ctx context.Context, attempt *skillz.AuthAtt
 	key := generateKey(keyAuthAttempt, attempt.State)
 	err = s.redis.Set(ctx, key, b, time.Minute*5).Err()
 	return errors.Wrapf(err, errorFFormat, authAPI, "CreateAuthAttempt", "failed to write cache")
+
+}
+
+func (s *Service) DeleteAuthAttempt(ctx context.Context, attempt *skillz.AuthAttempt) error {
+
+	key := generateKey(keyAuthAttempt, attempt.State)
+	err := s.redis.Del(ctx, key).Err()
+	return errors.Wrapf(err, errorFFormat, authAPI, "DeleteAuthAttempt", "failed to remove from cache")
 
 }

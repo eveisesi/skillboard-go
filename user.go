@@ -6,6 +6,7 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/volatiletech/null"
+	"golang.org/x/oauth2"
 )
 
 type UserRepository interface {
@@ -23,10 +24,17 @@ type User struct {
 	Expires           time.Time   `db:"expires," json:"expires"`
 	OwnerHash         string      `db:"owner_hash" json:"owner_hash"`
 	Scopes            UserScopes  `db:"scopes,omitempty" json:"scopes,omitempty"`
+	IsNew             bool        `db:"is_new"`
 	Disabled          bool        `db:"disabled" json:"disabled"`
 	DisabledReason    null.String `db:"disabled_reason,omitempty" json:"disabled_reason"`
 	DisabledTimestamp null.Time   `db:"disabled_timestamp,omitempty" json:"disabled_timestamp"`
 	LastLogin         time.Time   `db:"last_login" json:"last_login"`
 	CreatedAt         time.Time   `db:"created_at" json:"created_at"`
 	UpdatedAt         time.Time   `db:"updated_at" json:"updated_at"`
+}
+
+func (i *User) ApplyToken(t *oauth2.Token) {
+	i.AccessToken = t.AccessToken
+	i.RefreshToken = t.RefreshToken
+	i.Expires = t.Expiry
 }

@@ -32,7 +32,7 @@ func init() {
 		{
 			Name:        "processor",
 			Description: "Start the Job Processor",
-			Action:      processorCommand,
+			// Action:      processorCommand,
 		},
 
 		{

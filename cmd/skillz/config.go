@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
@@ -11,7 +12,7 @@ type config struct {
 	MySQL struct {
 		Host string `envconfig:"MYSQL_HOST" required:"true"`
 		User string `envconfig:"MYSQL_USER" required:"true"`
-		Pass string `envconfig:"MYSQL_PASS" required:"true"`
+		Pass string `envconfig:"MYSQL_PASSWORD" required:"true"`
 		DB   string `envconfig:"MYSQL_DB" required:"true"`
 	}
 
@@ -28,6 +29,15 @@ type config struct {
 		ClientID     string `envconfig:"EVE_CLIENT_ID" required:"true"`
 		ClientSecret string `envconfig:"EVE_CLIENT_SECRET" required:"true"`
 		JWKSURI      string `envconfig:"EVE_JWKS_URI" required:"true"`
+	}
+
+	Auth struct {
+		PrivateKey     []byte `envconfig:"AUTH_KEY" required:"true"`
+		KeyID          string `envconfig:"AUTH_KID" required:"true"`
+		TokenIssuer    string `envconfig:"AUTH_ISSUER" required:"true"`
+		TokenAudience  string `envconfig:"AUTH_AUDIENCE" required:"true"`
+		TokenExpiryStr string `envconfig:"AUTH_EXPIRY" required:"true"`
+		TokenExpiry    time.Duration
 	}
 
 	Server struct {
@@ -47,4 +57,12 @@ func buildConfig() {
 	if err != nil {
 		panic(fmt.Sprintf("failed to config env: %s", err))
 	}
+
+	dur, err := time.ParseDuration(cfg.Auth.TokenExpiryStr)
+	if err != nil {
+		panic(fmt.Errorf("failed to parse AUTH_EXPIRY: %w", err))
+	}
+
+	cfg.Auth.TokenExpiry = dur
+
 }

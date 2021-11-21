@@ -7,30 +7,8 @@ import (
 	"context"
 
 	"github.com/eveisesi/skillz"
-	"github.com/eveisesi/skillz/internal"
 	"github.com/eveisesi/skillz/internal/server/gql/generated"
-	"github.com/eveisesi/skillz/internal/server/gql/model"
 )
-
-func (r *characterResolver) Skills(ctx context.Context, obj *skillz.Character) (*model.CharacterSkills, error) {
-	meta, err := r.skill.Skills(ctx, internal.UserFromContext(ctx))
-	if err != nil {
-		return nil, err
-	}
-
-	return &model.CharacterSkills{
-		Meta:   meta,
-		Skills: meta.Skills,
-	}, nil
-}
-
-func (r *characterResolver) Queue(ctx context.Context, obj *skillz.Character) ([]*skillz.CharacterSkillQueue, error) {
-	return r.skill.SkillQueue(ctx, internal.UserFromContext(ctx))
-}
-
-func (r *characterResolver) Attributes(ctx context.Context, obj *skillz.Character) (*skillz.CharacterAttributes, error) {
-	return r.skill.Attributes(ctx, internal.UserFromContext(ctx))
-}
 
 func (r *characterSkillResolver) Info(ctx context.Context, obj *skillz.CharacterSkill) (*skillz.Type, error) {
 	return r.dataloaders.TypeLoader().Load(ctx, obj.SkillID)

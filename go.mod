@@ -6,12 +6,12 @@ require (
 	github.com/99designs/gqlgen v0.14.0
 	github.com/Masterminds/squirrel v1.5.1
 	github.com/davecgh/go-spew v1.1.1
+	github.com/go-chi/chi v1.5.4
 	github.com/go-chi/chi/v5 v5.0.5
 	github.com/go-http-utils/headers v0.0.0-20181008091004-fed159eddc2a
 	github.com/go-redis/redis/v8 v8.11.4
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/gofrs/uuid v4.1.0+incompatible
-	github.com/iancoleman/strcase v0.2.0
 	github.com/jmoiron/sqlx v1.3.4
 	github.com/joho/godotenv v1.4.0
 	github.com/kelseyhightower/envconfig v1.4.0
@@ -23,6 +23,7 @@ require (
 	github.com/volatiletech/null v8.0.0+incompatible
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
+	xorm.io/builder v0.3.9
 )
 
 require (

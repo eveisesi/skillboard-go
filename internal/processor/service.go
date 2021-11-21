@@ -102,7 +102,7 @@ func (s *Service) processUser(ctx context.Context, userID uuid.UUID) error {
 		return errors.Wrap(err, "failed to fetch user from data store")
 	}
 
-	err = s.user.ValidateToken(ctx, user)
+	err = s.user.ValidateCurrentToken(ctx, user)
 	if err != nil {
 		return err
 	}
@@ -119,6 +119,14 @@ processorLoop:
 
 				continue processorLoop
 			}
+		}
+	}
+
+	if user.IsNew {
+		user.IsNew = false
+		err = s.user.UpdateUser(ctx, user)
+		if err != nil {
+			return errors.Wrap(err, "failed to update user and set is_new to false")
 		}
 	}
 

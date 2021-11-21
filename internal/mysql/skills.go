@@ -227,7 +227,9 @@ func (r *SkillRepository) CreateCharacterSkillMeta(ctx context.Context, meta *sk
 		ColumnCharacterID: meta.CharacterID,
 		ColumnCreatedAt:   meta.CreatedAt,
 		ColumnUpdatedAt:   meta.UpdatedAt,
-	}).ToSql()
+	}).
+		Suffix("ON DUPLICATE KEY UPDATE %[1]s=VALUES(%[1]s), %[2]s=VALUES(%[2]s)", MetaTotalSP, MetaUnallocatedSP).
+		ToSql()
 	if err != nil {
 		return errors.Wrapf(err, errorFFormat, skillsRepository, "CreateCharacterSkillMeta", "failed to generate sql")
 	}
@@ -237,24 +239,24 @@ func (r *SkillRepository) CreateCharacterSkillMeta(ctx context.Context, meta *sk
 
 }
 
-func (r *SkillRepository) UpdateCharacterSkillMeta(ctx context.Context, meta *skillz.CharacterSkillMeta) error {
+// func (r *SkillRepository) UpdateCharacterSkillMeta(ctx context.Context, meta *skillz.CharacterSkillMeta) error {
 
-	meta.UpdatedAt = time.Now()
+// 	meta.UpdatedAt = time.Now()
 
-	query, args, err := sq.Update(r.meta.table).SetMap(map[string]interface{}{
-		MetaTotalSP:       meta.TotalSP,
-		MetaUnallocatedSP: meta.UnallocatedSP,
+// 	query, args, err := sq.Update(r.meta.table).SetMap(map[string]interface{}{
+// 		MetaTotalSP:       meta.TotalSP,
+// 		MetaUnallocatedSP: meta.UnallocatedSP,
 
-		ColumnUpdatedAt: meta.UpdatedAt,
-	}).Where(sq.Eq{ColumnCharacterID: meta.CharacterID}).ToSql()
-	if err != nil {
-		return errors.Wrapf(err, errorFFormat, skillsRepository, "UpdateCharacterSkillMeta", "failed to generate sql")
-	}
+// 		ColumnUpdatedAt: meta.UpdatedAt,
+// 	}).Where(sq.Eq{ColumnCharacterID: meta.CharacterID}).ToSql()
+// 	if err != nil {
+// 		return errors.Wrapf(err, errorFFormat, skillsRepository, "UpdateCharacterSkillMeta", "failed to generate sql")
+// 	}
 
-	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, skillsRepository, "UpdateCharacterSkillMeta")
+// 	_, err = r.db.ExecContext(ctx, query, args...)
+// 	return errors.Wrapf(err, prefixFormat, skillsRepository, "UpdateCharacterSkillMeta")
 
-}
+// }
 
 func (r *SkillRepository) DeleteCharacterSkillMeta(ctx context.Context, characterID uint64) error {
 

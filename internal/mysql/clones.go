@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
@@ -93,30 +94,20 @@ func (r *CloneRepository) CreateCharacterCloneMeta(ctx context.Context, meta *sk
 		MetaLastStationChangeDate: meta.LastStationChangeDate,
 		ColumnCreatedAt:           meta.CreatedAt,
 		ColumnUpdatedAt:           meta.UpdatedAt,
-	}).ToSql()
+	}).
+		Suffix(fmt.Sprintf(
+			"ON DUPLICATE KEY UPDATE %[1]s=VALUES(%[1]s),%[2]s=VALUES(%[2]s),%[2]s=VALUES(%[2]s)",
+			MetaLastCloneJumpDate,
+			MetaLastStationChangeDate,
+			ColumnUpdatedAt,
+		)).
+		ToSql()
 	if err != nil {
 		return errors.Wrapf(err, errorFFormat, cloneRepository, "CreateCloneMeta", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
 	return errors.Wrapf(err, prefixFormat, cloneRepository, "CreateCloneMeta")
-}
-
-func (r *CloneRepository) UpdateCharacterCloneMeta(ctx context.Context, meta *skillz.CharacterCloneMeta) error {
-
-	meta.UpdatedAt = time.Now()
-
-	query, args, err := sq.Update(r.meta.table).SetMap(map[string]interface{}{
-		MetaLastCloneJumpDate:     meta.LastCloneJumpDate,
-		MetaLastStationChangeDate: meta.LastStationChangeDate,
-		ColumnUpdatedAt:           meta.UpdatedAt,
-	}).Where(sq.Eq{ColumnCharacterID: meta.CharacterID}).ToSql()
-	if err != nil {
-		return errors.Wrapf(err, errorFFormat, cloneRepository, "UpdateCloneMeta", "failed to generate sql")
-	}
-
-	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, cloneRepository, "UpdateCloneMeta")
 }
 
 func (r *CloneRepository) CharacterDeathClone(ctx context.Context, characterID uint64) (*skillz.CharacterDeathClone, error) {
@@ -147,25 +138,12 @@ func (r *CloneRepository) CreateCharacterDeathClone(ctx context.Context, death *
 		DeathLocationType: death.LocationType,
 		ColumnCreatedAt:   death.CreatedAt,
 		ColumnUpdatedAt:   death.UpdatedAt,
-	}).ToSql()
-	if err != nil {
-		return errors.Wrapf(err, errorFFormat, cloneRepository, "CreateCharacterDeathClone", "failed to generate sql")
-	}
-
-	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, cloneRepository, "CreateCharacterDeathClone")
-
-}
-
-func (r *CloneRepository) UpdateCharacterDeathClone(ctx context.Context, death *skillz.CharacterDeathClone) error {
-
-	death.UpdatedAt = time.Now()
-
-	query, args, err := sq.Update(r.death.table).SetMap(map[string]interface{}{
-		DeathLocationID:   death.LocationID,
-		DeathLocationType: death.LocationType,
-		ColumnUpdatedAt:   death.UpdatedAt,
-	}).Where(sq.Eq{ColumnCharacterID: death.CharacterID}).ToSql()
+	}).Suffix(fmt.Sprintf(
+		"ON DUPLICATE KEY UPDATE %[1]s=VALUES(%[1]s),%[2]s=VALUES(%[2]s),%[2]s=VALUES(%[2]s)",
+		DeathLocationID,
+		DeathLocationType,
+		ColumnUpdatedAt,
+	)).ToSql()
 	if err != nil {
 		return errors.Wrapf(err, errorFFormat, cloneRepository, "CreateCharacterDeathClone", "failed to generate sql")
 	}

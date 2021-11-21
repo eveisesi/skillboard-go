@@ -15,9 +15,9 @@ import (
 
 type API interface {
 	skillz.Processor
-	Skills(ctx context.Context, user *skillz.User) (*skillz.CharacterSkillMeta, error)
-	Attributes(ctx context.Context, user *skillz.User) (*skillz.CharacterAttributes, error)
-	SkillQueue(ctx context.Context, user *skillz.User) ([]*skillz.CharacterSkillQueue, error)
+	Skills(ctx context.Context, characterID uint64) (*skillz.CharacterSkillMeta, error)
+	Attributes(ctx context.Context, characterID uint64) (*skillz.CharacterAttributes, error)
+	SkillQueue(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkillQueue, error)
 }
 
 type Service struct {
@@ -43,22 +43,19 @@ func New(cache cache.SkillAPI, esi esi.SkillAPI, skills skillz.CharacterSkillRep
 
 func (s *Service) Process(ctx context.Context, user *skillz.User) error {
 
-	_, err := s.Skills(ctx, user)
-	if err != nil {
-		return err
+	var err error
+	var funcs = []func(context.Context, *skillz.User) error{
+		s.updateSkills, s.updateAttributes, s.updateSkillQueue,
 	}
 
-	_, err = s.Attributes(ctx, user)
-	if err != nil {
-		return err
+	for _, f := range funcs {
+		err = f(ctx, user)
+		if err != nil {
+			break
+		}
 	}
 
-	_, err = s.SkillQueue(ctx, user)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 
 }
 
@@ -66,15 +63,15 @@ func (s *Service) Scopes() []skillz.Scope {
 	return s.scopes
 }
 
-func (s *Service) Skills(ctx context.Context, user *skillz.User) (*skillz.CharacterSkillMeta, error) {
+func (s *Service) Skills(ctx context.Context, characterID uint64) (*skillz.CharacterSkillMeta, error) {
 
-	meta, err := s.cache.CharacterSkillMeta(ctx, user.CharacterID)
+	meta, err := s.cache.CharacterSkillMeta(ctx, characterID)
 	if err != nil && !errors.Is(err, redis.Nil) {
 		return nil, err
 	}
 
 	if meta != nil {
-		skills, err := s.cache.CharacterSkills(ctx, user.CharacterID)
+		skills, err := s.cache.CharacterSkills(ctx, characterID)
 		if err != nil {
 			return nil, err
 		}
@@ -85,75 +82,60 @@ func (s *Service) Skills(ctx context.Context, user *skillz.User) (*skillz.Charac
 
 	}
 
-	etagID, etag, err := s.esi.Etag(ctx, esi.GetCharacterSkills, &esi.Params{CharacterID: null.Uint64From(user.CharacterID)})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to fetch tag for expiry check")
-	}
-
-	meta, err = s.skills.CharacterSkillMeta(ctx, user.CharacterID)
+	meta, err = s.skills.CharacterSkillMeta(ctx, characterID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.Wrap(err, "failed to fetch character skills from data store")
 	}
 
-	exists := err == nil
-
-	if !exists || etag == nil || etag.CachedUntil.Unix() < time.Now().Add(-1*time.Minute).Unix() {
-
-		mods := append(make([]esi.ModifierFunc, 0, 3), s.esi.CacheEtag(ctx, etagID), s.esi.AddAuthorizationHeader(ctx, user.AccessToken))
-		if etag != nil && etag.Etag != "" {
-			mods = append(mods, s.esi.AddIfNoneMatchHeader(ctx, etag.Etag))
-		}
-
-		updateSkills, err := s.esi.GetCharacterSkills(ctx, user.CharacterID, mods...)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to fetch character skills from ESI")
-		}
-
-		if updateSkills != nil {
-			switch exists {
-			case true:
-				err = s.skills.UpdateCharacterSkillMeta(ctx, updateSkills)
-				if err != nil {
-					return nil, errors.Wrap(err, "failed to update skill meta")
-				}
-
-			case false:
-				err = s.skills.CreateCharacterSkillMeta(ctx, updateSkills)
-				if err != nil {
-					return nil, errors.Wrap(err, "failed to update skill meta")
-				}
-			}
-
-			err = s.skills.CreateCharacterSkills(ctx, updateSkills.Skills)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to update skills")
-			}
-
-			meta = updateSkills
-		}
-
-	}
-
-	skills := meta.Skills
-	meta.Skills = nil
-	err = s.cache.SetCharacterSkillMeta(ctx, meta, time.Hour)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to cache character skill meta")
-	}
-
-	err = s.cache.SetCharacterSkills(ctx, meta.CharacterID, skills, time.Hour)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to cache character skills")
-	}
-
-	meta.Skills = skills
 	return meta, nil
 
 }
 
-func (s *Service) Attributes(ctx context.Context, user *skillz.User) (*skillz.CharacterAttributes, error) {
+func (s *Service) updateSkills(ctx context.Context, user *skillz.User) error {
 
-	attributes, err := s.cache.CharacterAttributes(ctx, user.CharacterID)
+	etagID, etag, err := s.esi.Etag(ctx, esi.GetCharacterSkills, &esi.Params{CharacterID: null.Uint64From(user.CharacterID)})
+	if err != nil {
+		return errors.Wrap(err, "failed to fetch tag for expiry check")
+	}
+
+	mods := s.esi.BaseCharacterHeaders(ctx, user, etagID, etag)
+
+	updateSkills, err := s.esi.GetCharacterSkills(ctx, user.CharacterID, mods...)
+	if err != nil {
+		return errors.Wrap(err, "failed to fetch character skills from ESI")
+	}
+
+	if updateSkills != nil {
+		err = s.skills.CreateCharacterSkillMeta(ctx, updateSkills)
+		if err != nil {
+			return errors.Wrap(err, "failed to update skill meta")
+		}
+
+		err = s.skills.CreateCharacterSkills(ctx, updateSkills.Skills)
+		if err != nil {
+			return errors.Wrap(err, "failed to update skills")
+		}
+
+		err = s.cache.SetCharacterSkills(ctx, updateSkills.CharacterID, updateSkills.Skills, time.Hour)
+		if err != nil {
+			return errors.Wrap(err, "failed to cache character skills")
+		}
+
+		updateSkills.Skills = nil
+
+		err = s.cache.SetCharacterSkillMeta(ctx, updateSkills, time.Hour)
+		if err != nil {
+			return errors.Wrap(err, "failed to cache character skill meta")
+		}
+
+	}
+
+	return nil
+}
+
+func (s *Service) Attributes(ctx context.Context, characterID uint64) (*skillz.CharacterAttributes, error) {
+
+	attributes, err := s.cache.CharacterAttributes(ctx, characterID)
 	if err != nil && !errors.Is(err, redis.Nil) {
 		return nil, err
 	}
@@ -162,50 +144,55 @@ func (s *Service) Attributes(ctx context.Context, user *skillz.User) (*skillz.Ch
 		return attributes, nil
 	}
 
-	etagID, etag, err := s.esi.Etag(ctx, esi.GetCharacterAttributes, &esi.Params{CharacterID: null.Uint64From(user.CharacterID)})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to fetch etag for expiry check")
-	}
-
-	attributes, err = s.skills.CharacterAttributes(ctx, user.CharacterID)
+	attributes, err = s.skills.CharacterAttributes(ctx, characterID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.Wrap(err, "failed to fetch character attributes from data store")
 	}
 
-	exists := err == nil
+	return attributes, nil
 
-	if !exists || etag == nil || etag.CachedUntil.Unix() < time.Now().Add(-1*time.Minute).Unix() {
+}
 
-		mods := append(make([]esi.ModifierFunc, 0, 3), s.esi.CacheEtag(ctx, etagID), s.esi.AddAuthorizationHeader(ctx, user.AccessToken))
-		if etag != nil && etag.Etag != "" {
-			mods = append(mods, s.esi.AddIfNoneMatchHeader(ctx, etag.Etag))
-		}
+func (s *Service) updateAttributes(ctx context.Context, user *skillz.User) error {
 
-		updatedAttributes, err := s.esi.GetCharacterAttributes(ctx, user.CharacterID, mods...)
+	etagID, etag, err := s.esi.Etag(ctx, esi.GetCharacterAttributes, &esi.Params{CharacterID: null.Uint64From(user.CharacterID)})
+	if err != nil {
+		return errors.Wrap(err, "failed to fetch etag for expiry check")
+	}
+
+	if etag != nil && etag.CachedUntil.Unix() > time.Now().Unix() {
+		// Cannot update data that is still cached
+		return nil
+	}
+
+	mods := s.esi.BaseCharacterHeaders(ctx, user, etagID, etag)
+
+	updatedAttributes, err := s.esi.GetCharacterAttributes(ctx, user.CharacterID, mods...)
+	if err != nil {
+		return errors.Wrap(err, "failed to fetch character attributes from ESI")
+	}
+
+	if updatedAttributes != nil {
+
+		err = s.skills.CreateCharacterAttributes(ctx, updatedAttributes)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to fetch character attributes from ESI")
+			return errors.Wrap(err, "failed to create/update character skill attributes")
 		}
 
-		if updatedAttributes != nil {
-
-			err = s.skills.CreateCharacterAttributes(ctx, updatedAttributes)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to create/update character skill attributes")
-			}
-
-			attributes = updatedAttributes
-
+		err = s.cache.SetCharacterAttributes(ctx, updatedAttributes, time.Hour)
+		if err != nil {
+			return errors.Wrap(err, "failed to cache character attributes")
 		}
 
 	}
 
-	return attributes, s.cache.SetCharacterAttributes(ctx, attributes, time.Hour)
+	return nil
 
 }
 
-func (s *Service) SkillQueue(ctx context.Context, user *skillz.User) ([]*skillz.CharacterSkillQueue, error) {
+func (s *Service) SkillQueue(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkillQueue, error) {
 
-	queue, err := s.cache.CharacterSkillQueue(ctx, user.CharacterID)
+	queue, err := s.cache.CharacterSkillQueue(ctx, characterID)
 	if err != nil {
 		return nil, err
 	}
@@ -214,48 +201,52 @@ func (s *Service) SkillQueue(ctx context.Context, user *skillz.User) ([]*skillz.
 		return queue, nil
 	}
 
-	etagID, etag, err := s.esi.Etag(ctx, esi.GetCharacterSkillQueue, &esi.Params{CharacterID: null.Uint64From(user.CharacterID)})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to fetch etag for expiry check")
-	}
-
-	queue, err = s.skills.CharacterSkillQueue(ctx, user.CharacterID)
+	queue, err = s.skills.CharacterSkillQueue(ctx, characterID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.Wrap(err, "failed to fetch character skill queue from data store")
 	}
 
-	exists := err == nil
+	return queue, nil
 
-	if !exists || etag == nil || etag.CachedUntil.Unix() < time.Now().Add(-1*time.Minute).Unix() {
+}
 
-		mods := append(make([]esi.ModifierFunc, 0, 3), s.esi.CacheEtag(ctx, etagID), s.esi.AddAuthorizationHeader(ctx, user.AccessToken))
-		if etag != nil && etag.Etag != "" {
-			mods = append(mods, s.esi.AddIfNoneMatchHeader(ctx, etag.Etag))
-		}
+func (s *Service) updateSkillQueue(ctx context.Context, user *skillz.User) error {
 
-		updatedQueue, err := s.esi.GetCharacterSkillQueue(ctx, user.CharacterID, mods...)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to fetch character skill queue from ESI")
-		}
-
-		if updatedQueue != nil {
-
-			err = s.skills.DeleteCharacterSkillQueue(ctx, user.CharacterID)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to delete character skill queue")
-			}
-
-			err = s.skills.CreateCharacterSkillQueue(ctx, updatedQueue)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to create character skill queue")
-			}
-
-			queue = updatedQueue
-
-		}
-
+	etagID, etag, err := s.esi.Etag(ctx, esi.GetCharacterSkillQueue, &esi.Params{CharacterID: null.Uint64From(user.CharacterID)})
+	if err != nil {
+		return errors.Wrap(err, "failed to fetch etag for expiry check")
 	}
 
-	return queue, s.cache.SetCharacterSkillQueue(ctx, user.CharacterID, queue, time.Hour)
+	if etag != nil && etag.CachedUntil.Unix() > time.Now().Unix() {
+		// Cannot update data that is still cached
+		return nil
+	}
+
+	mods := s.esi.BaseCharacterHeaders(ctx, user, etagID, etag)
+
+	updatedQueue, err := s.esi.GetCharacterSkillQueue(ctx, user.CharacterID, mods...)
+	if err != nil {
+		return errors.Wrap(err, "failed to fetch character skill queue from ESI")
+	}
+
+	if updatedQueue != nil {
+
+		err = s.skills.DeleteCharacterSkillQueue(ctx, user.CharacterID)
+		if err != nil {
+			return errors.Wrap(err, "failed to delete character skill queue")
+		}
+
+		err = s.skills.CreateCharacterSkillQueue(ctx, updatedQueue)
+		if err != nil {
+			return errors.Wrap(err, "failed to create character skill queue")
+		}
+
+		err = s.cache.SetCharacterSkillQueue(ctx, user.CharacterID, updatedQueue, time.Hour)
+		if err != nil {
+			return errors.Wrap(err, "failed to create character skill queue")
+		}
+	}
+
+	return nil
 
 }

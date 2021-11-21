@@ -8,18 +8,9 @@ import (
 	"fmt"
 
 	"github.com/eveisesi/skillz"
-	"github.com/eveisesi/skillz/internal"
 	"github.com/eveisesi/skillz/internal/server/gql/generated"
 	"github.com/eveisesi/skillz/internal/server/gql/model"
 )
-
-func (r *characterResolver) Clone(ctx context.Context, obj *skillz.Character) (*skillz.CharacterCloneMeta, error) {
-	return r.dataloaders.CloneLoader().Load(ctx, internal.UserFromContext(ctx))
-}
-
-func (r *characterResolver) Implants(ctx context.Context, obj *skillz.Character) ([]*skillz.CharacterImplant, error) {
-	return r.dataloaders.ImplantLoader().Load(ctx, internal.UserFromContext(ctx))
-}
 
 func (r *characterCloneResolver) Jump(ctx context.Context, obj *skillz.CharacterCloneMeta) ([]*skillz.CharacterJumpClone, error) {
 	return obj.JumpClones, nil

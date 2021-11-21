@@ -10,28 +10,25 @@ services:
         image: redis:6.2.5
         restart: unless-stopped
         container_name: skillboard-redis
-        env_file: .config/redis/.env
+        environment:
+            - REDIS_PASS
         ports:
             - "54410:6379"
         command: >
-            redis-server /etc/redis.conf
+            ./init_redis.sh
         volumes:
+            - ./.config/redis/scripts/init_redis.sh:/data/init_redis.sh
+            - ./.config/redis/tmpl_redis.conf:/data/tmpl_redis.conf
             - skillboard-cache:/data
-            - ./.config/redis/redis.conf:/etc/redis.conf
-    # mongo:
-    #     image: mongo:latest
-    #     restart: unless-stopped
-    #     container_name: skillboard-mongo
-    #     env_file: .config/mongo/.env
-    #     ports:
-    #         - "54410:27017"
-    #     volumes:
-    #         - skillboard-mongo:/data/db
     mysql:
         image: mysql:5.7
         restart: unless-stopped
         container_name: skillboard-mysql
-        env_file: .config/mysql/.env
+        environment:
+            - MYSQL_DATABASE=skillz
+            - MYSQL_USER=skillz
+            - MYSQL_PASSWORD
+            - MYSQL_ROOT_PASSWORD
         ports:
             - "54420:3306"
         volumes:
@@ -39,5 +36,4 @@ services:
             - ./.config/mysql/skillz.conf:/etc/mysql/skillz.conf
 volumes:
     skillboard-cache:
-    skillboard-mongo:
     skillboard-mysql:

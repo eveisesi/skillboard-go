@@ -15,6 +15,7 @@ type modifiers interface {
 	AddIfNoneMatchHeader(ctx context.Context, etag string) ModifierFunc
 	AddAuthorizationHeader(ctx context.Context, token string) ModifierFunc
 	CacheEtag(ctx context.Context, hash string) ModifierFunc
+	BaseCharacterHeaders(ctx context.Context, user *skillz.User, etagID string, etag *skillz.Etag) []ModifierFunc
 }
 
 type ModifierFunc func(req *http.Request, res *http.Response) error
@@ -81,4 +82,13 @@ func (s *Service) CacheEtag(ctx context.Context, hash string) ModifierFunc {
 
 		return nil
 	}
+}
+
+func (s *Service) BaseCharacterHeaders(ctx context.Context, user *skillz.User, etagID string, etag *skillz.Etag) []ModifierFunc {
+	mods := append(make([]ModifierFunc, 0, 3), s.CacheEtag(ctx, etagID), s.AddAuthorizationHeader(ctx, user.AccessToken))
+	if etag != nil && etag.Etag != "" {
+		mods = append(mods, s.AddIfNoneMatchHeader(ctx, etag.Etag))
+	}
+
+	return mods
 }

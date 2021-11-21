@@ -13,11 +13,9 @@ import (
 type CloneRepository interface {
 	CharacterCloneMeta(ctx context.Context, characterID uint64) (*CharacterCloneMeta, error)
 	CreateCharacterCloneMeta(ctx context.Context, meta *CharacterCloneMeta) error
-	UpdateCharacterCloneMeta(ctx context.Context, meta *CharacterCloneMeta) error
 
 	CharacterDeathClone(ctx context.Context, characterID uint64) (*CharacterDeathClone, error)
 	CreateCharacterDeathClone(ctx context.Context, death *CharacterDeathClone) error
-	UpdateCharacterDeathClone(ctx context.Context, death *CharacterDeathClone) error
 
 	CharacterJumpClones(ctx context.Context, characterID uint64) ([]*CharacterJumpClone, error)
 	CreateCharacterJumpClones(ctx context.Context, clones []*CharacterJumpClone) error

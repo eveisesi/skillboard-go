@@ -47,7 +47,8 @@ func (s *server) authorization(next http.Handler) http.Handler {
 			for _, prefix := range prefixes {
 				authHeader = strings.TrimPrefix(authHeader, prefix)
 			}
-			token, err := s.auth.ParseAndVerifyToken(ctx, authHeader)
+
+			token, err := s.auth.ParseAndVerifyUserToken(ctx, authHeader)
 			if err != nil {
 				s.writeError(ctx, w, http.StatusUnauthorized, fmt.Errorf("failed to validate token: %w", err))
 				return
@@ -61,6 +62,7 @@ func (s *server) authorization(next http.Handler) http.Handler {
 
 			ctx = internal.ContextWithToken(ctx, token)
 			ctx = internal.ContextWithUser(ctx, user)
+			ctx = internal.ContextWithUpdateable(ctx, false)
 		}
 
 		next.ServeHTTP(w, r.WithContext(ctx))

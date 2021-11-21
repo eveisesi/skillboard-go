@@ -11,11 +11,3 @@ type Character @goModel(model: "github.com/eveisesi/skillz.Character") {
     bloodlineID: Uint!
     raceID: Uint!
 }
-
-extend type User {
-    character: Character!
-}
-
-extend type CharacterImplant {
-    character: Character!
-}

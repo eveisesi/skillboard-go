@@ -7,8 +7,7 @@ import (
 type AuthAttempt struct {
 	Status AuthAttemptStatus
 	State  string
-	Token  null.String
-	User   *User
+	Token  null.String `json:",omitempty"`
 }
 
 type AuthAttemptStatus uint
