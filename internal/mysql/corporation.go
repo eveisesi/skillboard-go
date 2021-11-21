@@ -2,8 +2,6 @@ package mysql
 
 import (
 	"context"
-	"fmt"
-	"strings"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
@@ -40,20 +38,9 @@ const (
 	AllianceHistoryStartDate     string = "start_date"
 )
 
-var insertCorporationAllianceHistoryDuplicateKeyStmt string
-
 var _ skillz.CorporationRepository = (*CorporationRepository)(nil)
 
 func NewCorporationRepository(db QueryExecContext) *CorporationRepository {
-
-	t := make([]string, 0)
-	for _, column := range []string{
-		AllianceHistoryCorporationID, AllianceHistoryAllianceID,
-		AllianceHistoryIsDeleteed, AllianceHistoryStartDate, ColumnUpdatedAt,
-	} {
-		t = append(t, fmt.Sprintf("%[1]s = VALUES(%[1]s)", column))
-	}
-	insertCorporationAllianceHistoryDuplicateKeyStmt = fmt.Sprintf("ON DUPLICATE KEY UPDATE %s", strings.Join(t, ","))
 
 	return &CorporationRepository{
 		db: db,
@@ -188,7 +175,13 @@ func (r *CorporationRepository) CreateCorporationAllianceHistory(ctx context.Con
 		)
 	}
 
-	i = i.Suffix(insertCorporationAllianceHistoryDuplicateKeyStmt)
+	i = i.Suffix(OnDuplicateKeyStmt(
+		AllianceHistoryCorporationID,
+		AllianceHistoryAllianceID,
+		AllianceHistoryIsDeleteed,
+		AllianceHistoryStartDate,
+		ColumnUpdatedAt,
+	))
 
 	query, args, err := i.ToSql()
 	if err != nil {

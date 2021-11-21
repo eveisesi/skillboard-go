@@ -2,8 +2,6 @@ package mysql
 
 import (
 	"context"
-	"fmt"
-	"strings"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
@@ -108,32 +106,6 @@ func (r *SkillRepository) CharacterAttributes(ctx context.Context, characterID u
 
 }
 
-// var characterSkillsOnDuplicateKeyStmt = fmt.Sprintf(
-// 	"ON DUPLICATE KEY UPDATE %[1]s = VALUES(%[1]s), %[2]s = VALUES(%[2]s), %[3]s = VALUES(%[3]s), %[4]s = VALUES(%[4]s)",
-// 	SkillsActiveSkillLevel, SkillsSkillpointsInSkill, SkillsTrainedSkillLevel, ColumnUpdatedAt,
-// )
-
-var characterSkillAttributesDuplicateKeyStmt = func() string {
-	var stmt = "ON DUPLICATE KEY UPDATE %s"
-	columns := []string{
-		AttributesCharisma,
-		AttributesIntelligence,
-		AttributesMemory,
-		AttributesPerception,
-		AttributesWillpower,
-		AttributesBonusRemaps,
-		AttributesLastRemapDate,
-		AttributesAccruedRemapCooldownDate,
-		ColumnUpdatedAt,
-	}
-	stmts := make([]string, 0, len(columns))
-	for _, column := range columns {
-		stmts = append(stmts, fmt.Sprintf("%[1]s = VALUES(%[1]s)", column))
-	}
-
-	return fmt.Sprintf(stmt, strings.Join(stmts, ","))
-}()
-
 func (r *SkillRepository) CreateCharacterAttributes(ctx context.Context, attributes *skillz.CharacterAttributes) error {
 
 	now := time.Now()
@@ -153,7 +125,17 @@ func (r *SkillRepository) CreateCharacterAttributes(ctx context.Context, attribu
 		ColumnCreatedAt:                    attributes.CreatedAt,
 		ColumnUpdatedAt:                    attributes.UpdatedAt,
 	}).
-		Suffix(characterSkillAttributesDuplicateKeyStmt).
+		Suffix(OnDuplicateKeyStmt(
+			AttributesCharisma,
+			AttributesIntelligence,
+			AttributesMemory,
+			AttributesPerception,
+			AttributesWillpower,
+			AttributesBonusRemaps,
+			AttributesLastRemapDate,
+			AttributesAccruedRemapCooldownDate,
+			ColumnUpdatedAt,
+		)).
 		ToSql()
 	if err != nil {
 		return errors.Wrapf(err, errorFFormat, skillsRepository, "CreateCharacterAttributes", "failed to generate sql")
@@ -228,7 +210,7 @@ func (r *SkillRepository) CreateCharacterSkillMeta(ctx context.Context, meta *sk
 		ColumnCreatedAt:   meta.CreatedAt,
 		ColumnUpdatedAt:   meta.UpdatedAt,
 	}).
-		Suffix("ON DUPLICATE KEY UPDATE %[1]s=VALUES(%[1]s), %[2]s=VALUES(%[2]s)", MetaTotalSP, MetaUnallocatedSP).
+		Suffix(OnDuplicateKeyStmt(MetaTotalSP, MetaUnallocatedSP, ColumnUpdatedAt)).
 		ToSql()
 	if err != nil {
 		return errors.Wrapf(err, errorFFormat, skillsRepository, "CreateCharacterSkillMeta", "failed to generate sql")
@@ -286,11 +268,6 @@ func (r *SkillRepository) CharacterSkills(ctx context.Context, characterID uint6
 
 }
 
-var characterSkillsOnDuplicateKeyStmt = fmt.Sprintf(
-	"ON DUPLICATE KEY UPDATE %[1]s = VALUES(%[1]s), %[2]s = VALUES(%[2]s), %[3]s = VALUES(%[3]s), %[4]s = VALUES(%[4]s)",
-	SkillsActiveSkillLevel, SkillsSkillpointsInSkill, SkillsTrainedSkillLevel, ColumnUpdatedAt,
-)
-
 func (r *SkillRepository) CreateCharacterSkills(ctx context.Context, skills []*skillz.CharacterSkill) error {
 
 	now := time.Now()
@@ -310,8 +287,7 @@ func (r *SkillRepository) CreateCharacterSkills(ctx context.Context, skills []*s
 			skill.UpdatedAt,
 		)
 	}
-
-	i = i.Suffix(characterSkillsOnDuplicateKeyStmt)
+	i = i.Suffix(OnDuplicateKeyStmt(SkillsActiveSkillLevel, SkillsSkillpointsInSkill, SkillsTrainedSkillLevel, ColumnUpdatedAt))
 
 	query, args, err := i.ToSql()
 	if err != nil {

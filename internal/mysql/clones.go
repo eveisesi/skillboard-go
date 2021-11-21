@@ -2,7 +2,6 @@ package mysql
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
@@ -95,8 +94,7 @@ func (r *CloneRepository) CreateCharacterCloneMeta(ctx context.Context, meta *sk
 		ColumnCreatedAt:           meta.CreatedAt,
 		ColumnUpdatedAt:           meta.UpdatedAt,
 	}).
-		Suffix(fmt.Sprintf(
-			"ON DUPLICATE KEY UPDATE %[1]s=VALUES(%[1]s),%[2]s=VALUES(%[2]s),%[2]s=VALUES(%[2]s)",
+		Suffix(OnDuplicateKeyStmt(
 			MetaLastCloneJumpDate,
 			MetaLastStationChangeDate,
 			ColumnUpdatedAt,
@@ -138,8 +136,7 @@ func (r *CloneRepository) CreateCharacterDeathClone(ctx context.Context, death *
 		DeathLocationType: death.LocationType,
 		ColumnCreatedAt:   death.CreatedAt,
 		ColumnUpdatedAt:   death.UpdatedAt,
-	}).Suffix(fmt.Sprintf(
-		"ON DUPLICATE KEY UPDATE %[1]s=VALUES(%[1]s),%[2]s=VALUES(%[2]s),%[2]s=VALUES(%[2]s)",
+	}).Suffix(OnDuplicateKeyStmt(
 		DeathLocationID,
 		DeathLocationType,
 		ColumnUpdatedAt,

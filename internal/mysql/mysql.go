@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"fmt"
+	"strings"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/eveisesi/skillz"
@@ -103,4 +104,17 @@ func BuildOperators(operators ...*skillz.Operator) *builder.Builder {
 
 	return b
 
+}
+
+func OnDuplicateKeyStmt(columns ...string) string {
+	if len(columns) == 0 {
+		return ""
+	}
+
+	stmts := make([]string, 0, len(columns))
+	for _, column := range columns {
+		stmts = append(stmts, fmt.Sprintf("%[1]s = VALUES(%[1]s)", column))
+	}
+
+	return fmt.Sprintf("ON DUPLICATE KEY UPDATE %s", strings.Join(stmts, ","))
 }

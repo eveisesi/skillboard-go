@@ -2,7 +2,6 @@ package mysql
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
@@ -51,13 +50,6 @@ func (r *ETagRepository) Etag(ctx context.Context, path string) (*skillz.Etag, e
 
 }
 
-var insertEtagDuplicateKeyStmt = fmt.Sprintf(
-	"ON DUPLICATE KEY UPDATE %[1]s = VALUES(%[1]s), %[2]s = VALUES(%[2]s), %[3]s = VALUES(%[3]s)",
-	ETagETag,
-	ETagCachedUntil,
-	ColumnUpdatedAt,
-)
-
 func (r *ETagRepository) InsertEtag(ctx context.Context, etag *skillz.Etag) error {
 
 	now := time.Now()
@@ -70,7 +62,11 @@ func (r *ETagRepository) InsertEtag(ctx context.Context, etag *skillz.Etag) erro
 		ETagCachedUntil: etag.CachedUntil,
 		ColumnCreatedAt: etag.CreatedAt,
 		ColumnUpdatedAt: etag.UpdatedAt,
-	}).Suffix(insertEtagDuplicateKeyStmt).ToSql()
+	}).Suffix(OnDuplicateKeyStmt(
+		ETagETag,
+		ETagCachedUntil,
+		ColumnUpdatedAt,
+	)).ToSql()
 	if err != nil {
 		return errors.Wrapf(err, errorFFormat, etagRepository, "InsertEtag", "failed to generate sql")
 	}
