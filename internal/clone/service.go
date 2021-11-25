@@ -101,7 +101,11 @@ func (s *Service) updateClones(ctx context.Context, user *skillz.User) error {
 		return errors.Wrap(err, "failed to fetch tag for expiry check")
 	}
 
-	mods := s.esi.BaseCharacterHeaders(ctx, user, etagID, etag)
+	if etag != nil && etag.CachedUntil.Unix() > time.Now().Unix() {
+		return nil
+	}
+
+	mods := s.esi.BaseCharacterModifiers(ctx, user, etagID, etag)
 
 	updatedClones, err := s.esi.GetCharacterClones(ctx, user.CharacterID, mods...)
 	if err != nil {
@@ -178,7 +182,11 @@ func (s *Service) updateImplants(ctx context.Context, user *skillz.User) error {
 		return errors.Wrap(err, "failed to fetch etag for expiry check")
 	}
 
-	mods := s.esi.BaseCharacterHeaders(ctx, user, etagID, etag)
+	if etag != nil && etag.CachedUntil.Unix() > time.Now().Unix() {
+		return nil
+	}
+
+	mods := s.esi.BaseCharacterModifiers(ctx, user, etagID, etag)
 
 	implantsOk, err := s.esi.GetCharacterImplants(ctx, user.CharacterID, mods...)
 	if err != nil {

@@ -2,12 +2,14 @@ package user
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/eveisesi/skillz"
+	"github.com/eveisesi/skillz/internal"
 	"github.com/eveisesi/skillz/internal/alliance"
 	"github.com/eveisesi/skillz/internal/auth"
 	"github.com/eveisesi/skillz/internal/character"
@@ -24,6 +26,7 @@ type API interface {
 	ValidateCurrentToken(ctx context.Context, user *skillz.User) error
 
 	User(ctx context.Context, id uuid.UUID) (*skillz.User, error)
+	UserByCharacterID(ctx context.Context, characterID uint64) (*skillz.User, error)
 	UpdateUser(ctx context.Context, user *skillz.User) error
 }
 
@@ -144,6 +147,11 @@ func (s *Service) Login(ctx context.Context, code, state string) (*skillz.AuthAt
 		return nil, errors.Wrap(err, "failed to remove auth attempt from cache")
 	}
 
+	err = s.redis.ZAdd(ctx, internal.UpdateQueue, &redis.Z{Score: float64(time.Now().Unix()), Member: user.ID.String()}).Err()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to push user id to processing queue")
+	}
+
 	attempt.Token.SetValid(userToken)
 
 	return attempt, err
@@ -168,6 +176,12 @@ func (s *Service) UserFromToken(ctx context.Context, token jwt.Token) (*skillz.U
 		}
 
 		user, err = s.UserRepository.UserByCharacterID(ctx, characterID)
+		if err != nil && errors.Is(err, sql.ErrNoRows) {
+			user = &skillz.User{
+				CharacterID: characterID,
+			}
+			err = nil
+		}
 
 	case "http://192.168.1.242:54405":
 		userID, ierr := uuid.FromString(token.Subject())

@@ -15,7 +15,8 @@ import (
 
 type API interface {
 	skillz.Processor
-	Skills(ctx context.Context, characterID uint64) (*skillz.CharacterSkillMeta, error)
+	Meta(ctx context.Context, characterID uint64) (*skillz.CharacterSkillMeta, error)
+	Skillz(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkill, error)
 	Attributes(ctx context.Context, characterID uint64) (*skillz.CharacterAttributes, error)
 	SkillQueue(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkillQueue, error)
 }
@@ -63,23 +64,11 @@ func (s *Service) Scopes() []skillz.Scope {
 	return s.scopes
 }
 
-func (s *Service) Skills(ctx context.Context, characterID uint64) (*skillz.CharacterSkillMeta, error) {
+func (s *Service) Meta(ctx context.Context, characterID uint64) (*skillz.CharacterSkillMeta, error) {
 
 	meta, err := s.cache.CharacterSkillMeta(ctx, characterID)
 	if err != nil && !errors.Is(err, redis.Nil) {
 		return nil, err
-	}
-
-	if meta != nil {
-		skills, err := s.cache.CharacterSkills(ctx, characterID)
-		if err != nil {
-			return nil, err
-		}
-
-		meta.Skills = skills
-
-		return meta, err
-
 	}
 
 	meta, err = s.skills.CharacterSkillMeta(ctx, characterID)
@@ -87,7 +76,27 @@ func (s *Service) Skills(ctx context.Context, characterID uint64) (*skillz.Chara
 		return nil, errors.Wrap(err, "failed to fetch character skills from data store")
 	}
 
-	return meta, nil
+	return meta, s.cache.SetCharacterSkillMeta(ctx, meta, time.Hour)
+
+}
+
+func (s *Service) Skillz(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkill, error) {
+
+	skillz, err := s.cache.CharacterSkills(ctx, characterID)
+	if err != nil && !errors.Is(err, redis.Nil) {
+		return nil, err
+	}
+
+	if len(skillz) > 0 || err == nil {
+		return skillz, err
+	}
+
+	skillz, err = s.skills.CharacterSkills(ctx, characterID)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
+
+	return skillz, err
 
 }
 
@@ -98,7 +107,11 @@ func (s *Service) updateSkills(ctx context.Context, user *skillz.User) error {
 		return errors.Wrap(err, "failed to fetch tag for expiry check")
 	}
 
-	mods := s.esi.BaseCharacterHeaders(ctx, user, etagID, etag)
+	if etag != nil && etag.CachedUntil.Unix() > time.Now().Unix() {
+		return nil
+	}
+
+	mods := s.esi.BaseCharacterModifiers(ctx, user, etagID, etag)
 
 	updateSkills, err := s.esi.GetCharacterSkills(ctx, user.CharacterID, mods...)
 	if err != nil {
@@ -160,12 +173,11 @@ func (s *Service) updateAttributes(ctx context.Context, user *skillz.User) error
 		return errors.Wrap(err, "failed to fetch etag for expiry check")
 	}
 
-	if etag != nil && etag.CachedUntil.Unix() > time.Now().Unix() {
-		// Cannot update data that is still cached
+	if etag != nil && etag.CachedUntil.Unix() < time.Now().Unix() {
 		return nil
 	}
 
-	mods := s.esi.BaseCharacterHeaders(ctx, user, etagID, etag)
+	mods := s.esi.BaseCharacterModifiers(ctx, user, etagID, etag)
 
 	updatedAttributes, err := s.esi.GetCharacterAttributes(ctx, user.CharacterID, mods...)
 	if err != nil {
@@ -218,11 +230,10 @@ func (s *Service) updateSkillQueue(ctx context.Context, user *skillz.User) error
 	}
 
 	if etag != nil && etag.CachedUntil.Unix() > time.Now().Unix() {
-		// Cannot update data that is still cached
 		return nil
 	}
 
-	mods := s.esi.BaseCharacterHeaders(ctx, user, etagID, etag)
+	mods := s.esi.BaseCharacterModifiers(ctx, user, etagID, etag)
 
 	updatedQueue, err := s.esi.GetCharacterSkillQueue(ctx, user.CharacterID, mods...)
 	if err != nil {

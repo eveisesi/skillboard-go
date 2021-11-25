@@ -427,6 +427,7 @@ CREATE TABLE IF NOT EXISTS `users` (
     `expires` datetime NOT NULL,
     `owner_hash` varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL,
     `scopes` json NOT NULL,
+    `is_new` TINYINT(1) NOT NULL DEFAULT '1',
     `disabled` tinyint(3) UNSIGNED NOT NULL DEFAULT '0',
     `disabled_reason` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
     `disabled_timestamp` datetime DEFAULT NULL,
