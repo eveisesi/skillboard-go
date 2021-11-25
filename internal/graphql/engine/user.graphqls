@@ -1,0 +1,16 @@
+type User @goModel(model: "github.com/eveisesi/skillz.User") {
+    id: UUID!
+    characterID: Uint64!
+    expires: Time!
+    ownerHash: String!
+    scopes: [String!]
+    isNew: Boolean!
+    lastLogin: Time
+
+    character: Character!
+    clone: CharacterClone
+    implants: [CharacterImplant]!
+    skills: CharacterSkills!
+    queue: [CharacterSkillQueue]!
+    attributes: CharacterAttributes!
+}

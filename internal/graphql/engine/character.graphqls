@@ -1,0 +1,13 @@
+type Character @goModel(model: "github.com/eveisesi/skillz.Character") {
+    id: Uint64!
+    name: String!
+    corporationID: Uint!
+    allianceID: Uint
+    factionID: Uint
+    securityStatus: Float
+    gender: String!
+    birthday: Time!
+    title: String
+    bloodlineID: Uint!
+    raceID: Uint!
+}

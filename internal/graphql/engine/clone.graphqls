@@ -1,0 +1,31 @@
+type CharacterClone @isAuthed @goModel(model: "github.com/eveisesi/skillz.CharacterCloneMeta") {
+    characterID: Uint64!
+    lastCloneJumpDate: Time
+    lastStationChangeDate: Time
+    jump: [CharacterJumpClone]!
+    death: CharacterDeathClone!
+}
+
+type CharacterJumpClone @isAuthed @goModel(model: "github.com/eveisesi/skillz.CharacterJumpClone") {
+    characterID: Uint64!
+    jumpCloneID: Uint!
+    locationID: Uint64!
+    locationType: String!
+
+    location: LocationInfo
+}
+
+type CharacterDeathClone @isAuthed @goModel(model: "github.com/eveisesi/skillz.CharacterDeathClone") {
+    characterID: Uint64!
+    locationID: Uint64!
+    locationType: String!
+
+    location: LocationInfo
+}
+
+type CharacterImplant @goModel(model: "github.com/eveisesi/skillz.CharacterImplant") {
+    characterID: Uint64!
+    implantID: Uint!
+}
+
+union LocationInfo = Structure | Station

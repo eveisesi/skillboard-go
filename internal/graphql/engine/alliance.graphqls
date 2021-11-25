@@ -1,0 +1,15 @@
+type Alliance @goModel(model: "github.com/eveisesi/skillz.Alliance") {
+    id: Uint!
+    name: String!
+    ticker: String!
+    dateFounded: Time!
+    creatorID: Uint!
+    creatorCorporationID: Uint!
+    executorCorporationID: Uint!
+    factionID: Uint
+    isClosed: Boolean!
+}
+
+extend type Corporation {
+    alliance: Alliance
+}
