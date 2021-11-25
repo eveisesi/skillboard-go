@@ -11,7 +11,7 @@ import (
 )
 
 type EtagAPI interface {
-	EtagByPath(ctx context.Context, pathHashed string) (*skillz.Etag, error)
+	EtagByPath(ctx context.Context, path string) (*skillz.Etag, error)
 	SetEtag(ctx context.Context, etag *skillz.Etag, expires time.Duration) error
 }
 
@@ -34,7 +34,7 @@ func (s *Service) EtagByPath(ctx context.Context, path string) (*skillz.Etag, er
 
 	etag := new(skillz.Etag)
 	err = json.Unmarshal(result, etag)
-	return etag, errors.Wrapf(err, errorFFormat, universeAPI, "Bloodline", "failed to decode json to structure")
+	return etag, errors.Wrapf(err, errorFFormat, etagAPI, "EtagByPath", "failed to decode json to structure")
 
 }
 
@@ -47,6 +47,6 @@ func (s *Service) SetEtag(ctx context.Context, etag *skillz.Etag, expires time.D
 
 	key := generateKey(etagKeyPrefix, hash(etag.Path))
 	err = s.redis.Set(ctx, key, data, expires).Err()
-	return errors.Wrapf(err, errorFFormat, universeAPI, "SetRace", "failed to write cache")
+	return errors.Wrapf(err, errorFFormat, etagAPI, "SetEtag", "failed to write cache")
 
 }

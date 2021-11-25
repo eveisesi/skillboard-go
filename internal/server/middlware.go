@@ -3,11 +3,8 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"strings"
 
-	"github.com/eveisesi/skillz/internal"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/sirupsen/logrus"
 )
@@ -30,45 +27,45 @@ func (s *server) cors(next http.Handler) http.Handler {
 	})
 }
 
-func (s *server) authorization(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// func (s *server) authorization(next http.Handler) http.Handler {
+// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		var ctx = r.Context()
+// 		var ctx = r.Context()
 
-		authHeader := r.Header.Get("authorization")
+// 		authHeader := r.Header.Get("authorization")
 
-		if authHeader != "" {
-			if !strings.HasPrefix(strings.ToLower(authHeader), "bearer ") {
-				s.writeError(ctx, w, http.StatusUnauthorized, fmt.Errorf("missing or invalid token"))
-				return
-			}
+// 		if authHeader != "" {
+// 			if !strings.HasPrefix(strings.ToLower(authHeader), "bearer ") {
+// 				s.writeError(ctx, w, http.StatusUnauthorized, fmt.Errorf("missing or invalid token"))
+// 				return
+// 			}
 
-			var prefixes = []string{`bearer `, `Bearer `}
-			for _, prefix := range prefixes {
-				authHeader = strings.TrimPrefix(authHeader, prefix)
-			}
+// 			var prefixes = []string{`bearer `, `Bearer `}
+// 			for _, prefix := range prefixes {
+// 				authHeader = strings.TrimPrefix(authHeader, prefix)
+// 			}
 
-			token, err := s.auth.ParseAndVerifyUserToken(ctx, authHeader)
-			if err != nil {
-				s.writeError(ctx, w, http.StatusUnauthorized, fmt.Errorf("failed to validate token: %w", err))
-				return
-			}
+// 			token, err := s.auth.ParseAndVerifyUserToken(ctx, authHeader)
+// 			if err != nil {
+// 				s.writeError(ctx, w, http.StatusUnauthorized, fmt.Errorf("failed to validate token: %w", err))
+// 				return
+// 			}
 
-			user, err := s.user.UserFromToken(ctx, token)
-			if err != nil {
-				s.writeError(ctx, w, http.StatusBadRequest, err)
-				return
-			}
+// 			user, err := s.user.UserFromToken(ctx, token)
+// 			if err != nil {
+// 				s.writeError(ctx, w, http.StatusBadRequest, err)
+// 				return
+// 			}
 
-			ctx = internal.ContextWithToken(ctx, token)
-			ctx = internal.ContextWithUser(ctx, user)
-			ctx = internal.ContextWithUpdateable(ctx, false)
-		}
+// 			ctx = internal.ContextWithToken(ctx, token)
+// 			ctx = internal.ContextWithUser(ctx, user)
+// 			ctx = internal.ContextWithUpdateable(ctx, false)
+// 		}
 
-		next.ServeHTTP(w, r.WithContext(ctx))
+// 		next.ServeHTTP(w, r.WithContext(ctx))
 
-	})
-}
+// 	})
+// }
 
 // NewStructuredLogger is a constructor for creating a request logger middleware
 func (s *server) requestLogger(logger *logrus.Logger) func(next http.Handler) http.Handler {

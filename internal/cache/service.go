@@ -19,6 +19,7 @@ const (
 	cloneAPI       string = "CloneAPI"
 	corporationAPI string = "CorporationAPI"
 	etagAPI        string = "EtagAPI"
+	pageAPI        string = "PageAPI"
 	skillAPI       string = "SkillAPI"
 	universeAPI    string = "UniverseAPI"
 )

@@ -7,7 +7,7 @@ import (
 	"context"
 
 	"github.com/eveisesi/skillz"
-	"github.com/eveisesi/skillz/internal/graphql/engine/generated"
+	"github.com/eveisesi/skillz/internal/graphql/engine"
 )
 
 func (r *characterSkillResolver) Info(ctx context.Context, obj *skillz.CharacterSkill) (*skillz.Type, error) {
@@ -18,13 +18,11 @@ func (r *characterSkillQueueResolver) Info(ctx context.Context, obj *skillz.Char
 	return r.dataloaders.TypeLoader().Load(ctx, obj.SkillID)
 }
 
-// CharacterSkill returns generated.CharacterSkillResolver implementation.
-func (r *Resolver) CharacterSkill() generated.CharacterSkillResolver {
-	return &characterSkillResolver{r}
-}
+// CharacterSkill returns engine.CharacterSkillResolver implementation.
+func (r *Resolver) CharacterSkill() engine.CharacterSkillResolver { return &characterSkillResolver{r} }
 
-// CharacterSkillQueue returns generated.CharacterSkillQueueResolver implementation.
-func (r *Resolver) CharacterSkillQueue() generated.CharacterSkillQueueResolver {
+// CharacterSkillQueue returns engine.CharacterSkillQueueResolver implementation.
+func (r *Resolver) CharacterSkillQueue() engine.CharacterSkillQueueResolver {
 	return &characterSkillQueueResolver{r}
 }
 

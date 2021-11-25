@@ -4,10 +4,10 @@ package resolvers
 // will be copied through when generating and any unknown code will be moved to the end.
 
 import (
-	"github.com/eveisesi/skillz/internal/graphql/engine/generated"
+	"github.com/eveisesi/skillz/internal/graphql/engine"
 )
 
-// Character returns generated.CharacterResolver implementation.
-func (r *Resolver) Character() generated.CharacterResolver { return &characterResolver{r} }
+// Character returns engine.CharacterResolver implementation.
+func (r *Resolver) Character() engine.CharacterResolver { return &characterResolver{r} }
 
 type characterResolver struct{ *Resolver }

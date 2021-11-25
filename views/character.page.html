@@ -1,4 +1,130 @@
-{{template "base" .}} 
+{{template "base" .}}
 {{define "content"}}
-<main>Hello World</main>
+{{with $user := .Data.user}}
+
+<main>
+    <div class="container">
+        <div class="row">
+            <div class="col">
+                <h1>Viewing Skillboard of {{$user.character.name}}</h1>
+                <hr />
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-3">
+                <img src="https://images.evetech.net/characters/{{$user.character.id}}/portrait?size=256" class="rounded mx-auto d-block" />
+            </div>
+            <div class="col-9">
+                <div class="row">
+                    <div class="col-6">
+                        <table class="table">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th colspan="2" class="text-center">Basic Info</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Corporation</td>
+                                    <td class="text-end">{{$user.character.corporation.name}}</td>
+                                </tr>
+                                {{if $user.character.corporation.alliance}}
+                                <tr>
+                                    <td>Alliance</td>
+                                    <td class="text-end">{{$user.character.corporation.alliance.name}}</td>
+                                </tr>
+                                {{end}}
+                                <tr>
+                                    <td>Date Of Birth</td>
+                                    <td class="text-end">{{$user.character.birthday}}</td>
+                                </tr>
+                                <tr>
+                                    <td>Security Status</td>
+                                    <td class="text-end">{{$user.character.securityStatus}}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="col-6">
+                        <table class="table">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th colspan="2" class="text-center">Basic Skill Info</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Unallocated Skillpoints</td>
+                                    <td>{{$user.skills.meta.unallocatedSp}}</td>
+                                </tr>
+                                <tr>
+                                    <td>Allocated Skillpoints</td>
+                                    <td>{{$user.skills.meta.totalSp}}</td>
+                                </tr>
+                                <tr>
+                                    <td>Total Skillpoints</td>
+                                    <td>{{$user.skills.meta.totalSp}}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-6">
+                        <table class="table">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th colspan="2" class="text-center">Attributes Overview</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+
+                                <tr>
+                                    <td>Available Remaps</td>
+                                    <td class="text-end">{{$user.attributes.bonusRemaps}}</td>
+                                </tr>
+                                <tr>
+                                    <td>Charisma</td>
+                                    <td class="text-end">{{$user.attributes.charisma}}</td>
+                                </tr>
+                                <tr>
+                                    <td>Intelligence</td>
+                                    <td class="text-end">{{$user.attributes.intelligence}}</td>
+                                </tr>
+                                <tr>
+                                    <td>Memory</td>
+                                    <td class="text-end">{{$user.attributes.memory}}</td>
+                                </tr>
+                                <tr>
+                                    <td>Perception</td>
+                                    <td class="text-end">{{$user.attributes.perception}}</td>
+                                </tr>
+                                <tr>
+                                    <td>Willpower</td>
+                                    <td class="text-end">{{$user.attributes.willpower}}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="col-6">
+                        <table class="table">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th colspan="2" class="text-center">Skill Queue Overview</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Number of Skills Queued</td>
+                                    <td class="text-end">{{len $user.queue}}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+{{end}}
 {{end}}

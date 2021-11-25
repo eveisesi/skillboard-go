@@ -7,14 +7,14 @@ import (
 	"context"
 
 	"github.com/eveisesi/skillz"
-	"github.com/eveisesi/skillz/internal/graphql/engine/generated"
+	"github.com/eveisesi/skillz/internal/graphql/engine"
 )
 
 func (r *characterResolver) Corporation(ctx context.Context, obj *skillz.Character) (*skillz.Corporation, error) {
 	return r.dataloaders.CorporationLoader().Load(ctx, obj.CorporationID)
 }
 
-// Corporation returns generated.CorporationResolver implementation.
-func (r *Resolver) Corporation() generated.CorporationResolver { return &corporationResolver{r} }
+// Corporation returns engine.CorporationResolver implementation.
+func (r *Resolver) Corporation() engine.CorporationResolver { return &corporationResolver{r} }
 
 type corporationResolver struct{ *Resolver }

@@ -17,6 +17,7 @@ require (
 	github.com/lestrrat-go/jwx v1.2.10
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.8.1
+	github.com/tdewolff/minify/v2 v2.9.22
 	github.com/urfave/cli/v2 v2.3.0
 	github.com/vektah/gqlparser/v2 v2.2.0
 	github.com/volatiletech/null v8.0.0+incompatible
@@ -43,11 +44,12 @@ require (
 	github.com/lestrrat-go/option v1.0.0 // indirect
 	github.com/russross/blackfriday/v2 v2.0.1 // indirect
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
+	github.com/tdewolff/parse/v2 v2.5.22 // indirect
 	github.com/volatiletech/inflect v0.0.1 // indirect
 	github.com/volatiletech/sqlboiler v3.7.1+incompatible // indirect
 	golang.org/x/crypto v0.0.0-20201217014255-9d1352758620 // indirect
 	golang.org/x/net v0.0.0-20210428140749-89ef3d95e781 // indirect
-	golang.org/x/sys v0.0.0-20210423082822-04245dca01da // indirect
+	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/appengine v1.6.6 // indirect
 	google.golang.org/protobuf v1.26.0 // indirect

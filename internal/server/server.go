@@ -9,16 +9,9 @@ import (
 	"path/filepath"
 
 	"github.com/eveisesi/skillz"
-	"github.com/eveisesi/skillz/internal/alliance"
-	"github.com/eveisesi/skillz/internal/auth"
-	"github.com/eveisesi/skillz/internal/character"
-	"github.com/eveisesi/skillz/internal/clone"
-	"github.com/eveisesi/skillz/internal/corporation"
-	"github.com/eveisesi/skillz/internal/skill"
-	"github.com/eveisesi/skillz/internal/user"
+	"github.com/eveisesi/skillz/internal/cache"
+	"github.com/eveisesi/skillz/internal/graphql"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-http-utils/headers"
 	"github.com/sirupsen/logrus"
 )
 
@@ -27,13 +20,8 @@ type server struct {
 	env    skillz.Environment
 	logger *logrus.Logger
 
-	alliance    alliance.API
-	auth        auth.API
-	character   character.API
-	clone       clone.API
-	corporation corporation.API
-	skill       skill.API
-	user        user.API
+	cache   cache.PageAPI
+	graphql graphql.API
 
 	server *http.Server
 
@@ -41,31 +29,19 @@ type server struct {
 }
 
 func New(
-
 	port uint,
 	env skillz.Environment,
 	logger *logrus.Logger,
-
-	alliance alliance.API,
-	auth auth.API,
-	character character.API,
-	clone clone.API,
-	corporation corporation.API,
-	skill skill.API,
-	user user.API,
+	cache cache.PageAPI,
+	graphql graphql.API,
 ) *server {
 
 	s := &server{
-		port:        port,
-		env:         env,
-		logger:      logger,
-		alliance:    alliance,
-		auth:        auth,
-		character:   character,
-		clone:       clone,
-		corporation: corporation,
-		skill:       skill,
-		user:        user,
+		port:    port,
+		env:     env,
+		logger:  logger,
+		cache:   cache,
+		graphql: graphql,
 	}
 
 	s.parseTemplateFiles()
@@ -129,13 +105,13 @@ func (s *server) buildRouter() *chi.Mux {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	r.Group(func(r chi.Router) {
-		r.Use(
-			middleware.SetHeader(headers.ContentType, "application/json"),
-		)
-		r.Get("/.well-known/openid-configuration", s.GetOpenIDConfiguration)
-		r.Get("/auth/jwks", s.GetJsonWebKeySet)
-	})
+	// r.Group(func(r chi.Router) {
+	// 	r.Use(
+	// 		middleware.SetHeader(headers.ContentType, "application/json"),
+	// 	)
+	// 	r.Get("/.well-known/openid-configuration", s.GetOpenIDConfiguration)
+	// 	r.Get("/auth/jwks", s.GetJsonWebKeySet)
+	// })
 
 	r.Get("/", s.handleRenderHomepage)
 	r.Get("/characters/{userUUID}", s.handleRenderCharacterPage)

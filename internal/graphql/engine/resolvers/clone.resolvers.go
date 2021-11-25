@@ -8,8 +8,7 @@ import (
 	"fmt"
 
 	"github.com/eveisesi/skillz"
-	"github.com/eveisesi/skillz/internal/graphql/engine/generated"
-	"github.com/eveisesi/skillz/internal/graphql/engine/model"
+	"github.com/eveisesi/skillz/internal/graphql/engine"
 )
 
 func (r *characterCloneResolver) Jump(ctx context.Context, obj *skillz.CharacterCloneMeta) ([]*skillz.CharacterJumpClone, error) {
@@ -24,7 +23,7 @@ func (r *characterDeathCloneResolver) LocationType(ctx context.Context, obj *ski
 	return obj.LocationType.String(), nil
 }
 
-func (r *characterDeathCloneResolver) Location(ctx context.Context, obj *skillz.CharacterDeathClone) (model.LocationInfo, error) {
+func (r *characterDeathCloneResolver) Location(ctx context.Context, obj *skillz.CharacterDeathClone) (engine.LocationInfo, error) {
 	switch obj.LocationType {
 	case skillz.CloneLocationTypeStation:
 		return r.dataloaders.StationLoader().Load(ctx, uint(obj.LocationID))
@@ -39,7 +38,7 @@ func (r *characterJumpCloneResolver) LocationType(ctx context.Context, obj *skil
 	return obj.LocationType.String(), nil
 }
 
-func (r *characterJumpCloneResolver) Location(ctx context.Context, obj *skillz.CharacterJumpClone) (model.LocationInfo, error) {
+func (r *characterJumpCloneResolver) Location(ctx context.Context, obj *skillz.CharacterJumpClone) (engine.LocationInfo, error) {
 	switch obj.LocationType {
 	case skillz.CloneLocationTypeStation:
 		return r.dataloaders.StationLoader().Load(ctx, uint(obj.LocationID))
@@ -50,23 +49,21 @@ func (r *characterJumpCloneResolver) Location(ctx context.Context, obj *skillz.C
 	}
 }
 
-// CharacterClone returns generated.CharacterCloneResolver implementation.
-func (r *Resolver) CharacterClone() generated.CharacterCloneResolver {
-	return &characterCloneResolver{r}
-}
+// CharacterClone returns engine.CharacterCloneResolver implementation.
+func (r *Resolver) CharacterClone() engine.CharacterCloneResolver { return &characterCloneResolver{r} }
 
-// CharacterDeathClone returns generated.CharacterDeathCloneResolver implementation.
-func (r *Resolver) CharacterDeathClone() generated.CharacterDeathCloneResolver {
+// CharacterDeathClone returns engine.CharacterDeathCloneResolver implementation.
+func (r *Resolver) CharacterDeathClone() engine.CharacterDeathCloneResolver {
 	return &characterDeathCloneResolver{r}
 }
 
-// CharacterImplant returns generated.CharacterImplantResolver implementation.
-func (r *Resolver) CharacterImplant() generated.CharacterImplantResolver {
+// CharacterImplant returns engine.CharacterImplantResolver implementation.
+func (r *Resolver) CharacterImplant() engine.CharacterImplantResolver {
 	return &characterImplantResolver{r}
 }
 
-// CharacterJumpClone returns generated.CharacterJumpCloneResolver implementation.
-func (r *Resolver) CharacterJumpClone() generated.CharacterJumpCloneResolver {
+// CharacterJumpClone returns engine.CharacterJumpCloneResolver implementation.
+func (r *Resolver) CharacterJumpClone() engine.CharacterJumpCloneResolver {
 	return &characterJumpCloneResolver{r}
 }
 

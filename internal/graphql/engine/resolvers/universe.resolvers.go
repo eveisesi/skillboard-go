@@ -7,7 +7,7 @@ import (
 	"context"
 
 	"github.com/eveisesi/skillz"
-	"github.com/eveisesi/skillz/internal/graphql/engine/generated"
+	"github.com/eveisesi/skillz/internal/graphql/engine"
 )
 
 func (r *characterImplantResolver) Implant(ctx context.Context, obj *skillz.CharacterImplant) (*skillz.Type, error) {
@@ -38,23 +38,23 @@ func (r *typeResolver) Group(ctx context.Context, obj *skillz.Type) (*skillz.Gro
 	return r.dataloaders.GroupLoader().Load(ctx, obj.GroupID)
 }
 
-// Constellation returns generated.ConstellationResolver implementation.
-func (r *Resolver) Constellation() generated.ConstellationResolver { return &constellationResolver{r} }
+// Constellation returns engine.ConstellationResolver implementation.
+func (r *Resolver) Constellation() engine.ConstellationResolver { return &constellationResolver{r} }
 
-// Group returns generated.GroupResolver implementation.
-func (r *Resolver) Group() generated.GroupResolver { return &groupResolver{r} }
+// Group returns engine.GroupResolver implementation.
+func (r *Resolver) Group() engine.GroupResolver { return &groupResolver{r} }
 
-// SolarSystem returns generated.SolarSystemResolver implementation.
-func (r *Resolver) SolarSystem() generated.SolarSystemResolver { return &solarSystemResolver{r} }
+// SolarSystem returns engine.SolarSystemResolver implementation.
+func (r *Resolver) SolarSystem() engine.SolarSystemResolver { return &solarSystemResolver{r} }
 
-// Station returns generated.StationResolver implementation.
-func (r *Resolver) Station() generated.StationResolver { return &stationResolver{r} }
+// Station returns engine.StationResolver implementation.
+func (r *Resolver) Station() engine.StationResolver { return &stationResolver{r} }
 
-// Structure returns generated.StructureResolver implementation.
-func (r *Resolver) Structure() generated.StructureResolver { return &structureResolver{r} }
+// Structure returns engine.StructureResolver implementation.
+func (r *Resolver) Structure() engine.StructureResolver { return &structureResolver{r} }
 
-// Type returns generated.TypeResolver implementation.
-func (r *Resolver) Type() generated.TypeResolver { return &typeResolver{r} }
+// Type returns engine.TypeResolver implementation.
+func (r *Resolver) Type() engine.TypeResolver { return &typeResolver{r} }
 
 type constellationResolver struct{ *Resolver }
 type groupResolver struct{ *Resolver }

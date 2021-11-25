@@ -1,11 +1,11 @@
 # Where are all the schema files located? globs are supported eg  src/**/*.graphqls
 schema:
-    - internal/server/gql/*.graphqls
+    - internal/graphql/engine/schema/*.graphqls
 
 # Where should the generated server code go?
 exec:
-    filename: internal/server/gql/generated/generated.go
-    package: generated
+    filename: internal/graphql/engine/generated.go
+    package: engine
 
 # Uncomment to enable federation
 # federation:
@@ -14,13 +14,13 @@ exec:
 
 # Where should any generated models go?
 model:
-    filename: internal/server/gql/model/models_gen.go
-    package: model
+    filename: internal/graphql/engine/models.go
+    package: engine
 
 # Where should the resolver implementations go?
 resolver:
     layout: follow-schema
-    dir: internal/server/gql
+    dir: internal/graphql/engine/resolvers
     package: resolvers
 
 # Optional: turn on use `gqlgen:"fieldName"` tags in your models
@@ -35,7 +35,7 @@ skip_validation: true
 # gqlgen will search for any type names in the schema in these go packages
 # if they match it will use them, otherwise it will generate them.
 autobind:
-    - "github.com/eveisesi/skillz/internal/server/gql/graph/model"
+    - "github.com/eveisesi/skillz/internal/graphql/engine/graph/model"
 
 # This section declares type mapping between the GraphQL and go type systems
 #
@@ -50,26 +50,26 @@ models:
             - github.com/99designs/gqlgen/graphql.Int32
     Float:
         model:
-            - github.com/eveisesi/skillz/internal/server/gql/scalar.Float32
-            - github.com/eveisesi/skillz/internal/server/gql/scalar.Float64
-            - github.com/eveisesi/skillz/internal/server/gql/scalar/null.Float32
-            - github.com/eveisesi/skillz/internal/server/gql/scalar/null.Float64
+            - github.com/eveisesi/skillz/internal/graphql/engine/scalar.Float32
+            - github.com/eveisesi/skillz/internal/graphql/engine/scalar.Float64
+            - github.com/eveisesi/skillz/internal/graphql/engine/scalar/null.Float32
+            - github.com/eveisesi/skillz/internal/graphql/engine/scalar/null.Float64
     Uint:
         model:
-            - github.com/eveisesi/skillz/internal/server/gql/scalar.Uint
-            - github.com/eveisesi/skillz/internal/server/gql/scalar/null.Uint
+            - github.com/eveisesi/skillz/internal/graphql/engine/scalar.Uint
+            - github.com/eveisesi/skillz/internal/graphql/engine/scalar/null.Uint
     Uint64:
         model:
-            - github.com/eveisesi/skillz/internal/server/gql/scalar.Uint64
-            - github.com/eveisesi/skillz/internal/server/gql/scalar/null.Uint64
+            - github.com/eveisesi/skillz/internal/graphql/engine/scalar.Uint64
+            - github.com/eveisesi/skillz/internal/graphql/engine/scalar/null.Uint64
     String:
         model:
             - github.com/99designs/gqlgen/graphql.String
-            - github.com/eveisesi/skillz/internal/server/gql/scalar/null.String
+            - github.com/eveisesi/skillz/internal/graphql/engine/scalar/null.String
     Time:
         model:
             - github.com/99designs/gqlgen/graphql.Time
-            - github.com/eveisesi/skillz/internal/server/gql/scalar/null.Time
+            - github.com/eveisesi/skillz/internal/graphql/engine/scalar/null.Time
     UUID:
         model:
-            - github.com/eveisesi/skillz/internal/server/gql/scalar.UUID
+            - github.com/eveisesi/skillz/internal/graphql/engine/scalar.UUID

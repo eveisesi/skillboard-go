@@ -16,11 +16,13 @@ import (
 	"github.com/eveisesi/skillz/internal/corporation"
 	"github.com/eveisesi/skillz/internal/esi"
 	"github.com/eveisesi/skillz/internal/etag"
+	"github.com/eveisesi/skillz/internal/graphql"
+	"github.com/eveisesi/skillz/internal/universe"
+
+	// "github.com/eveisesi/skillz/internal/graphql/engine/dataloaders"
 	"github.com/eveisesi/skillz/internal/mysql"
 	"github.com/eveisesi/skillz/internal/server"
-	"github.com/eveisesi/skillz/internal/server/gql/dataloaders"
 	"github.com/eveisesi/skillz/internal/skill"
-	"github.com/eveisesi/skillz/internal/universe"
 	"github.com/eveisesi/skillz/internal/user"
 	"github.com/urfave/cli/v2"
 )
@@ -62,8 +64,8 @@ func serverCommand(_ *cli.Context) error {
 	clone := clone.New(cache, etag, esi, clonesRepo)
 	skill := skill.New(cache, esi, skillsRepo)
 	universe := universe.New(cache, esi, universeRepo)
-	dataloaders := dataloaders.New(time.Millisecond*250, 100, character, corporation, alliance, clone, universe)
-	server := server.New(cfg.Server.Port, env, logger, alliance, auth, character, clone, corporation, dataloaders, skill, user)
+	graphql := graphql.New(alliance, auth, character, clone, corporation, skill, universe, user)
+	server := server.New(cfg.Server.Port, env, logger, cache, graphql)
 	errChan := make(chan error, 1)
 	go func() {
 		errChan <- server.Run()

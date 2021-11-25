@@ -1,8 +1,8 @@
 type Query {
     initializeAuth: String!
     finalizeAuth(code: String!, state: String!): AuthAttempt!
-    user: User! @isAuthed
-    userByID: User!
+    # user: User! @isAuthed
+    user(id: Uint64!): User!
     character(id: Uint64!): Character
 }
 

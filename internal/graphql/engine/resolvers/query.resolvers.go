@@ -5,11 +5,9 @@ package resolvers
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/eveisesi/skillz"
-	"github.com/eveisesi/skillz/internal"
-	"github.com/eveisesi/skillz/internal/graphql/engine/generated"
+	"github.com/eveisesi/skillz/internal/graphql/engine"
 )
 
 func (r *queryResolver) InitializeAuth(ctx context.Context) (string, error) {
@@ -25,19 +23,15 @@ func (r *queryResolver) FinalizeAuth(ctx context.Context, code string, state str
 	return r.user.Login(ctx, code, state)
 }
 
-func (r *queryResolver) User(ctx context.Context) (*skillz.User, error) {
-	return internal.UserFromContext(ctx), nil
-}
-
-func (r *queryResolver) UserByID(ctx context.Context) (*skillz.User, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *queryResolver) User(ctx context.Context, id uint64) (*skillz.User, error) {
+	return r.user.UserByCharacterID(ctx, id)
 }
 
 func (r *queryResolver) Character(ctx context.Context, id uint64) (*skillz.Character, error) {
 	return r.character.Character(ctx, id)
 }
 
-// Query returns generated.QueryResolver implementation.
-func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
+// Query returns engine.QueryResolver implementation.
+func (r *Resolver) Query() engine.QueryResolver { return &queryResolver{r} }
 
 type queryResolver struct{ *Resolver }

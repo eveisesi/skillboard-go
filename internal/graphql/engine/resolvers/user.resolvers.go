@@ -7,8 +7,7 @@ import (
 	"context"
 
 	"github.com/eveisesi/skillz"
-	"github.com/eveisesi/skillz/internal/graphql/engine/generated"
-	"github.com/eveisesi/skillz/internal/graphql/engine/model"
+	"github.com/eveisesi/skillz/internal/graphql/engine"
 )
 
 func (r *userResolver) Scopes(ctx context.Context, obj *skillz.User) ([]string, error) {
@@ -31,15 +30,20 @@ func (r *userResolver) Implants(ctx context.Context, obj *skillz.User) ([]*skill
 	return r.clone.Implants(ctx, obj)
 }
 
-func (r *userResolver) Skills(ctx context.Context, obj *skillz.User) (*model.CharacterSkills, error) {
-	meta, err := r.skill.Skills(ctx, obj.CharacterID)
+func (r *userResolver) Skills(ctx context.Context, obj *skillz.User) (*engine.CharacterSkills, error) {
+	meta, err := r.skill.Meta(ctx, obj.CharacterID)
 	if err != nil {
 		return nil, err
 	}
 
-	return &model.CharacterSkills{
+	skills, err := r.skill.Skillz(ctx, obj.CharacterID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &engine.CharacterSkills{
 		Meta:   meta,
-		Skills: meta.Skills,
+		Skills: skills,
 	}, nil
 }
 
@@ -51,7 +55,7 @@ func (r *userResolver) Attributes(ctx context.Context, obj *skillz.User) (*skill
 	return r.skill.Attributes(ctx, obj.CharacterID)
 }
 
-// User returns generated.UserResolver implementation.
-func (r *Resolver) User() generated.UserResolver { return &userResolver{r} }
+// User returns engine.UserResolver implementation.
+func (r *Resolver) User() engine.UserResolver { return &userResolver{r} }
 
 type userResolver struct{ *Resolver }
