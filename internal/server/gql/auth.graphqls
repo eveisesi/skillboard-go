@@ -1,3 +1,0 @@
-type AuthAttempt @goModel(model: "github.com/eveisesi/skillz.AuthAttempt") {
-    token: String
-}

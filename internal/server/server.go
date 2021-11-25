@@ -14,7 +14,6 @@ import (
 	"github.com/eveisesi/skillz/internal/character"
 	"github.com/eveisesi/skillz/internal/clone"
 	"github.com/eveisesi/skillz/internal/corporation"
-	"github.com/eveisesi/skillz/internal/server/gql/dataloaders"
 	"github.com/eveisesi/skillz/internal/skill"
 	"github.com/eveisesi/skillz/internal/user"
 	"github.com/go-chi/chi/v5"
@@ -33,7 +32,6 @@ type server struct {
 	character   character.API
 	clone       clone.API
 	corporation corporation.API
-	dataloaders dataloaders.API
 	skill       skill.API
 	user        user.API
 
@@ -53,7 +51,6 @@ func New(
 	character character.API,
 	clone clone.API,
 	corporation corporation.API,
-	dataloaders dataloaders.API,
 	skill skill.API,
 	user user.API,
 ) *server {
@@ -67,7 +64,6 @@ func New(
 		character:   character,
 		clone:       clone,
 		corporation: corporation,
-		dataloaders: dataloaders,
 		skill:       skill,
 		user:        user,
 	}
@@ -127,7 +123,6 @@ func (s *server) buildRouter() *chi.Mux {
 	r.Use(
 		s.requestLogger(s.logger),
 		s.cors,
-		// middleware.SetHeader(headers.ContentType, "application/json"),
 	)
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -142,59 +137,8 @@ func (s *server) buildRouter() *chi.Mux {
 		r.Get("/auth/jwks", s.GetJsonWebKeySet)
 	})
 
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-
-		err := s.templates.ExecuteTemplate(w, "homepage.html", nil)
-		if err != nil {
-			s.logger.WithError(err).Error("failed to execute template")
-			return
-		}
-
-	})
+	r.Get("/", s.handleRenderHomepage)
 	r.Get("/characters/{userUUID}", s.handleRenderCharacterPage)
-
-	// r.Get("/playground", playground.Handler("GraphQL playground", "/graphql"))
-
-	// r.Group(func(r chi.Router) {
-	// 	r.Use(s.authorization)
-
-	// 	// ##### GraphQL Handler #####
-	// 	handler := handler.New(
-	// 		generated.NewExecutableSchema(
-	// 			generated.Config{
-	// 				Resolvers: resolvers.New(
-	// 					s.alliance,
-	// 					s.auth,
-	// 					s.character,
-	// 					s.clone,
-	// 					s.corporation,
-	// 					s.dataloaders,
-	// 					s.skill,
-	// 					s.user,
-	// 				),
-	// 				Directives: generated.DirectiveRoot{
-	// 					IsAuthed: resolvers.IsAuthed,
-	// 				},
-	// 			},
-	// 		),
-	// 	)
-
-	// 	handler.AddTransport(transport.POST{})
-	// 	// handler.AddTransport(transport.Websocket{
-	// 	// 	Upgrader: websocket.Upgrader{
-	// 	// 		CheckOrigin: func(r *http.Request) bool {
-	// 	// 			return true
-	// 	// 		},
-	// 	// 	},
-	// 	// 	KeepAlivePingInterval: 2 * time.Second,
-	// 	// })
-
-	// 	if s.env != skillz.Production {
-	// 		handler.Use(extension.Introspection{})
-	// 	}
-
-	// 	r.Handle("/graphql", handler)
-	// })
 
 	return r
 }

@@ -13,7 +13,9 @@ import (
 	"github.com/eveisesi/skillz/internal/alliance"
 	"github.com/eveisesi/skillz/internal/auth"
 	"github.com/eveisesi/skillz/internal/character"
+	"github.com/eveisesi/skillz/internal/clone"
 	"github.com/eveisesi/skillz/internal/corporation"
+	"github.com/eveisesi/skillz/internal/skill"
 	"github.com/go-redis/redis/v8"
 	"github.com/gofrs/uuid"
 	"github.com/lestrrat-go/jwx/jwt"
@@ -28,6 +30,8 @@ type API interface {
 	User(ctx context.Context, id uuid.UUID) (*skillz.User, error)
 	UserByCharacterID(ctx context.Context, characterID uint64) (*skillz.User, error)
 	UpdateUser(ctx context.Context, user *skillz.User) error
+
+	// OverviewData(ctx context.Context, characterID string)
 }
 
 type Service struct {
@@ -37,6 +41,9 @@ type Service struct {
 	character   character.API
 	corporation corporation.API
 	alliance    alliance.API
+
+	clone  clone.API
+	skillz skill.API
 
 	skillz.UserRepository
 }

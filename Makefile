@@ -17,3 +17,7 @@ server:
 test:
 	go mod tidy
 	aws-vault exec phoenix -- chamber exec phoenix -- go run ./cmd/skillz/*.go test
+
+swatch:
+	ulimit -n 1000
+	reflex -s -r '\.go$$' -r '\.html$$' make server

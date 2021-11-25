@@ -3,3 +3,4 @@ redis.conf
 logs/*.log
 cmd/skillz/underscore.go
 .config/backup.env
+.config/.key
