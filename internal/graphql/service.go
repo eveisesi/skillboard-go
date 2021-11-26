@@ -21,16 +21,13 @@ import (
 )
 
 type API interface {
-	Skillboard(ctx context.Context, characterID uint64) *Response
+	Skillboard(ctx context.Context, characterID uint64) (*Skillboard, gqlerror.List)
+	ExecutableSchema() graphql.ExecutableSchema
 }
 
 type Service struct {
+	es       graphql.ExecutableSchema
 	executor graphql.GraphExecutor
-}
-
-type Response struct {
-	Errors gqlerror.List
-	Data   map[string]interface{}
 }
 
 func New(
@@ -48,12 +45,16 @@ func New(
 		time.Millisecond*100, 100, character, corporation, alliance, clone, universe,
 	)
 
-	return &Service{
-		executor: executor.New(engine.NewExecutableSchema(engine.Config{
-			Resolvers: resolvers.New(alliance, auth, character, clone, corporation, dl, skill, user),
-			Directives: engine.DirectiveRoot{
-				IsAuthed: IsAuthed,
-			},
-		})),
-	}
+	es := engine.NewExecutableSchema(engine.Config{
+		Resolvers: resolvers.New(alliance, auth, character, clone, corporation, dl, skill, user),
+		Directives: engine.DirectiveRoot{
+			IsAuthed: IsAuthed,
+		},
+	})
+
+	return &Service{es, executor.New(es)}
+}
+
+func (s *Service) ExecutableSchema() graphql.ExecutableSchema {
+	return s.es
 }

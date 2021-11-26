@@ -10,10 +10,6 @@ import (
 	"github.com/eveisesi/skillz/internal/graphql/engine"
 )
 
-func (r *characterImplantResolver) Implant(ctx context.Context, obj *skillz.CharacterImplant) (*skillz.Type, error) {
-	return r.dataloaders.TypeLoader().Load(ctx, obj.ImplantID)
-}
-
 func (r *constellationResolver) Region(ctx context.Context, obj *skillz.Constellation) (*skillz.Region, error) {
 	return r.dataloaders.RegionLoader().Load(ctx, obj.RegionID)
 }
@@ -32,6 +28,10 @@ func (r *stationResolver) System(ctx context.Context, obj *skillz.Station) (*ski
 
 func (r *structureResolver) System(ctx context.Context, obj *skillz.Structure) (*skillz.SolarSystem, error) {
 	return r.dataloaders.SolarSystemLoader().Load(ctx, obj.SolarSystemID)
+}
+
+func (r *typeResolver) Attributes(ctx context.Context, obj *skillz.Type) ([]*skillz.TypeDogmaAttribute, error) {
+	return r.dataloaders.TypeAttributeLoader().Load(ctx, obj.ID)
 }
 
 func (r *typeResolver) Group(ctx context.Context, obj *skillz.Type) (*skillz.Group, error) {

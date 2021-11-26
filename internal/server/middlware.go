@@ -1,8 +1,6 @@
 package server
 
 import (
-	"context"
-	"encoding/json"
 	"net/http"
 
 	"github.com/go-chi/chi/v5/middleware"
@@ -80,28 +78,28 @@ func (s *server) requestLogger(logger *logrus.Logger) func(next http.Handler) ht
 // 	}
 // }
 
-func (s *server) writeResponse(ctx context.Context, w http.ResponseWriter, code int, data interface{}) {
+// func (s *server) writeResponse(ctx context.Context, w http.ResponseWriter, code int, data interface{}) {
 
-	if code != http.StatusOK {
-		w.WriteHeader(code)
-	}
+// 	if code != http.StatusOK {
+// 		w.WriteHeader(code)
+// 	}
 
-	if data != nil {
-		_ = json.NewEncoder(w).Encode(data)
-	}
-}
+// 	if data != nil {
+// 		_ = json.NewEncoder(w).Encode(data)
+// 	}
+// }
 
-func (s *server) writeError(ctx context.Context, w http.ResponseWriter, code int, err error) {
+// func (s *server) writeError(ctx context.Context, w http.ResponseWriter, code int, err error) {
 
-	// If err is not nil, actually pass in a map so that the output to the wire is {"error": "text...."} else just let it fall through
-	if err != nil {
-		LogEntrySetField(ctx, "error", err)
-		s.writeResponse(ctx, w, code, map[string]interface{}{
-			"message": err.Error(),
-		})
-		return
-	}
+// 	// If err is not nil, actually pass in a map so that the output to the wire is {"error": "text...."} else just let it fall through
+// 	if err != nil {
+// 		LogEntrySetField(ctx, "error", err)
+// 		s.writeResponse(ctx, w, code, map[string]interface{}{
+// 			"message": err.Error(),
+// 		})
+// 		return
+// 	}
 
-	s.writeResponse(ctx, w, code, nil)
+// 	s.writeResponse(ctx, w, code, nil)
 
-}
+// }

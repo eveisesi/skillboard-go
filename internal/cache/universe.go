@@ -32,22 +32,31 @@ type UniverseAPI interface {
 	SetCategory(ctx context.Context, category *skillz.Category) error
 	Group(ctx context.Context, id uint) (*skillz.Group, error)
 	SetGroup(ctx context.Context, group *skillz.Group) error
+	GroupsByCategoryID(ctx context.Context, id uint) ([]*skillz.Group, error)
+	SetGroupsByCategoryID(ctx context.Context, categoryID uint, groups []*skillz.Group) error
 	Type(ctx context.Context, id uint) (*skillz.Type, error)
 	SetType(ctx context.Context, item *skillz.Type) error
+	TypeAttributes(ctx context.Context, id uint) ([]*skillz.TypeDogmaAttribute, error)
+	SetTypeAttributes(ctx context.Context, id uint, attributes []*skillz.TypeDogmaAttribute) error
+	TypesByGroupID(ctx context.Context, id uint) ([]*skillz.Type, error)
+	SetTypesByGroupID(ctx context.Context, groupID uint, types []*skillz.Type) error
 }
 
 const (
-	keyBloodline     = "bloodline"
-	keyRace          = "race"
-	keyFaction       = "faction"
-	keyCategory      = "category"
-	keyGroup         = "group"
-	keyType          = "type"
-	keyRegion        = "region"
-	keyConstellation = "constellation"
-	keySolarSystem   = "solar_system"
-	keyStation       = "station"
-	keyStructure     = "structure"
+	keyBloodline       = "bloodline"
+	keyRace            = "race"
+	keyFaction         = "faction"
+	keyCategory        = "category"
+	keyGroup           = "group"
+	keyGroupByCategory = "group-by-category"
+	keyType            = "type"
+	keyTypeAttributes  = "type-attributes"
+	keyTypesByGroup    = "types-by-group"
+	keyRegion          = "region"
+	keyConstellation   = "constellation"
+	keySolarSystem     = "solar_system"
+	keyStation         = "station"
+	keyStructure       = "structure"
 )
 
 func (s *Service) Bloodline(ctx context.Context, bloodlineID uint) (*skillz.Bloodline, error) {
@@ -63,7 +72,7 @@ func (s *Service) Bloodline(ctx context.Context, bloodlineID uint) (*skillz.Bloo
 	}
 
 	var bloodline = new(skillz.Bloodline)
-	err = json.Unmarshal(result, &bloodline)
+	err = json.Unmarshal(result, bloodline)
 	return bloodline, errors.Wrapf(err, errorFFormat, universeAPI, "Bloodline", "failed to decode json to structure")
 
 }
@@ -94,7 +103,7 @@ func (s *Service) Race(ctx context.Context, id uint) (*skillz.Race, error) {
 	}
 
 	var race = new(skillz.Race)
-	err = json.Unmarshal(result, &race)
+	err = json.Unmarshal(result, race)
 	return race, errors.Wrapf(err, errorFFormat, universeAPI, "Race", "failed to decode json to structure")
 
 }
@@ -125,7 +134,7 @@ func (s *Service) Faction(ctx context.Context, id uint) (*skillz.Faction, error)
 	}
 
 	var faction = new(skillz.Faction)
-	err = json.Unmarshal(result, &faction)
+	err = json.Unmarshal(result, faction)
 	return faction, errors.Wrapf(err, errorFFormat, universeAPI, "Faction", "failed to decode json to structure")
 
 }
@@ -156,7 +165,7 @@ func (s *Service) Region(ctx context.Context, id uint) (*skillz.Region, error) {
 	}
 
 	var region = new(skillz.Region)
-	err = json.Unmarshal(result, &region)
+	err = json.Unmarshal(result, region)
 	return region, errors.Wrapf(err, errorFFormat, universeAPI, "Region", "failed to decode json to structure")
 
 }
@@ -187,7 +196,7 @@ func (s *Service) Constellation(ctx context.Context, id uint) (*skillz.Constella
 	}
 
 	var constellation = new(skillz.Constellation)
-	err = json.Unmarshal(result, &constellation)
+	err = json.Unmarshal(result, constellation)
 	return constellation, errors.Wrapf(err, errorFFormat, universeAPI, "Constellation", "failed to decode json to structure")
 
 }
@@ -218,7 +227,7 @@ func (s *Service) SolarSystem(ctx context.Context, id uint) (*skillz.SolarSystem
 	}
 
 	var solarSystem = new(skillz.SolarSystem)
-	err = json.Unmarshal(result, &solarSystem)
+	err = json.Unmarshal(result, solarSystem)
 	return solarSystem, errors.Wrapf(err, errorFFormat, universeAPI, "SolarSystem", "failed to decode json to structure")
 
 }
@@ -249,7 +258,7 @@ func (s *Service) Station(ctx context.Context, id uint) (*skillz.Station, error)
 	}
 
 	var station = new(skillz.Station)
-	err = json.Unmarshal(result, &station)
+	err = json.Unmarshal(result, station)
 	return station, errors.Wrapf(err, errorFFormat, universeAPI, "Station", "failed to decode json to structure")
 
 }
@@ -280,7 +289,7 @@ func (s *Service) Structure(ctx context.Context, id uint64) (*skillz.Structure, 
 	}
 
 	var structure = new(skillz.Structure)
-	err = json.Unmarshal(result, &structure)
+	err = json.Unmarshal(result, structure)
 	return structure, errors.Wrapf(err, errorFFormat, universeAPI, "Structure", "failed to decode json to structure")
 
 }
@@ -311,7 +320,7 @@ func (s *Service) Category(ctx context.Context, id uint) (*skillz.Category, erro
 	}
 
 	var category = new(skillz.Category)
-	err = json.Unmarshal(result, &category)
+	err = json.Unmarshal(result, category)
 	return category, errors.Wrapf(err, errorFFormat, universeAPI, "Category", "failed to decode json to structure")
 
 }
@@ -342,7 +351,7 @@ func (s *Service) Group(ctx context.Context, id uint) (*skillz.Group, error) {
 	}
 
 	var group = new(skillz.Group)
-	err = json.Unmarshal(result, &group)
+	err = json.Unmarshal(result, group)
 	return group, errors.Wrapf(err, errorFFormat, universeAPI, "Group", "failed to decode json to structure")
 
 }
@@ -360,6 +369,37 @@ func (s *Service) SetGroup(ctx context.Context, group *skillz.Group) error {
 
 }
 
+func (s *Service) GroupsByCategoryID(ctx context.Context, id uint) ([]*skillz.Group, error) {
+
+	key := generateKey(keyGroupByCategory, strconv.FormatUint(uint64(id), 10))
+	result, err := s.redis.Get(ctx, key).Bytes()
+	if err != nil && !errors.Is(err, redis.Nil) {
+		return nil, errors.Wrapf(err, errorFFormat, universeAPI, "GroupsByCategoryID", "failed to fetch results from cache")
+	}
+
+	if errors.Is(err, redis.Nil) {
+		return nil, nil
+	}
+
+	var groups = make([]*skillz.Group, 0)
+	err = json.Unmarshal(result, &groups)
+	return groups, errors.Wrapf(err, errorFFormat, universeAPI, "GroupsByCategoryID", "failed to decode json to structure")
+
+}
+
+func (s *Service) SetGroupsByCategoryID(ctx context.Context, categoryID uint, groups []*skillz.Group) error {
+
+	key := generateKey(keyGroupByCategory, strconv.FormatUint(uint64(categoryID), 10))
+	data, err := json.Marshal(groups)
+	if err != nil {
+		return errors.Wrapf(err, errorFFormat, universeAPI, "SetGroupsByCategoryID", "failed to encode structure as json")
+	}
+
+	err = s.redis.Set(ctx, key, data, time.Hour).Err()
+	return errors.Wrapf(err, errorFFormat, universeAPI, "SetGroupsByCategoryID", "failed to write cache")
+
+}
+
 func (s *Service) Type(ctx context.Context, id uint) (*skillz.Type, error) {
 
 	key := generateKey(keyType, strconv.FormatUint(uint64(id), 10))
@@ -373,7 +413,7 @@ func (s *Service) Type(ctx context.Context, id uint) (*skillz.Type, error) {
 	}
 
 	var item = new(skillz.Type)
-	err = json.Unmarshal(result, &item)
+	err = json.Unmarshal(result, item)
 	return item, errors.Wrapf(err, errorFFormat, universeAPI, "Type", "failed to decode json to structure")
 
 }
@@ -388,5 +428,67 @@ func (s *Service) SetType(ctx context.Context, item *skillz.Type) error {
 
 	err = s.redis.Set(ctx, key, data, time.Hour).Err()
 	return errors.Wrapf(err, errorFFormat, universeAPI, "SetType", "failed to write cache")
+
+}
+
+func (s *Service) TypeAttributes(ctx context.Context, id uint) ([]*skillz.TypeDogmaAttribute, error) {
+
+	key := generateKey(keyTypeAttributes, strconv.FormatUint(uint64(id), 10))
+	result, err := s.redis.Get(ctx, key).Bytes()
+	if err != nil && !errors.Is(err, redis.Nil) {
+		return nil, errors.Wrapf(err, errorFFormat, universeAPI, "TypeAttributes", "failed to fetch results from cache")
+	}
+
+	if errors.Is(err, redis.Nil) {
+		return nil, nil
+	}
+
+	var attributes = make([]*skillz.TypeDogmaAttribute, 0)
+	err = json.Unmarshal(result, &attributes)
+	return attributes, errors.Wrapf(err, errorFFormat, universeAPI, "TypeAttributes", "failed to decode json to structure")
+
+}
+
+func (s *Service) SetTypeAttributes(ctx context.Context, id uint, attributes []*skillz.TypeDogmaAttribute) error {
+
+	key := generateKey(keyTypeAttributes, strconv.FormatUint(uint64(id), 10))
+	data, err := json.Marshal(attributes)
+	if err != nil {
+		return errors.Wrapf(err, errorFFormat, universeAPI, "SetTypeAttributes", "failed to encode structure as json")
+	}
+
+	err = s.redis.Set(ctx, key, data, time.Hour).Err()
+	return errors.Wrapf(err, errorFFormat, universeAPI, "SetTypeAttributes", "failed to write cache")
+
+}
+
+func (s *Service) TypesByGroupID(ctx context.Context, id uint) ([]*skillz.Type, error) {
+
+	key := generateKey(keyTypesByGroup, strconv.FormatUint(uint64(id), 10))
+	result, err := s.redis.Get(ctx, key).Bytes()
+	if err != nil && !errors.Is(err, redis.Nil) {
+		return nil, errors.Wrapf(err, errorFFormat, universeAPI, "TypesByGroupID", "failed to fetch results from cache")
+	}
+
+	if errors.Is(err, redis.Nil) {
+		return nil, nil
+	}
+
+	var types = make([]*skillz.Type, 0)
+	err = json.Unmarshal(result, &types)
+	return types, errors.Wrapf(err, errorFFormat, universeAPI, "TypesByGroupID", "failed to decode json to structure")
+
+}
+
+func (s *Service) SetTypesByGroupID(ctx context.Context, groupID uint, types []*skillz.Type) error {
+
+	key := generateKey(keyTypesByGroup, strconv.FormatUint(uint64(groupID), 10))
+	data, err := json.Marshal(types)
+	if err != nil {
+		return errors.Wrapf(err, errorFFormat, universeAPI, "SetTypesByGroupID", "failed to encode structure as json")
+	}
+
+	err = s.redis.Set(ctx, key, data, time.Hour).Err()
+	return errors.Wrapf(err, errorFFormat, universeAPI, "SetTypesByGroupID", "failed to write cache")
 
 }

@@ -1,43 +1,51 @@
 package graphql
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 
 	"github.com/99designs/gqlgen/graphql"
+	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
-func (s *Service) Skillboard(ctx context.Context, characterID uint64) *Response {
+func (s *Service) executeQuery(ctx context.Context, params *graphql.RawParams) *graphql.Response {
 
 	ctx = graphql.StartOperationTrace(ctx)
+
+	params.ReadTime = graphql.TraceTiming{
+		Start: graphql.Now(),
+		End:   graphql.Now(),
+	}
+
+	oc, el := s.executor.CreateOperationContext(ctx, params)
+	if len(el) > 0 {
+		return &graphql.Response{Errors: el}
+	}
+
+	var rh graphql.ResponseHandler
+	rh, ctx = s.executor.DispatchOperation(ctx, oc)
+
+	return rh(ctx)
+
+}
+
+func (s *Service) Skillboard(ctx context.Context, characterID uint64) (*Skillboard, gqlerror.List) {
 
 	params := &graphql.RawParams{
 		Query: skillboard,
 		Variables: map[string]interface{}{
 			"id": characterID,
 		},
-		ReadTime: graphql.TraceTiming{
-			Start: graphql.Now(),
-			End:   graphql.Now(),
-		},
 	}
 
-	oc, el := s.executor.CreateOperationContext(ctx, params)
-	if len(el) > 0 {
-		return &Response{Errors: el}
+	res := s.executeQuery(ctx, params)
+
+	var skillboard = new(Skillboard)
+	err := json.Unmarshal(res.Data, skillboard)
+	if err != nil {
+		return nil, gqlerror.List{gqlerror.Errorf("failed to decode graphql response")}
 	}
 
-	var rh graphql.ResponseHandler
-	rh, ctx = s.executor.DispatchOperation(ctx, oc)
-
-	res := rh(ctx)
-
-	var m = make(map[string]interface{})
-	dec := json.NewDecoder(bytes.NewReader(res.Data))
-	dec.UseNumber()
-	_ = dec.Decode(&m)
-
-	return &Response{Errors: res.Errors, Data: m}
+	return skillboard, nil
 
 }

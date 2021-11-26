@@ -2,7 +2,6 @@ package esi
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -73,7 +72,7 @@ func (s *Service) request(ctx context.Context, method, path string, body io.Read
 			return errors.Wrap(err, "failed to execute request")
 		}
 
-		fmt.Printf("\n%s (%d)\n\n", fmt.Sprintf("%s %s", method, path), res.StatusCode)
+		fmt.Printf("%s (%d)\n", fmt.Sprintf("%s %s", method, path), res.StatusCode)
 
 		if res.StatusCode < http.StatusContinue || res.StatusCode > http.StatusInternalServerError {
 			time.Sleep(time.Millisecond * 500)
@@ -129,5 +128,6 @@ func (s *Service) request(ctx context.Context, method, path string, body io.Read
 }
 
 func hash(s string) string {
-	return fmt.Sprintf("%x", sha256.Sum256([]byte(s)))
+	// fmt.Sprintf("%x", sha256.Sum256([]byte(s)))
+	return s
 }

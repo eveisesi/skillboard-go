@@ -60,11 +60,14 @@ type Type @goModel(model: "github.com/eveisesi/skillz.Type") {
     radius: Float
     volume: Float!
 
+    attributes: [DogmaAttribute]! @goField(forceResolver: true)
+
     group: Group!
 }
 
-extend type CharacterImplant {
-    implant: Type!
+type DogmaAttribute @goModel(model: "github.com/eveisesi/skillz.TypeDogmaAttribute") {
+    attributeID: Uint!
+    value: Float!
 }
 
 type Group @goModel(model: "github.com/eveisesi/skillz.Group") {

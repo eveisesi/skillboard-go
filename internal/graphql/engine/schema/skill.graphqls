@@ -1,5 +1,13 @@
-type CharacterSkills {
-    meta: CharacterSkillMeta
+# type CharacterSkills {
+#     characterID: Uint64! @goField(forceResolver: true)
+#     meta: CharacterSkillMeta
+#     # skills: [CharacterSkill]!
+#     skills: [CharacterSkillsGrouped]! @goField(forceResolver: true)
+# }
+
+type CharacterSkillGroup @goModel(model: "github.com/eveisesi/skillz.CharacterSkillGroup") {
+    info: Group!
+    totalGroupSP: Uint!
     skills: [CharacterSkill]!
 }
 

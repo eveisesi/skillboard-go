@@ -59,9 +59,13 @@ type UniverseRepository interface {
 	UpdateStructure(ctx context.Context, structure *Structure) error
 
 	Type(ctx context.Context, typeID uint) (*Type, error)
-	Types(ctx context.Context) ([]*Type, error)
+	Types(ctx context.Context, operators ...*Operator) ([]*Type, error)
 	CreateType(ctx context.Context, item *Type) error
 	UpdateType(ctx context.Context, item *Type) error
+
+	TypeDogmaAttributes(ctx context.Context, typeID uint) ([]*TypeDogmaAttribute, error)
+	CreateTypeDogmaAttributes(ctx context.Context, attributes []*TypeDogmaAttribute) error
+	DeleteTypeDogmaAttributes(ctx context.Context, typeID uint) error
 }
 
 type Bloodline struct {
@@ -118,9 +122,11 @@ type Group struct {
 	Name       string    `db:"name" json:"name"`
 	Published  bool      `db:"published" json:"published"`
 	CategoryID uint      `db:"category_id" json:"category_id"`
-	Types      []uint    `db:"-" json:"types,omitempty"`
+	TypeIDs    []uint    `db:"-" json:"types,omitempty"`
 	CreatedAt  time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt  time.Time `db:"updated_at" json:"updated_at"`
+
+	Types []*Type
 }
 
 type Race struct {
@@ -192,4 +198,13 @@ type Type struct {
 	Volume         float64      `db:"volume,omitempty" json:"volume,omitempty"`
 	CreatedAt      time.Time    `db:"created_at" json:"created_at"`
 	UpdatedAt      time.Time    `db:"updated_at" json:"updated_at"`
+
+	Attributes []*TypeDogmaAttribute `json:"dogma_attributes"`
+}
+
+type TypeDogmaAttribute struct {
+	TypeID      uint      `db:"type_id" json:"type_id"`
+	AttributeID uint      `db:"attribute_id" json:"attribute_id"`
+	Value       float64   `db:"value" json:"value"`
+	CreatedAt   time.Time `db:"created_at" json:"-"`
 }

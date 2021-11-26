@@ -83,3 +83,13 @@ type CharacterSkill struct {
 	CreatedAt          time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt          time.Time `db:"updated_at" json:"updated_at"`
 }
+
+type CharacterSkillGroup struct {
+	Info   *Group            `json:"info"`
+	Skills []*CharacterSkill `json:"skills"`
+	// ActualSP     uint
+	// ActualSkillz uint
+
+	TotalGroupSP uint
+	// TotalSkillz uint
+}

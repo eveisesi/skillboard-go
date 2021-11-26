@@ -146,6 +146,29 @@ func (s *Service) TypeLoader() *generated.TypeLoader {
 	})
 }
 
+func (s *Service) TypeAttributeLoader() *generated.TypeAttributeLoader {
+	return generated.NewTypeAttributeLoader(generated.TypeAttributeLoaderConfig{
+		MaxBatch: s.batch,
+		Wait:     s.wait,
+		Fetch: func(ctx context.Context, keys []uint) ([][]*skillz.TypeDogmaAttribute, []error) {
+			var errors = make([]error, len(keys))
+			var results = make([][]*skillz.TypeDogmaAttribute, len(keys))
+
+			for i, k := range keys {
+				result, err := s.universe.TypeAttributes(ctx, k)
+				if err != nil {
+					errors[i] = err
+					continue
+				}
+
+				results[i] = result
+			}
+
+			return results, errors
+		},
+	})
+}
+
 func (s *Service) GroupLoader() *generated.GroupLoader {
 	return generated.NewGroupLoader(generated.GroupLoaderConfig{
 		MaxBatch: s.batch,

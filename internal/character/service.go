@@ -59,7 +59,6 @@ func (s *Service) Character(ctx context.Context, characterID uint64) (*skillz.Ch
 	}
 
 	exists := err == nil
-
 	if !exists || etag == nil || etag.CachedUntil.Unix() < time.Now().Add(-1*time.Minute).Unix() {
 		mods := append(make([]esi.ModifierFunc, 0, 2), s.esi.CacheEtag(ctx, etagID))
 		if etag != nil && etag.Etag != "" {

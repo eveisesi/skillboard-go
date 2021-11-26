@@ -23,30 +23,28 @@ func (r *characterDeathCloneResolver) LocationType(ctx context.Context, obj *ski
 	return obj.LocationType.String(), nil
 }
 
-func (r *characterDeathCloneResolver) Location(ctx context.Context, obj *skillz.CharacterDeathClone) (engine.LocationInfo, error) {
-	switch obj.LocationType {
-	case skillz.CloneLocationTypeStation:
-		return r.dataloaders.StationLoader().Load(ctx, uint(obj.LocationID))
-	case skillz.CloneLocationTypeStructure:
-		return r.dataloaders.StructureLoader().Load(ctx, obj.LocationID)
-	default:
-		return nil, fmt.Errorf("%s is not a resolvable location type", obj.LocationType.String())
-	}
+func (r *characterDeathCloneResolver) Station(ctx context.Context, obj *skillz.CharacterDeathClone) (*skillz.Station, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *characterDeathCloneResolver) Structure(ctx context.Context, obj *skillz.CharacterDeathClone) (*skillz.Structure, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *characterImplantResolver) Implant(ctx context.Context, obj *skillz.CharacterImplant) (*skillz.Type, error) {
+	return r.dataloaders.TypeLoader().Load(ctx, obj.ImplantID)
 }
 
 func (r *characterJumpCloneResolver) LocationType(ctx context.Context, obj *skillz.CharacterJumpClone) (string, error) {
 	return obj.LocationType.String(), nil
 }
 
-func (r *characterJumpCloneResolver) Location(ctx context.Context, obj *skillz.CharacterJumpClone) (engine.LocationInfo, error) {
-	switch obj.LocationType {
-	case skillz.CloneLocationTypeStation:
-		return r.dataloaders.StationLoader().Load(ctx, uint(obj.LocationID))
-	case skillz.CloneLocationTypeStructure:
-		return r.dataloaders.StructureLoader().Load(ctx, obj.LocationID)
-	default:
-		return nil, fmt.Errorf("%s is not a resolvable location type", obj.LocationType.String())
-	}
+func (r *characterJumpCloneResolver) Station(ctx context.Context, obj *skillz.CharacterJumpClone) (*skillz.Station, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *characterJumpCloneResolver) Structure(ctx context.Context, obj *skillz.CharacterJumpClone) (*skillz.Structure, error) {
+	panic(fmt.Errorf("not implemented"))
 }
 
 // CharacterClone returns engine.CharacterCloneResolver implementation.

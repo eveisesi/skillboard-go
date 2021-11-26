@@ -7,6 +7,7 @@ import (
 	sq "github.com/Masterminds/squirrel"
 	"github.com/eveisesi/skillz"
 	"github.com/pkg/errors"
+	"xorm.io/builder"
 )
 
 type UniverseRepository struct {
@@ -19,7 +20,7 @@ type UniverseRepository struct {
 
 	stations, structures tableConf
 
-	categories, groups, types tableConf
+	categories, groups, types, typeAttributes tableConf
 }
 
 const (
@@ -98,6 +99,10 @@ const (
 	TypesPortionSize    string = "portion_size"
 	TypesRadius         string = "radius"
 	TypesVolume         string = "volume"
+
+	TypeDogmaAttributesTypeID     string = "type_id"
+	TypeDogmaAttributeAttributeID string = "attribute_id"
+	TypeDogmaAttributeValue       string = "value"
 )
 
 var _ skillz.UniverseRepository = (*UniverseRepository)(nil)
@@ -242,6 +247,13 @@ func NewUniverseRepository(db QueryExecContext) *UniverseRepository {
 				TypesVolume,
 				ColumnCreatedAt,
 				ColumnUpdatedAt,
+			},
+		},
+		typeAttributes: tableConf{
+			table: "type_attributes",
+			columns: []string{
+				TypeDogmaAttributesTypeID, TypeDogmaAttributeAttributeID,
+				TypeDogmaAttributeValue, ColumnCreatedAt,
 			},
 		},
 	}
@@ -599,9 +611,9 @@ func (r *UniverseRepository) Group(ctx context.Context, groupID uint) (*skillz.G
 
 func (r *UniverseRepository) Groups(ctx context.Context, operators ...*skillz.Operator) ([]*skillz.Group, error) {
 
-	query, args, err := sq.Select(r.groups.columns...).
+	query, args, err := BuildOperators(operators...).Select(r.groups.columns...).
 		From(r.groups.table).
-		ToSql()
+		ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, errorFFormat, universeRepository, "Groups", "failed to generate sql")
 	}
@@ -1071,11 +1083,11 @@ func (r *UniverseRepository) Type(ctx context.Context, typeID uint) (*skillz.Typ
 
 }
 
-func (r *UniverseRepository) Types(ctx context.Context) ([]*skillz.Type, error) {
+func (r *UniverseRepository) Types(ctx context.Context, operators ...*skillz.Operator) ([]*skillz.Type, error) {
 
-	query, args, err := sq.Select(r.types.columns...).
+	query, args, err := BuildOperators(operators...).Select(r.types.columns...).
 		From(r.types.table).
-		ToSql()
+		ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, errorFFormat, universeRepository, "Types", "failed to generate sql")
 	}
@@ -1142,5 +1154,49 @@ func (r *UniverseRepository) UpdateType(ctx context.Context, item *skillz.Type) 
 
 	_, err = r.db.ExecContext(ctx, query, args...)
 	return errors.Wrapf(err, prefixFormat, universeRepository, "UpdateType")
+
+}
+func (r *UniverseRepository) TypeDogmaAttributes(ctx context.Context, typeID uint) ([]*skillz.TypeDogmaAttribute, error) {
+
+	query, args, err := builder.Select(r.typeAttributes.columns...).From(r.typeAttributes.table).
+		Where(builder.Eq{TypeDogmaAttributesTypeID: typeID}).ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, errorFFormat, universeRepository, "TypeDogmaAttributes", "failed to generate sql")
+	}
+
+	var typeAttributes = make([]*skillz.TypeDogmaAttribute, 0)
+	err = r.db.SelectContext(ctx, &typeAttributes, query, args...)
+	return typeAttributes, errors.Wrapf(err, prefixFormat, universeRepository, "TypeDogmaAttributes")
+
+}
+
+func (r *UniverseRepository) CreateTypeDogmaAttributes(ctx context.Context, attributes []*skillz.TypeDogmaAttribute) error {
+
+	now := time.Now()
+	i := sq.Insert(r.typeAttributes.table).Columns(r.typeAttributes.columns...)
+	for _, attribute := range attributes {
+		attribute.CreatedAt = now
+		i = i.Values(attribute.TypeID, attribute.AttributeID, attribute.Value, attribute.CreatedAt)
+	}
+
+	query, args, err := i.ToSql()
+	if err != nil {
+		return errors.Wrapf(err, errorFFormat, universeRepository, "CreateTypeDogmaAttributes", "failed to generate sql")
+	}
+
+	_, err = r.db.ExecContext(ctx, query, args...)
+	return errors.Wrapf(err, prefixFormat, universeRepository, "CreateTypeDogmaAttributes")
+
+}
+
+func (r *UniverseRepository) DeleteTypeDogmaAttributes(ctx context.Context, typeID uint) error {
+
+	query, args, err := sq.Delete(r.typeAttributes.table).Where(sq.Eq{TypeDogmaAttributesTypeID: typeID}).ToSql()
+	if err != nil {
+		return errors.Wrapf(err, errorFFormat, universeRepository, "DeleteTypeDogmaAttributes", "failed to generate sql")
+	}
+
+	_, err = r.db.ExecContext(ctx, query, args...)
+	return errors.Wrapf(err, prefixFormat, universeRepository, "DeleteTypeDogmaAttributes")
 
 }

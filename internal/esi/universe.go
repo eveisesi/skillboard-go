@@ -162,6 +162,9 @@ func (s *Service) GetType(ctx context.Context, typeID uint, mods ...ModifierFunc
 	}
 
 	item.ID = typeID
+	for _, attribute := range item.Attributes {
+		attribute.TypeID = typeID
+	}
 
 	return item, nil
 

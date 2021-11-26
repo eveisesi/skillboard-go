@@ -8,6 +8,7 @@ import (
 	"github.com/eveisesi/skillz"
 	"github.com/eveisesi/skillz/internal/cache"
 	"github.com/eveisesi/skillz/internal/esi"
+	"github.com/eveisesi/skillz/internal/universe"
 	"github.com/go-redis/redis/v8"
 	"github.com/pkg/errors"
 	"github.com/volatiletech/null"
@@ -19,11 +20,14 @@ type API interface {
 	Skillz(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkill, error)
 	Attributes(ctx context.Context, characterID uint64) (*skillz.CharacterAttributes, error)
 	SkillQueue(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkillQueue, error)
+	SkillsGrouped(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkillGroup, error)
 }
 
 type Service struct {
 	cache cache.SkillAPI
 	esi   esi.SkillAPI
+
+	universe universe.API
 
 	skills skillz.CharacterSkillRepository
 
@@ -32,11 +36,12 @@ type Service struct {
 
 var _ API = (*Service)(nil)
 
-func New(cache cache.SkillAPI, esi esi.SkillAPI, skills skillz.CharacterSkillRepository) *Service {
+func New(cache cache.SkillAPI, esi esi.SkillAPI, universe universe.API, skills skillz.CharacterSkillRepository) *Service {
 	return &Service{
-		cache:  cache,
-		esi:    esi,
-		skills: skills,
+		cache:    cache,
+		esi:      esi,
+		universe: universe,
+		skills:   skills,
 
 		scopes: []skillz.Scope{skillz.ReadSkillsV1, skillz.ReadSkillQueueV1},
 	}
@@ -71,6 +76,10 @@ func (s *Service) Meta(ctx context.Context, characterID uint64) (*skillz.Charact
 		return nil, err
 	}
 
+	if meta != nil {
+		return meta, nil
+	}
+
 	meta, err = s.skills.CharacterSkillMeta(ctx, characterID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.Wrap(err, "failed to fetch character skills from data store")
@@ -87,7 +96,7 @@ func (s *Service) Skillz(ctx context.Context, characterID uint64) ([]*skillz.Cha
 		return nil, err
 	}
 
-	if len(skillz) > 0 || err == nil {
+	if len(skillz) > 0 && err == nil {
 		return skillz, err
 	}
 
@@ -98,6 +107,53 @@ func (s *Service) Skillz(ctx context.Context, characterID uint64) ([]*skillz.Cha
 
 	return skillz, err
 
+}
+
+func (s *Service) SkillsGrouped(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkillGroup, error) {
+
+	skills, err := s.Skillz(ctx, characterID)
+	if err != nil {
+		return nil, err
+	}
+
+	skillzMap := make(map[uint]*skillz.CharacterSkill)
+	for _, skill := range skills {
+		skillzMap[skill.SkillID] = skill
+	}
+
+	groups, err := s.universe.GroupsByCategory(ctx, 16)
+	if err != nil {
+		return nil, err
+	}
+
+	groupedSkillz := make([]*skillz.CharacterSkillGroup, 0, len(groups))
+
+	for _, group := range groups {
+		group.Types, err = s.universe.TypesByGroup(ctx, group.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		groupedSkill := &skillz.CharacterSkillGroup{
+			Info:         group,
+			Skills:       make([]*skillz.CharacterSkill, 0, len(group.Types)),
+			TotalGroupSP: 0,
+		}
+
+		for _, t := range group.Types {
+			skill, ok := skillzMap[t.ID]
+			if !ok {
+				continue
+			}
+
+			groupedSkill.Skills = append(groupedSkill.Skills, skill)
+			groupedSkill.TotalGroupSP += skill.SkillpointsInSkill
+		}
+
+		groupedSkillz = append(groupedSkillz, groupedSkill)
+	}
+
+	return groupedSkillz, nil
 }
 
 func (s *Service) updateSkills(ctx context.Context, user *skillz.User) error {

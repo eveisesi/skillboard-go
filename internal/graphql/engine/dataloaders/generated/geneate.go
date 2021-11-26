@@ -13,5 +13,6 @@
 //go:generate go run github.com/ddouglas/dataloaden@v0.4.0 StationLoader uint *github.com/eveisesi/skillz.Station
 //go:generate go run github.com/ddouglas/dataloaden@v0.4.0 StructureLoader uint64 *github.com/eveisesi/skillz.Structure
 //go:generate go run github.com/ddouglas/dataloaden@v0.4.0 TypeLoader uint *github.com/eveisesi/skillz.Type
+//go:generate go run github.com/ddouglas/dataloaden@v0.4.0 TypeAttributeLoader uint []*github.com/eveisesi/skillz.TypeDogmaAttribute
 
 package generated

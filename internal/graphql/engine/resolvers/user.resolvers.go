@@ -30,21 +30,26 @@ func (r *userResolver) Implants(ctx context.Context, obj *skillz.User) ([]*skill
 	return r.clone.Implants(ctx, obj)
 }
 
-func (r *userResolver) Skills(ctx context.Context, obj *skillz.User) (*engine.CharacterSkills, error) {
-	meta, err := r.skill.Meta(ctx, obj.CharacterID)
-	if err != nil {
-		return nil, err
-	}
+func (r *userResolver) SkillMeta(ctx context.Context, obj *skillz.User) (*skillz.CharacterSkillMeta, error) {
+	return r.skill.Meta(ctx, obj.CharacterID)
+}
 
-	skills, err := r.skill.Skillz(ctx, obj.CharacterID)
-	if err != nil {
-		return nil, err
-	}
+func (r *userResolver) Skills(ctx context.Context, obj *skillz.User) ([]*skillz.CharacterSkillGroup, error) {
+	// meta, err := r.skill.Meta(ctx, obj.CharacterID)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	return &engine.CharacterSkills{
-		Meta:   meta,
-		Skills: skills,
-	}, nil
+	// skills, err := r.skill.Skillz(ctx, obj.CharacterID)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// return &engine.CharacterSkills{
+	// 	Meta:   meta,
+	// 	Skills: skills,
+	// }, nil
+	return r.skill.SkillsGrouped(ctx, obj.CharacterID)
 }
 
 func (r *userResolver) Queue(ctx context.Context, obj *skillz.User) ([]*skillz.CharacterSkillQueue, error) {

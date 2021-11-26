@@ -25,6 +25,7 @@ type API interface {
 	StationLoader() *generated.StationLoader
 	StructureLoader() *generated.StructureLoader
 	TypeLoader() *generated.TypeLoader
+	TypeAttributeLoader() *generated.TypeAttributeLoader
 }
 
 type Service struct {

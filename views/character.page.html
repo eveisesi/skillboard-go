@@ -1,18 +1,18 @@
 {{template "base" .}}
 {{define "content"}}
-{{with $user := .Data.user}}
+{{with $user := .User}}
 
 <main>
     <div class="container">
         <div class="row">
             <div class="col">
-                <h1>Viewing Skillboard of {{$user.character.name}}</h1>
+                <h1>Viewing Skillboard of {{$user.Character.Name}}</h1>
                 <hr />
             </div>
         </div>
         <div class="row">
             <div class="col-3">
-                <img src="https://images.evetech.net/characters/{{$user.character.id}}/portrait?size=256" class="rounded mx-auto d-block" />
+                <img src="https://images.evetech.net/characters/{{$user.Character.ID}}/portrait?size=256" class="rounded mx-auto d-block" />
             </div>
             <div class="col-9">
                 <div class="row">
@@ -26,21 +26,21 @@
                             <tbody>
                                 <tr>
                                     <td>Corporation</td>
-                                    <td class="text-end">{{$user.character.corporation.name}}</td>
+                                    <td class="text-end">{{$user.Character.Corporation.Name}}</td>
                                 </tr>
-                                {{if $user.character.corporation.alliance}}
+                                {{if $user.Character.Corporation.Alliance}}
                                 <tr>
                                     <td>Alliance</td>
-                                    <td class="text-end">{{$user.character.corporation.alliance.name}}</td>
+                                    <td class="text-end">{{$user.Character.Corporation.Alliance.Name}}</td>
                                 </tr>
                                 {{end}}
                                 <tr>
                                     <td>Date Of Birth</td>
-                                    <td class="text-end">{{$user.character.birthday}}</td>
+                                    <td class="text-end">{{$user.Character.Birthday | fmtDate}}</td>
                                 </tr>
                                 <tr>
                                     <td>Security Status</td>
-                                    <td class="text-end">{{$user.character.securityStatus}}</td>
+                                    <td class="text-end">{{nullFloat64 $user.Character.SecurityStatus}}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -55,15 +55,15 @@
                             <tbody>
                                 <tr>
                                     <td>Unallocated Skillpoints</td>
-                                    <td>{{$user.skills.meta.unallocatedSp}}</td>
+                                    <td class="text-end">{{$user.Skills.Meta.UnallocatedSP | nullUint|uintToInt64 | comma}}</td>
                                 </tr>
                                 <tr>
                                     <td>Allocated Skillpoints</td>
-                                    <td>{{$user.skills.meta.totalSp}}</td>
+                                    <td class="text-end">{{$user.Skills.Meta.TotalSP|uintToInt64|comma}}</td>
                                 </tr>
                                 <tr>
                                     <td>Total Skillpoints</td>
-                                    <td>{{$user.skills.meta.totalSp}}</td>
+                                    <td class="text-end">{{$user.Skills.Meta.TotalSP|uintToInt64|comma}}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -79,29 +79,31 @@
                             </thead>
                             <tbody>
 
+                                {{if $user.Attributes.BonusRemaps.Valid}}
                                 <tr>
                                     <td>Available Remaps</td>
-                                    <td class="text-end">{{$user.attributes.bonusRemaps}}</td>
+                                    <td class="text-end">{{$user.Attributes.BonusRemaps.Uint}}</td>
                                 </tr>
+                                {{end}}
                                 <tr>
                                     <td>Charisma</td>
-                                    <td class="text-end">{{$user.attributes.charisma}}</td>
+                                    <td class="text-end">{{$user.Attributes.Charisma}}</td>
                                 </tr>
                                 <tr>
                                     <td>Intelligence</td>
-                                    <td class="text-end">{{$user.attributes.intelligence}}</td>
+                                    <td class="text-end">{{$user.Attributes.Intelligence}}</td>
                                 </tr>
                                 <tr>
                                     <td>Memory</td>
-                                    <td class="text-end">{{$user.attributes.memory}}</td>
+                                    <td class="text-end">{{$user.Attributes.Memory}}</td>
                                 </tr>
                                 <tr>
                                     <td>Perception</td>
-                                    <td class="text-end">{{$user.attributes.perception}}</td>
+                                    <td class="text-end">{{$user.Attributes.Perception}}</td>
                                 </tr>
                                 <tr>
                                     <td>Willpower</td>
-                                    <td class="text-end">{{$user.attributes.willpower}}</td>
+                                    <td class="text-end">{{$user.Attributes.Willpower}}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -116,7 +118,7 @@
                             <tbody>
                                 <tr>
                                     <td>Number of Skills Queued</td>
-                                    <td class="text-end">{{len $user.queue}}</td>
+                                    <td class="text-end">{{len $user.Queue}}</td>
                                 </tr>
                             </tbody>
                         </table>

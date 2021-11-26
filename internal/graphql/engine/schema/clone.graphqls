@@ -12,7 +12,8 @@ type CharacterJumpClone @isAuthed @goModel(model: "github.com/eveisesi/skillz.Ch
     locationID: Uint64!
     locationType: String!
 
-    location: LocationInfo
+    station: Station
+    structure: Structure
 }
 
 type CharacterDeathClone @isAuthed @goModel(model: "github.com/eveisesi/skillz.CharacterDeathClone") {
@@ -20,12 +21,14 @@ type CharacterDeathClone @isAuthed @goModel(model: "github.com/eveisesi/skillz.C
     locationID: Uint64!
     locationType: String!
 
-    location: LocationInfo
+    station: Station
+    structure: Structure
 }
 
 type CharacterImplant @goModel(model: "github.com/eveisesi/skillz.CharacterImplant") {
     characterID: Uint64!
     implantID: Uint!
+
+    implant: Type!
 }
 
-union LocationInfo = Structure | Station

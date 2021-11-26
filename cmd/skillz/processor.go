@@ -13,6 +13,7 @@ import (
 	"github.com/eveisesi/skillz/internal/mysql"
 	"github.com/eveisesi/skillz/internal/processor"
 	"github.com/eveisesi/skillz/internal/skill"
+	"github.com/eveisesi/skillz/internal/universe"
 	"github.com/eveisesi/skillz/internal/user"
 	"github.com/urfave/cli/v2"
 )
@@ -31,6 +32,7 @@ func processorCommand(c *cli.Context) error {
 	cloneRepo := mysql.NewCloneRepository(mysqlClient)
 	skillsRepo := mysql.NewSkillRepository(mysqlClient)
 	userRepo := mysql.NewUserRepository(mysqlClient)
+	universeRepo := mysql.NewUniverseRepository(mysqlClient)
 
 	alliance := alliance.New(cache, esi, etag, allianceRepo)
 	corporation := corporation.New(cache, esi, etag, corporationRepo)
@@ -49,7 +51,8 @@ func processorCommand(c *cli.Context) error {
 
 	user := user.New(redisClient, auth, alliance, character, corporation, userRepo)
 	clone := clone.New(cache, etag, esi, cloneRepo)
-	skills := skill.New(cache, esi, skillsRepo)
+	universe := universe.New(cache, esi, universeRepo)
+	skills := skill.New(cache, esi, universe, skillsRepo)
 
 	return processor.New(logger, redisClient, user, skillz.ScopeProcessors{
 		clone,

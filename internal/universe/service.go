@@ -9,6 +9,7 @@ import (
 	"github.com/eveisesi/skillz/internal"
 	"github.com/eveisesi/skillz/internal/cache"
 	"github.com/eveisesi/skillz/internal/esi"
+	"github.com/eveisesi/skillz/internal/mysql"
 	"github.com/pkg/errors"
 	"github.com/volatiletech/null"
 )
@@ -19,12 +20,15 @@ type API interface {
 	Constellation(ctx context.Context, constellationID uint) (*skillz.Constellation, error)
 	Faction(ctx context.Context, id uint) (*skillz.Faction, error)
 	Group(ctx context.Context, groupID uint) (*skillz.Group, error)
+	GroupsByCategory(ctx context.Context, categoryID uint) ([]*skillz.Group, error)
 	Race(ctx context.Context, id uint) (*skillz.Race, error)
 	Region(ctx context.Context, regionID uint) (*skillz.Region, error)
 	SolarSystem(ctx context.Context, solarSystemID uint) (*skillz.SolarSystem, error)
 	Station(ctx context.Context, stationID uint) (*skillz.Station, error)
 	Structure(ctx context.Context, structureID uint64) (*skillz.Structure, error)
 	Type(ctx context.Context, itemID uint) (*skillz.Type, error)
+	TypeAttributes(ctx context.Context, id uint) ([]*skillz.TypeDogmaAttribute, error)
+	TypesByGroup(ctx context.Context, groupID uint) ([]*skillz.Type, error)
 }
 
 type Service struct {
@@ -253,6 +257,28 @@ func (s *Service) Group(ctx context.Context, groupID uint) (*skillz.Group, error
 	}
 
 	return group, s.cache.SetGroup(ctx, group)
+
+}
+
+func (s *Service) GroupsByCategory(ctx context.Context, categoryID uint) ([]*skillz.Group, error) {
+
+	groups, err := s.cache.GroupsByCategoryID(ctx, categoryID)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(groups) > 0 {
+		return groups, nil
+	}
+
+	groups, err = s.universe.Groups(ctx, skillz.NewEqualOperator(mysql.GroupCategoryID, categoryID))
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
+
+	err = s.cache.SetGroupsByCategoryID(ctx, categoryID, groups)
+
+	return groups, errors.Wrap(err, "failed to cache groups by category ID")
 
 }
 
@@ -550,12 +576,31 @@ func (s *Service) Type(ctx context.Context, itemID uint) (*skillz.Type, error) {
 			case true:
 				err = s.universe.UpdateType(ctx, updatedType)
 				if err != nil {
-					return nil, errors.Wrap(err, "failed to save character to data store")
+					return nil, errors.Wrap(err, "failed to save item to data store")
 				}
+				if len(updatedType.Attributes) > 0 {
+					err = s.universe.DeleteTypeDogmaAttributes(ctx, itemID)
+					if err != nil {
+						return nil, errors.Wrap(err, "failed to save item attributes to data store")
+					}
+
+					err = s.universe.CreateTypeDogmaAttributes(ctx, updatedType.Attributes)
+					if err != nil {
+						return nil, errors.Wrap(err, "failed to save item attributes to data store")
+					}
+				}
+
 			case false:
 				err = s.universe.CreateType(ctx, updatedType)
 				if err != nil {
-					return nil, errors.Wrap(err, "failed to save character to data store")
+					return nil, errors.Wrap(err, "failed to save item to data store")
+				}
+
+				if len(updatedType.Attributes) > 0 {
+					err = s.universe.CreateTypeDogmaAttributes(ctx, updatedType.Attributes)
+					if err != nil {
+						return nil, errors.Wrap(err, "failed to save item attributes to data store")
+					}
 				}
 
 			}
@@ -565,6 +610,55 @@ func (s *Service) Type(ctx context.Context, itemID uint) (*skillz.Type, error) {
 
 	}
 
+	attributes, err := s.universe.TypeDogmaAttributes(ctx, item.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	item.Attributes = attributes
+
 	return item, s.cache.SetType(ctx, item)
+
+}
+
+func (s *Service) TypeAttributes(ctx context.Context, id uint) ([]*skillz.TypeDogmaAttribute, error) {
+
+	attributes, err := s.cache.TypeAttributes(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(attributes) > 0 {
+		return attributes, nil
+	}
+
+	attributes, err = s.universe.TypeDogmaAttributes(ctx, id)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
+
+	return attributes, s.cache.SetTypeAttributes(ctx, id, attributes)
+
+}
+
+func (s *Service) TypesByGroup(ctx context.Context, groupID uint) ([]*skillz.Type, error) {
+
+	types, err := s.cache.TypesByGroupID(ctx, groupID)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(types) > 0 {
+		return types, nil
+	}
+
+	types, err = s.universe.Types(ctx, skillz.NewEqualOperator(mysql.TypesGroupID, groupID))
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
+
+	err = s.cache.SetTypesByGroupID(ctx, groupID, types)
+
+	return types, errors.Wrap(err, "failed to cache types by group ID")
 
 }
