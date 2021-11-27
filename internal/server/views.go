@@ -59,12 +59,12 @@ var characterTemplates = template.Must(template.New("character.page.html").Funcs
 ))
 
 type characterViewData struct {
-	Character     *graphql.Character `json:"character"`
-	Skills        *graphql.Skills    `json:"skills"`
-	GroupedSkills [][]*graphql.Skills
-	Implants      []*graphql.Implant  `json:"implants"`
-	Attributes    *graphql.Attributes `json:"attributes"`
-	Queue         []*graphql.Queue    `json:"queue"`
+	Character  *graphql.Character
+	SkillMeta  *graphql.SkillMeta
+	Skills     []*graphql.SkillGroup
+	Implants   []*graphql.Implant
+	Attributes *graphql.Attributes
+	Queue      []*graphql.Queue
 }
 
 func (s *server) handleRenderCharacterPage(w http.ResponseWriter, r *http.Request) {
@@ -104,6 +104,7 @@ func (s *server) handleRenderCharacterPage(w http.ResponseWriter, r *http.Reques
 	viewData := &characterViewData{
 		Character:  skillboard.User.Character,
 		Skills:     skillboard.User.Skills,
+		SkillMeta:  skillboard.User.SkillMeta,
 		Implants:   skillboard.User.Implants,
 		Attributes: skillboard.User.Attributes,
 		Queue:      skillboard.User.Queue,

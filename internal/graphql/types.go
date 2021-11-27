@@ -19,8 +19,10 @@ type User struct {
 	IsNew       bool      `json:"isNew"`
 	LastLogin   time.Time `json:"lastLogin"`
 
-	Character  *Character  `json:"character"`
-	Skills     *Skills     `json:"skills"`
+	Character *Character    `json:"character"`
+	SkillMeta *SkillMeta    `json:"skillMeta"`
+	Skills    []*SkillGroup `json:"skills"`
+	// Skills     *Skills     `json:"skills"`
 	Implants   []*Implant  `json:"implants"`
 	Attributes *Attributes `json:"attributes"`
 	Queue      []*Queue    `json:"queue"`
@@ -47,16 +49,16 @@ type Character struct {
 	Corporation *Corporation `json:"corporation"`
 }
 
-type Skills struct {
-	Meta   *SkillMeta `json:"meta"`
-	Skills []*Skill   `json:"skills"`
-	// Grouped
-}
-
 type SkillMeta struct {
 	CharacterID   uint64    `json:"characterID"`
 	TotalSP       uint      `json:"totalSp"`
 	UnallocatedSP null.Uint `json:"unallocatedSp"`
+}
+
+type SkillGroup struct {
+	TotalGroupSP uint `json:"totalGroupSP"`
+	Info         *InvGroup
+	Skills       []*Skill
 }
 
 type Skill struct {
@@ -106,7 +108,13 @@ type InvType struct {
 	ID   uint   `db:"id" json:"id"`
 	Name string `db:"name" json:"name"`
 
-	Group *InvGroup `json:"group"`
+	Attribute []*InvTypeAttribute `json:"attributes"`
+	Group     *InvGroup           `json:"group"`
+}
+
+type InvTypeAttribute struct {
+	AttributeID uint    `json:"attributeID"`
+	Value       float64 `json:"value"`
 }
 
 type InvGroup struct {

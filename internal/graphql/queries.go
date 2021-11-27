@@ -18,10 +18,15 @@ query($id: Uint64!) {
         }
       }
     }
+    skillMeta {
+      totalSp
+      unallocatedSp
+    }
     skills {
-      meta {
-        totalSp
-        unallocatedSp
+      totalGroupSP
+      info {
+        id
+        name
       }
       skills {
         skillID
@@ -31,9 +36,9 @@ query($id: Uint64!) {
         info {
           id
           name
-          group {
-            id
-            name
+          attributes {
+            attributeID
+            value
           }
         }
       }
