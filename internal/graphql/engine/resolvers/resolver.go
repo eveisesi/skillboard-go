@@ -6,7 +6,7 @@ import (
 	"github.com/eveisesi/skillz/internal/character"
 	"github.com/eveisesi/skillz/internal/clone"
 	"github.com/eveisesi/skillz/internal/corporation"
-	"github.com/eveisesi/skillz/internal/graphql/engine/dataloaders"
+	"github.com/eveisesi/skillz/internal/graphql/dataloaders"
 	"github.com/eveisesi/skillz/internal/skill"
 	"github.com/eveisesi/skillz/internal/user"
 )

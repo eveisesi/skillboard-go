@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/eveisesi/skillz"
-	"github.com/eveisesi/skillz/internal/graphql/engine/dataloaders/generated"
+	"github.com/eveisesi/skillz/internal/graphql/dataloaders/generated"
 )
 
 func (s *Service) StationLoader() *generated.StationLoader {
