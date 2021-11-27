@@ -12,8 +12,9 @@ import (
 	"github.com/eveisesi/skillz"
 	"github.com/eveisesi/skillz/internal/cache"
 	"github.com/eveisesi/skillz/internal/graphql"
-	"github.com/eveisesi/skillz/internal/skill"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-http-utils/headers"
 	"github.com/sirupsen/logrus"
 )
 
@@ -24,7 +25,6 @@ type server struct {
 
 	cache   cache.PageAPI
 	graphql graphql.API
-	skill   skill.API
 
 	server *http.Server
 }
@@ -70,32 +70,20 @@ func (s *server) buildRouter() *chi.Mux {
 	r.Use(
 		s.requestLogger(s.logger),
 		s.cors,
+		middleware.SetHeader(headers.ContentType, "application/json"),
 	)
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	// r.Group(func(r chi.Router) {
-	// 	r.Use(
-	// 		middleware.SetHeader(headers.ContentType, "application/json"),
-	// 	)
-	// 	r.Get("/.well-known/openid-configuration", s.GetOpenIDConfiguration)
-	// 	r.Get("/auth/jwks", s.GetJsonWebKeySet)
-	// })
+	// ##### GraphQL Handler #####
+	handler := handler.New(s.graphql.ExecutableSchema())
 
-	r.Get("/", s.handleRenderHomepage)
-	r.Get("/characters/{userUUID}", s.handleRenderCharacterPage)
-
-	if s.env != skillz.Production {
-		// ##### GraphQL Handler #####
-		handler := handler.New(s.graphql.ExecutableSchema())
-
-		handler.AddTransport(transport.POST{})
-		handler.Use(extension.Introspection{})
-		r.Handle("/graphql", handler)
-		r.Get("/playground", playground.Handler("GraphQL playground", "/graphql"))
-	}
+	handler.AddTransport(transport.POST{})
+	handler.Use(extension.Introspection{})
+	r.Handle("/graphql", handler)
+	r.Get("/playground", playground.Handler("GraphQL playground", "/graphql"))
 
 	return r
 }

@@ -1,7 +1,6 @@
 package graphql
 
 import (
-	"context"
 	"time"
 
 	"github.com/99designs/gqlgen/graphql"
@@ -17,11 +16,9 @@ import (
 	"github.com/eveisesi/skillz/internal/skill"
 	"github.com/eveisesi/skillz/internal/universe"
 	"github.com/eveisesi/skillz/internal/user"
-	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
 type API interface {
-	Skillboard(ctx context.Context, characterID uint64) (*Skillboard, gqlerror.List)
 	ExecutableSchema() graphql.ExecutableSchema
 }
 
