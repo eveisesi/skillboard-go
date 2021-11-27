@@ -1,5 +1,4 @@
 type User @goModel(model: "github.com/eveisesi/skillz.User") {
-    id: UUID!
     characterID: Uint64!
     scopes: [String!]
     isNew: Boolean!

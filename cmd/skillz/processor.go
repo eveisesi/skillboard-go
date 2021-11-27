@@ -44,8 +44,6 @@ func processorCommand(c *cli.Context) error {
 		oauth2Config(),
 		keyConfig(),
 		cfg.Eve.JWKSURI,
-		cfg.Auth.TokenIssuer,
-		cfg.Auth.TokenAudience,
 		cfg.Auth.TokenExpiry,
 	)
 

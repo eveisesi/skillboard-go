@@ -2,70 +2,86 @@ package auth
 
 import (
 	"context"
+	"crypto"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha256"
 	"fmt"
+	"net/http"
+	"strings"
 	"time"
 
-	"github.com/eveisesi/skillz"
-	"github.com/lestrrat-go/jwx/jwa"
-	"github.com/lestrrat-go/jwx/jwk"
-	"github.com/lestrrat-go/jwx/jwt"
+	"github.com/gofrs/uuid"
 	"github.com/pkg/errors"
 )
 
 type user interface {
-	GetPublicUserJWKS() jwk.Set
-	ParseAndVerifyUserToken(ctx context.Context, t string) (jwt.Token, error)
-	TokenFromUser(ctx context.Context, user *skillz.User) (string, error)
+	CookieForUserID(ctx context.Context, cookie *http.Cookie, userID uuid.UUID) (*http.Cookie, error)
+	UserIDFromCookie(ctx context.Context, cookie *http.Cookie) (uuid.UUID, error)
 }
 
-func (s *Service) GetPublicUserJWKS() jwk.Set {
-	return s.userAuth.jwks
+func (s *Service) CookieForUserID(ctx context.Context, cookie *http.Cookie, userID uuid.UUID) (*http.Cookie, error) {
+
+	userIDString := userID.String()
+
+	hash, err := s.hash([]byte(userIDString))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to hash user id")
+	}
+
+	signature, err := s.userAuth.rsaKey.Sign(rand.Reader, hash, &rsa.PSSOptions{SaltLength: 32, Hash: crypto.SHA256})
+	if err != nil {
+		return cookie, err
+	}
+
+	cookie.Value = fmt.Sprintf("%s.%x", userIDString, signature)
+	cookie.Value = userIDString
+	cookie.Expires = time.Now().Add(s.userAuth.tokenExpiry)
+
+	fmt.Println(cookie.Value, cookie.Expires.Format("2006-01-02 15:04:05"))
+
+	return cookie, nil
+
 }
 
-func (s *Service) ParseAndVerifyUserToken(ctx context.Context, t string) (jwt.Token, error) {
+func (s *Service) UserIDFromCookie(ctx context.Context, cookie *http.Cookie) (uuid.UUID, error) {
 
-	token, err := jwt.ParseString(t, s.userAuth.parseOpts...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse token: %w", err)
+	v := cookie.Value
+	vp := strings.Split(v, ".")
+	if len(vp) != 2 {
+		return uuid.Nil, errors.Errorf("expected split of cookie value to = 2, got %d parts", len(vp))
 	}
 
-	return token, nil
+	userIDStr := vp[0]
+	signature := vp[1]
+
+	userIDHash, err := s.hash([]byte(userIDStr))
+	if err != nil {
+		return uuid.Nil, errors.Wrap(err, "failed to hash user id")
+	}
+
+	err = rsa.VerifyPSS(&s.userAuth.rsaKey.PublicKey, crypto.SHA256, []byte(userIDHash), []byte(signature), &rsa.PSSOptions{SaltLength: 32, Hash: crypto.SHA256})
+	if err != nil {
+		return uuid.Nil, errors.Wrap(err, "failed to verify signature")
+	}
+
+	userID, err := uuid.FromString(userIDStr)
+	if err != nil {
+		return uuid.Nil, errors.Wrap(err, "failed to parse uuid")
+	}
+
+	return userID, nil
 
 }
 
-func (s *Service) TokenFromUser(ctx context.Context, user *skillz.User) (string, error) {
+func (s *Service) hash(in []byte) ([]byte, error) {
 
-	token := jwt.New()
-	err := token.Set(jwt.AudienceKey, s.userAuth.tokenAud)
+	hasher := sha256.New()
+	_, err := hasher.Write(in)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to set audience on token")
+		return nil, err
 	}
 
-	err = token.Set(jwt.IssuerKey, s.userAuth.tokenIssuer)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to set issuer on token")
-	}
-
-	err = token.Set(jwt.ExpirationKey, time.Now().Add(s.userAuth.tokenExpiry))
-	if err != nil {
-		return "", errors.Wrap(err, "failed to set expiry on token")
-	}
-
-	err = token.Set(jwt.SubjectKey, user.ID.String())
-	if err != nil {
-		return "", errors.Wrap(err, "failed to set subject on token")
-	}
-
-	err = token.Set("owner", user.OwnerHash)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to set private claim 'owner' on token")
-	}
-
-	signed, err := jwt.Sign(token, jwa.RS256, s.userAuth.jwkKey)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to sign token")
-	}
-
-	return string(signed), err
+	return hasher.Sum(nil), nil
 
 }

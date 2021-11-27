@@ -4,38 +4,25 @@ import (
 	"context"
 
 	"github.com/eveisesi/skillz"
-	"github.com/lestrrat-go/jwx/jwt"
+	"github.com/gofrs/uuid"
 )
 
 type ctxKey int
 
 const (
-	ctxToken ctxKey = iota
+	ctxSessionID ctxKey = iota
 	ctxUser
-	ctxUpdateable
 )
 
-func UpdateableFromContext(ctx context.Context) bool {
-	if updateable, ok := ctx.Value(ctxUpdateable).(bool); ok {
-		return updateable
+func ContextWithSessionID(ctx context.Context, sessionID uuid.UUID) context.Context {
+	return context.WithValue(ctx, ctxSessionID, sessionID)
+}
+
+func SessionIDFromContext(ctx context.Context) uuid.UUID {
+	if sessionID, ok := ctx.Value(ctxSessionID).(uuid.UUID); ok {
+		return sessionID
 	}
-
-	return false
-}
-
-func ContextWithUpdateable(ctx context.Context, updateable bool) context.Context {
-	return context.WithValue(ctx, ctxUpdateable, updateable)
-}
-
-func ContextWithToken(ctx context.Context, token jwt.Token) context.Context {
-	return context.WithValue(ctx, ctxToken, token)
-}
-
-func TokenFromContext(ctx context.Context) jwt.Token {
-	if token, ok := ctx.Value(ctxToken).(jwt.Token); ok {
-		return token
-	}
-	return nil
+	return uuid.Nil
 }
 
 func ContextWithUser(ctx context.Context, user *skillz.User) context.Context {

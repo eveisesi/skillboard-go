@@ -53,8 +53,6 @@ func serverCommand(_ *cli.Context) error {
 		oauth2Config(),
 		keyConfig(),
 		cfg.Eve.JWKSURI,
-		cfg.Auth.TokenIssuer,
-		cfg.Auth.TokenAudience,
 		cfg.Auth.TokenExpiry,
 	)
 	character := character.New(cache, esi, etag, characterRepo)
@@ -65,7 +63,7 @@ func serverCommand(_ *cli.Context) error {
 	universe := universe.New(cache, esi, universeRepo)
 	skill := skill.New(cache, esi, universe, skillsRepo)
 	graphql := graphql.New(alliance, auth, character, clone, corporation, skill, universe, user)
-	server := server.New(cfg.Server.Port, env, logger, cache, graphql)
+	server := server.New(cfg.Server.Port, env, logger, auth, graphql, user)
 	errChan := make(chan error, 1)
 	go func() {
 		errChan <- server.Run()

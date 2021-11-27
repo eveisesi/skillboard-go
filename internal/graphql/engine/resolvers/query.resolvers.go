@@ -19,7 +19,7 @@ func (r *queryResolver) InitializeAuth(ctx context.Context) (string, error) {
 	return r.auth.AuthorizationURI(ctx, attempt.State), nil
 }
 
-func (r *queryResolver) FinalizeAuth(ctx context.Context, code string, state string) (*skillz.AuthAttempt, error) {
+func (r *queryResolver) FinalizeAuth(ctx context.Context, code string, state string) (*skillz.User, error) {
 	return r.user.Login(ctx, code, state)
 }
 

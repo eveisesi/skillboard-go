@@ -9,13 +9,13 @@
 package auth
 
 import (
+	"crypto/rsa"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/eveisesi/skillz/internal/cache"
 	"github.com/lestrrat-go/jwx/jwk"
-	"github.com/lestrrat-go/jwx/jwt"
 	"golang.org/x/oauth2"
 )
 
@@ -30,11 +30,7 @@ type esiAuth struct {
 }
 
 type userAuth struct {
-	jwkKey      jwk.RSAPrivateKey
-	jwks        jwk.Set
-	parseOpts   []jwt.ParseOption
-	tokenIssuer string
-	tokenAud    string
+	rsaKey      *rsa.PrivateKey
 	tokenExpiry time.Duration
 }
 
@@ -47,14 +43,10 @@ type Service struct {
 
 func New(
 	client *http.Client, cache cache.AuthAPI,
-	esiOAuth *oauth2.Config, userPrivateKey jwk.RSAPrivateKey,
-	esiAuthJWKSEndpoint, userTokenIssuer, userTokenAud string,
+	esiOAuth *oauth2.Config, userPrivateKey *rsa.PrivateKey,
+	esiAuthJWKSEndpoint string,
 	userTokenExpiry time.Duration,
 ) *Service {
-	userPublicKey, _ := userPrivateKey.PublicKey()
-	set := jwk.NewSet()
-	set.Add(userPublicKey)
-
 	s := &Service{
 		client: client,
 		cache:  cache,
@@ -62,17 +54,8 @@ func New(
 			oauthConfig: esiOAuth,
 		},
 		userAuth: userAuth{
-			jwkKey:      userPrivateKey,
-			jwks:        set,
-			tokenAud:    userTokenAud,
-			tokenIssuer: userTokenIssuer,
+			rsaKey:      userPrivateKey,
 			tokenExpiry: userTokenExpiry,
-			parseOpts: []jwt.ParseOption{
-				jwt.WithIssuer(userTokenIssuer),
-				jwt.WithAudience(userTokenAud),
-				jwt.WithKeySet(set),
-				jwt.WithValidate(true),
-			},
 		},
 	}
 

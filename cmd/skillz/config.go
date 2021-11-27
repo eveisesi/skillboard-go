@@ -33,9 +33,6 @@ type config struct {
 
 	Auth struct {
 		PrivateKey     []byte `envconfig:"AUTH_KEY" required:"true"`
-		KeyID          string `envconfig:"AUTH_KID" required:"true"`
-		TokenIssuer    string `envconfig:"AUTH_ISSUER" required:"true"`
-		TokenAudience  string `envconfig:"AUTH_AUDIENCE" required:"true"`
 		TokenExpiryStr string `envconfig:"AUTH_EXPIRY" required:"true"`
 		TokenExpiry    time.Duration
 	}

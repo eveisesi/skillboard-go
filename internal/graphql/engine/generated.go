@@ -17,7 +17,6 @@ import (
 	"github.com/eveisesi/skillz"
 	"github.com/eveisesi/skillz/internal/graphql/engine/scalar"
 	null1 "github.com/eveisesi/skillz/internal/graphql/engine/scalar/null"
-	"github.com/gofrs/uuid"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 	"github.com/volatiletech/null"
@@ -74,10 +73,6 @@ type ComplexityRoot struct {
 		IsClosed              func(childComplexity int) int
 		Name                  func(childComplexity int) int
 		Ticker                func(childComplexity int) int
-	}
-
-	AuthAttempt struct {
-		Token func(childComplexity int) int
 	}
 
 	Category struct {
@@ -282,7 +277,6 @@ type ComplexityRoot struct {
 		Character   func(childComplexity int) int
 		CharacterID func(childComplexity int) int
 		Clone       func(childComplexity int) int
-		ID          func(childComplexity int) int
 		Implants    func(childComplexity int) int
 		IsNew       func(childComplexity int) int
 		LastLogin   func(childComplexity int) int
@@ -330,7 +324,7 @@ type GroupResolver interface {
 }
 type QueryResolver interface {
 	InitializeAuth(ctx context.Context) (string, error)
-	FinalizeAuth(ctx context.Context, code string, state string) (*skillz.AuthAttempt, error)
+	FinalizeAuth(ctx context.Context, code string, state string) (*skillz.User, error)
 	User(ctx context.Context, id uint64) (*skillz.User, error)
 	Character(ctx context.Context, id uint64) (*skillz.Character, error)
 }
@@ -436,13 +430,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Alliance.Ticker(childComplexity), true
-
-	case "AuthAttempt.token":
-		if e.complexity.AuthAttempt.Token == nil {
-			break
-		}
-
-		return e.complexity.AuthAttempt.Token(childComplexity), true
 
 	case "Category.id":
 		if e.complexity.Category.ID == nil {
@@ -1425,13 +1412,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.Clone(childComplexity), true
 
-	case "User.id":
-		if e.complexity.User.ID == nil {
-			break
-		}
-
-		return e.complexity.User.ID(childComplexity), true
-
 	case "User.implants":
 		if e.complexity.User.Implants == nil {
 			break
@@ -1547,10 +1527,6 @@ extend type Corporation {
     alliance: Alliance
 }
 `, BuiltIn: false},
-	{Name: "internal/graphql/engine/schema/auth.graphqls", Input: `type AuthAttempt @goModel(model: "github.com/eveisesi/skillz.AuthAttempt") {
-    token: String
-}
-`, BuiltIn: false},
 	{Name: "internal/graphql/engine/schema/character.graphqls", Input: `type Character @goModel(model: "github.com/eveisesi/skillz.Character") {
     id: Uint64!
     name: String!
@@ -1623,7 +1599,7 @@ extend type Character {
 `, BuiltIn: false},
 	{Name: "internal/graphql/engine/schema/query.graphqls", Input: `type Query {
     initializeAuth: String!
-    finalizeAuth(code: String!, state: String!): AuthAttempt!
+    finalizeAuth(code: String!, state: String!): User!
     # user: User! @isAuthed
     user(id: Uint64!): User!
     character(id: Uint64!): Character
@@ -1781,7 +1757,6 @@ type Category @goModel(model: "github.com/eveisesi/skillz.Category") {
 }
 `, BuiltIn: false},
 	{Name: "internal/graphql/engine/schema/user.graphqls", Input: `type User @goModel(model: "github.com/eveisesi/skillz.User") {
-    id: UUID!
     characterID: Uint64!
     scopes: [String!]
     isNew: Boolean!
@@ -2220,38 +2195,6 @@ func (ec *executionContext) _Alliance_isClosed(ctx context.Context, field graphq
 	res := resTmp.(bool)
 	fc.Result = res
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _AuthAttempt_token(ctx context.Context, field graphql.CollectedField, obj *skillz.AuthAttempt) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "AuthAttempt",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Token, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(null.String)
-	fc.Result = res
-	return ec.marshalOString2githubᚗcomᚋvolatiletechᚋnullᚐString(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Category_id(ctx context.Context, field graphql.CollectedField, obj *skillz.Category) (ret graphql.Marshaler) {
@@ -5476,9 +5419,9 @@ func (ec *executionContext) _Query_finalizeAuth(ctx context.Context, field graph
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*skillz.AuthAttempt)
+	res := resTmp.(*skillz.User)
 	fc.Result = res
-	return ec.marshalNAuthAttempt2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐAuthAttempt(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_user(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -6966,41 +6909,6 @@ func (ec *executionContext) _Type_group(ctx context.Context, field graphql.Colle
 	res := resTmp.(*skillz.Group)
 	fc.Result = res
 	return ec.marshalNGroup2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐGroup(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *skillz.User) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "User",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(uuid.UUID)
-	fc.Result = res
-	return ec.marshalNUUID2githubᚗcomᚋgofrsᚋuuidᚐUUID(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_characterID(ctx context.Context, field graphql.CollectedField, obj *skillz.User) (ret graphql.Marshaler) {
@@ -8593,30 +8501,6 @@ func (ec *executionContext) _Alliance(ctx context.Context, sel ast.SelectionSet,
 	return out
 }
 
-var authAttemptImplementors = []string{"AuthAttempt"}
-
-func (ec *executionContext) _AuthAttempt(ctx context.Context, sel ast.SelectionSet, obj *skillz.AuthAttempt) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, authAttemptImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	var invalids uint32
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("AuthAttempt")
-		case "token":
-			out.Values[i] = ec._AuthAttempt_token(ctx, field, obj)
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch()
-	if invalids > 0 {
-		return graphql.Null
-	}
-	return out
-}
-
 var categoryImplementors = []string{"Category"}
 
 func (ec *executionContext) _Category(ctx context.Context, sel ast.SelectionSet, obj *skillz.Category) graphql.Marshaler {
@@ -9876,11 +9760,6 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("User")
-		case "id":
-			out.Values[i] = ec._User_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
 		case "characterID":
 			out.Values[i] = ec._User_characterID(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -10259,20 +10138,6 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 // endregion **************************** object.gotpl ****************************
 
 // region    ***************************** type.gotpl *****************************
-
-func (ec *executionContext) marshalNAuthAttempt2githubᚗcomᚋeveisesiᚋskillzᚐAuthAttempt(ctx context.Context, sel ast.SelectionSet, v skillz.AuthAttempt) graphql.Marshaler {
-	return ec._AuthAttempt(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNAuthAttempt2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐAuthAttempt(ctx context.Context, sel ast.SelectionSet, v *skillz.AuthAttempt) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	return ec._AuthAttempt(ctx, sel, v)
-}
 
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
@@ -10729,21 +10594,6 @@ func (ec *executionContext) marshalNType2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐT
 		return graphql.Null
 	}
 	return ec._Type(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalNUUID2githubᚗcomᚋgofrsᚋuuidᚐUUID(ctx context.Context, v interface{}) (uuid.UUID, error) {
-	res, err := scalar.UnmarshalUUID(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNUUID2githubᚗcomᚋgofrsᚋuuidᚐUUID(ctx context.Context, sel ast.SelectionSet, v uuid.UUID) graphql.Marshaler {
-	res := scalar.MarshalUUID(v)
-	if res == graphql.Null {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "must not be null")
-		}
-	}
-	return res
 }
 
 func (ec *executionContext) unmarshalNUint2uint(ctx context.Context, v interface{}) (uint, error) {

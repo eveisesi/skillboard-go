@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -23,12 +24,13 @@ import (
 )
 
 type API interface {
-	Login(ctx context.Context, code, state string) (*skillz.AuthAttempt, error)
+	Login(ctx context.Context, code, state string) (*skillz.User, error)
 	UserFromToken(ctx context.Context, token jwt.Token) (*skillz.User, error)
 	ValidateCurrentToken(ctx context.Context, user *skillz.User) error
 
 	User(ctx context.Context, id uuid.UUID) (*skillz.User, error)
 	UserByCharacterID(ctx context.Context, characterID uint64) (*skillz.User, error)
+	UserByCookie(ctx context.Context, cookie *http.Cookie) (*skillz.User, error)
 	UpdateUser(ctx context.Context, user *skillz.User) error
 
 	// OverviewData(ctx context.Context, characterID string)
@@ -68,7 +70,7 @@ func New(
 	}
 }
 
-func (s *Service) Login(ctx context.Context, code, state string) (*skillz.AuthAttempt, error) {
+func (s *Service) Login(ctx context.Context, code, state string) (*skillz.User, error) {
 
 	attempt, err := s.auth.AuthAttempt(ctx, state)
 	if err != nil {
@@ -144,9 +146,9 @@ func (s *Service) Login(ctx context.Context, code, state string) (*skillz.AuthAt
 		}
 	}
 
-	userToken, err := s.auth.TokenFromUser(ctx, user)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to generate token for user")
+	sessionID := internal.SessionIDFromContext(ctx)
+	if sessionID != uuid.Nil {
+		internal.CacheSet(sessionID, user.ID)
 	}
 
 	err = s.auth.DeleteAuthAttempt(ctx, attempt)
@@ -159,9 +161,7 @@ func (s *Service) Login(ctx context.Context, code, state string) (*skillz.AuthAt
 		return nil, errors.Wrap(err, "failed to push user id to processing queue")
 	}
 
-	attempt.Token.SetValid(userToken)
-
-	return attempt, err
+	return user, err
 
 }
 
@@ -222,6 +222,17 @@ func (s *Service) UserFromToken(ctx context.Context, token jwt.Token) (*skillz.U
 	}
 
 	return user, nil
+
+}
+
+func (s *Service) UserByCookie(ctx context.Context, cookie *http.Cookie) (*skillz.User, error) {
+
+	userID, err := s.auth.UserIDFromCookie(ctx, cookie)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.User(ctx, userID)
 
 }
 
