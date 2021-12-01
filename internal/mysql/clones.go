@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-type CloneRepository struct {
+type cloneRepository struct {
 	db             QueryExecContext
 	meta, death    tableConf
 	jump, implants tableConf
@@ -30,34 +30,32 @@ const (
 	ImplantsImplantID string = "implant_id"
 )
 
-var _ skillz.CloneRepository = (*CloneRepository)(nil)
-
-func NewCloneRepository(db QueryExecContext) *CloneRepository {
-	return &CloneRepository{
+func NewCloneRepository(db QueryExecContext) skillz.CloneRepository {
+	return &cloneRepository{
 		db: db,
 		meta: tableConf{
-			table: "character_clone_meta",
+			table: TableCharacterCloneMeta,
 			columns: []string{
 				MetaLastCloneJumpDate, MetaLastStationChangeDate,
 				ColumnCharacterID, ColumnCreatedAt, ColumnUpdatedAt,
 			},
 		},
 		death: tableConf{
-			table: "character_home_clone",
+			table: TableCharacterHomeClone,
 			columns: []string{
 				DeathLocationID, DeathLocationType,
 				ColumnCharacterID, ColumnCreatedAt, ColumnUpdatedAt,
 			},
 		},
 		jump: tableConf{
-			table: "character_jump_clones",
+			table: TableCharacterJumpClones,
 			columns: []string{
 				JumpJumpCloneID, JumpLocationID, JumpLocationType, JumpImplants,
 				ColumnCharacterID, ColumnCreatedAt,
 			},
 		},
 		implants: tableConf{
-			table: "character_implants",
+			table: TableCharacterImplants,
 			columns: []string{
 				ColumnCharacterID, ImplantsImplantID, ColumnCreatedAt,
 			},
@@ -65,23 +63,23 @@ func NewCloneRepository(db QueryExecContext) *CloneRepository {
 	}
 }
 
-func (r *CloneRepository) CharacterCloneMeta(ctx context.Context, characterID uint64) (*skillz.CharacterCloneMeta, error) {
+func (r *cloneRepository) CharacterCloneMeta(ctx context.Context, characterID uint64) (*skillz.CharacterCloneMeta, error) {
 
 	query, args, err := sq.Select(r.meta.columns...).
 		From(r.meta.table).
 		Where(sq.Eq{ColumnCharacterID: characterID}).
 		ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, cloneRepository, "CharacterCloneMeta", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, cloneRepositoryIdentifier, "CharacterCloneMeta", "failed to generate sql")
 	}
 
 	var meta = new(skillz.CharacterCloneMeta)
 	err = r.db.GetContext(ctx, meta, query, args...)
-	return meta, errors.Wrapf(err, prefixFormat, cloneRepository, "CharacterCloneMeta")
+	return meta, errors.Wrapf(err, prefixFormat, cloneRepositoryIdentifier, "CharacterCloneMeta")
 
 }
 
-func (r *CloneRepository) CreateCharacterCloneMeta(ctx context.Context, meta *skillz.CharacterCloneMeta) error {
+func (r *cloneRepository) CreateCharacterCloneMeta(ctx context.Context, meta *skillz.CharacterCloneMeta) error {
 
 	now := time.Now()
 	meta.CreatedAt = now
@@ -101,30 +99,30 @@ func (r *CloneRepository) CreateCharacterCloneMeta(ctx context.Context, meta *sk
 		)).
 		ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, cloneRepository, "CreateCloneMeta", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, cloneRepositoryIdentifier, "CreateCloneMeta", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, cloneRepository, "CreateCloneMeta")
+	return errors.Wrapf(err, prefixFormat, cloneRepositoryIdentifier, "CreateCloneMeta")
 }
 
-func (r *CloneRepository) CharacterDeathClone(ctx context.Context, characterID uint64) (*skillz.CharacterDeathClone, error) {
+func (r *cloneRepository) CharacterDeathClone(ctx context.Context, characterID uint64) (*skillz.CharacterDeathClone, error) {
 
 	query, args, err := sq.Select(r.death.columns...).
 		From(r.death.table).
 		Where(sq.Eq{ColumnCharacterID: characterID}).
 		ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, cloneRepository, "CharacterDeathClone", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, cloneRepositoryIdentifier, "CharacterDeathClone", "failed to generate sql")
 	}
 
 	var death = new(skillz.CharacterDeathClone)
 	err = r.db.GetContext(ctx, death, query, args...)
-	return death, errors.Wrapf(err, prefixFormat, cloneRepository, "CharacterDeathClone")
+	return death, errors.Wrapf(err, prefixFormat, cloneRepositoryIdentifier, "CharacterDeathClone")
 
 }
 
-func (r *CloneRepository) CreateCharacterDeathClone(ctx context.Context, death *skillz.CharacterDeathClone) error {
+func (r *cloneRepository) CreateCharacterDeathClone(ctx context.Context, death *skillz.CharacterDeathClone) error {
 
 	now := time.Now()
 	death.CreatedAt = now
@@ -142,31 +140,31 @@ func (r *CloneRepository) CreateCharacterDeathClone(ctx context.Context, death *
 		ColumnUpdatedAt,
 	)).ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, cloneRepository, "CreateCharacterDeathClone", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, cloneRepositoryIdentifier, "CreateCharacterDeathClone", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, cloneRepository, "CreateCharacterDeathClone")
+	return errors.Wrapf(err, prefixFormat, cloneRepositoryIdentifier, "CreateCharacterDeathClone")
 
 }
 
-func (r *CloneRepository) CharacterJumpClones(ctx context.Context, characterID uint64) ([]*skillz.CharacterJumpClone, error) {
+func (r *cloneRepository) CharacterJumpClones(ctx context.Context, characterID uint64) ([]*skillz.CharacterJumpClone, error) {
 
 	query, args, err := sq.Select(r.jump.columns...).
 		From(r.jump.table).
 		Where(sq.Eq{ColumnCharacterID: characterID}).
 		ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, cloneRepository, "CharacterJumpClones", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, cloneRepositoryIdentifier, "CharacterJumpClones", "failed to generate sql")
 	}
 
 	var jump = make([]*skillz.CharacterJumpClone, 0, 10)
 	err = r.db.SelectContext(ctx, &jump, query, args...)
-	return jump, errors.Wrapf(err, prefixFormat, cloneRepository, "CharacterJumpClones")
+	return jump, errors.Wrapf(err, prefixFormat, cloneRepositoryIdentifier, "CharacterJumpClones")
 
 }
 
-func (r *CloneRepository) CreateCharacterJumpClones(ctx context.Context, clones []*skillz.CharacterJumpClone) error {
+func (r *cloneRepository) CreateCharacterJumpClones(ctx context.Context, clones []*skillz.CharacterJumpClone) error {
 
 	i := sq.Insert(r.jump.table).Columns(r.jump.columns...)
 	now := time.Now()
@@ -182,7 +180,7 @@ func (r *CloneRepository) CreateCharacterJumpClones(ctx context.Context, clones 
 
 	query, args, err := i.ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, cloneRepository, "CreateCharacterJumpClones", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, cloneRepositoryIdentifier, "CreateCharacterJumpClones", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
@@ -190,11 +188,11 @@ func (r *CloneRepository) CreateCharacterJumpClones(ctx context.Context, clones 
 
 }
 
-func (r *CloneRepository) DeleteCharacterJumpClones(ctx context.Context, characterID uint64) error {
+func (r *cloneRepository) DeleteCharacterJumpClones(ctx context.Context, characterID uint64) error {
 
 	query, args, err := sq.Delete(r.jump.table).Where(sq.Eq{ColumnCharacterID: characterID}).ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, cloneRepository, "DeleteCharacterJumpClones", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, cloneRepositoryIdentifier, "DeleteCharacterJumpClones", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
@@ -202,23 +200,23 @@ func (r *CloneRepository) DeleteCharacterJumpClones(ctx context.Context, charact
 
 }
 
-func (r *CloneRepository) CharacterImplants(ctx context.Context, characterID uint64) ([]*skillz.CharacterImplant, error) {
+func (r *cloneRepository) CharacterImplants(ctx context.Context, characterID uint64) ([]*skillz.CharacterImplant, error) {
 
 	query, args, err := sq.Select(r.implants.columns...).
 		From(r.implants.table).
 		Where(sq.Eq{ColumnCharacterID: characterID}).
 		ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, cloneRepository, "CharacterImplants", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, cloneRepositoryIdentifier, "CharacterImplants", "failed to generate sql")
 	}
 
 	var implants = make([]*skillz.CharacterImplant, 0, 10)
 	err = r.db.SelectContext(ctx, &implants, query, args...)
-	return implants, errors.Wrapf(err, prefixFormat, cloneRepository, "CharacterImplants")
+	return implants, errors.Wrapf(err, prefixFormat, cloneRepositoryIdentifier, "CharacterImplants")
 
 }
 
-func (r *CloneRepository) CreateCharacterImplants(ctx context.Context, implants []*skillz.CharacterImplant) error {
+func (r *cloneRepository) CreateCharacterImplants(ctx context.Context, implants []*skillz.CharacterImplant) error {
 
 	i := sq.Insert(r.implants.table).Columns(r.implants.columns...)
 	now := time.Now()
@@ -229,7 +227,7 @@ func (r *CloneRepository) CreateCharacterImplants(ctx context.Context, implants 
 
 	query, args, err := i.ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, cloneRepository, "CreateCharacterImplants", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, cloneRepositoryIdentifier, "CreateCharacterImplants", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
@@ -237,11 +235,11 @@ func (r *CloneRepository) CreateCharacterImplants(ctx context.Context, implants 
 
 }
 
-func (r *CloneRepository) DeleteCharacterImplants(ctx context.Context, characterID uint64) error {
+func (r *cloneRepository) DeleteCharacterImplants(ctx context.Context, characterID uint64) error {
 
 	query, args, err := sq.Delete(r.implants.table).Where(sq.Eq{ColumnCharacterID: characterID}).ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, cloneRepository, "DeleteCharacterImplants", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, cloneRepositoryIdentifier, "DeleteCharacterImplants", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)

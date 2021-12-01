@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-type CharacterRepository struct {
+type characterRepository struct {
 	db        QueryExecContext
 	character tableConf
 	history   tableConf
@@ -35,14 +35,12 @@ const (
 	HistoryStartDate     string = "start_date"
 )
 
-var _ skillz.CharacterRepository = (*CharacterRepository)(nil)
+func NewCharacterRepository(db QueryExecContext) skillz.CharacterRepository {
 
-func NewCharacterRepository(db QueryExecContext) *CharacterRepository {
-
-	return &CharacterRepository{
+	return &characterRepository{
 		db: db,
 		character: tableConf{
-			table: "characters",
+			table: TableCharacters,
 			columns: []string{
 				CharacterID, CharacterName, CharacterCorporationID,
 				CharacterAllianceID, CharacterFactionID, CharacterSecurityStatus,
@@ -52,7 +50,7 @@ func NewCharacterRepository(db QueryExecContext) *CharacterRepository {
 			},
 		},
 		history: tableConf{
-			table: "character_corporation_history",
+			table: TableCharacterCorporationHistory,
 			columns: []string{
 				HistoryCharacterID, HistoryRecordID, HistoryCorporationID,
 				HistoryIsDeleted, HistoryStartDate, ColumnCreatedAt,
@@ -62,7 +60,7 @@ func NewCharacterRepository(db QueryExecContext) *CharacterRepository {
 	}
 }
 
-func (r *CharacterRepository) Character(ctx context.Context, characterID uint64) (*skillz.Character, error) {
+func (r *characterRepository) Character(ctx context.Context, characterID uint64) (*skillz.Character, error) {
 
 	query, args, err := sq.Select(r.character.columns...).
 		From(r.character.table).
@@ -70,16 +68,16 @@ func (r *CharacterRepository) Character(ctx context.Context, characterID uint64)
 		Limit(1).
 		ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, characterRepository, "Character", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, characterRepositoryIdentifier, "Character", "failed to generate sql")
 	}
 
 	var character = new(skillz.Character)
 	err = r.db.GetContext(ctx, character, query, args...)
-	return character, errors.Wrapf(err, prefixFormat, characterRepository, "Character")
+	return character, errors.Wrapf(err, prefixFormat, characterRepositoryIdentifier, "Character")
 
 }
 
-func (r *CharacterRepository) CreateCharacter(ctx context.Context, character *skillz.Character) error {
+func (r *characterRepository) CreateCharacter(ctx context.Context, character *skillz.Character) error {
 
 	now := time.Now()
 	character.CreatedAt = now
@@ -101,14 +99,14 @@ func (r *CharacterRepository) CreateCharacter(ctx context.Context, character *sk
 		ColumnUpdatedAt:         character.UpdatedAt,
 	}).ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, characterRepository, "CreateCharacter", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, characterRepositoryIdentifier, "CreateCharacter", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, characterRepository, "CreateCharacter")
+	return errors.Wrapf(err, prefixFormat, characterRepositoryIdentifier, "CreateCharacter")
 }
 
-func (r *CharacterRepository) UpdateCharacter(ctx context.Context, character *skillz.Character) error {
+func (r *characterRepository) UpdateCharacter(ctx context.Context, character *skillz.Character) error {
 
 	character.UpdatedAt = time.Now()
 
@@ -126,31 +124,31 @@ func (r *CharacterRepository) UpdateCharacter(ctx context.Context, character *sk
 		ColumnUpdatedAt:         character.UpdatedAt,
 	}).Where(sq.Eq{CharacterID: character.ID}).ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, characterRepository, "UpdateCharacter", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, characterRepositoryIdentifier, "UpdateCharacter", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, characterRepository, "UpdateCharacter")
+	return errors.Wrapf(err, prefixFormat, characterRepositoryIdentifier, "UpdateCharacter")
 
 }
 
-func (r *CharacterRepository) CharacterCorporationHistory(ctx context.Context, characterID uint64) ([]*skillz.CharacterCorporationHistory, error) {
+func (r *characterRepository) CharacterCorporationHistory(ctx context.Context, characterID uint64) ([]*skillz.CharacterCorporationHistory, error) {
 
 	query, args, err := sq.Select(r.history.columns...).
 		From(r.history.table).
 		Where(sq.Eq{HistoryCharacterID: characterID}).
 		ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, characterRepository, "CharacterCorporationHistory", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, characterRepositoryIdentifier, "CharacterCorporationHistory", "failed to generate sql")
 	}
 
 	var records = make([]*skillz.CharacterCorporationHistory, 0, 256)
 	err = r.db.SelectContext(ctx, &records, query, args...)
-	return records, errors.Wrapf(err, prefixFormat, characterRepository, "CharacterCorporationHistory")
+	return records, errors.Wrapf(err, prefixFormat, characterRepositoryIdentifier, "CharacterCorporationHistory")
 
 }
 
-func (r *CharacterRepository) CreateCharacterCorporationHistory(ctx context.Context, records []*skillz.CharacterCorporationHistory) ([]*skillz.CharacterCorporationHistory, error) {
+func (r *characterRepository) CreateCharacterCorporationHistory(ctx context.Context, records []*skillz.CharacterCorporationHistory) ([]*skillz.CharacterCorporationHistory, error) {
 
 	i := sq.Insert(r.history.table).Columns(r.history.columns...)
 	now := time.Now()
@@ -178,10 +176,10 @@ func (r *CharacterRepository) CreateCharacterCorporationHistory(ctx context.Cont
 
 	query, args, err := i.ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, characterRepository, "CreateCharacterCorporationHistory", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, characterRepositoryIdentifier, "CreateCharacterCorporationHistory", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return records, errors.Wrapf(err, prefixFormat, characterRepository, "CreateCharacterCorporationHistory")
+	return records, errors.Wrapf(err, prefixFormat, characterRepositoryIdentifier, "CreateCharacterCorporationHistory")
 
 }

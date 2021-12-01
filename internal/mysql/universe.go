@@ -10,7 +10,7 @@ import (
 	"xorm.io/builder"
 )
 
-type UniverseRepository struct {
+type universeRepository struct {
 	db QueryExecContext
 
 	bloodlines,
@@ -105,13 +105,11 @@ const (
 	TypeDogmaAttributeValue       string = "value"
 )
 
-var _ skillz.UniverseRepository = (*UniverseRepository)(nil)
-
-func NewUniverseRepository(db QueryExecContext) *UniverseRepository {
-	return &UniverseRepository{
+func NewUniverseRepository(db QueryExecContext) skillz.UniverseRepository {
+	return &universeRepository{
 		db: db,
 		bloodlines: tableConf{
-			table: "bloodlines",
+			table: TableBloodlines,
 			columns: []string{
 				BloodlineID,
 				BloodlineName,
@@ -128,7 +126,7 @@ func NewUniverseRepository(db QueryExecContext) *UniverseRepository {
 			},
 		},
 		factions: tableConf{
-			table: "factions",
+			table: TableFactions,
 			columns: []string{
 				FactionID,
 				FactionName,
@@ -144,7 +142,7 @@ func NewUniverseRepository(db QueryExecContext) *UniverseRepository {
 			},
 		},
 		races: tableConf{
-			table: "races",
+			table: TableRaces,
 			columns: []string{
 				RaceID, RaceName,
 				ColumnCreatedAt, ColumnUpdatedAt,
@@ -152,14 +150,14 @@ func NewUniverseRepository(db QueryExecContext) *UniverseRepository {
 		},
 
 		regions: tableConf{
-			table: "map_regions",
+			table: TableMapRegions,
 			columns: []string{
 				RegionID, RegionName,
 				ColumnCreatedAt, ColumnUpdatedAt,
 			},
 		},
 		constellations: tableConf{
-			table: "map_constellations",
+			table: TableMapConstellations,
 			columns: []string{ConstellationID,
 				ConstellationName,
 				ConstellationRegionID,
@@ -168,7 +166,7 @@ func NewUniverseRepository(db QueryExecContext) *UniverseRepository {
 			},
 		},
 		solarSystems: tableConf{
-			table: "map_solar_systems",
+			table: TableMapSolarSystems,
 			columns: []string{
 				SolarSystemID,
 				SolarSystemName,
@@ -181,7 +179,7 @@ func NewUniverseRepository(db QueryExecContext) *UniverseRepository {
 		},
 
 		stations: tableConf{
-			table: "map_stations",
+			table: TableMapStations,
 			columns: []string{
 				StationID,
 				StationName,
@@ -198,7 +196,7 @@ func NewUniverseRepository(db QueryExecContext) *UniverseRepository {
 			},
 		},
 		structures: tableConf{
-			table: "map_structures",
+			table: TableStructures,
 			columns: []string{
 				StructureID,
 				StructureName,
@@ -211,7 +209,7 @@ func NewUniverseRepository(db QueryExecContext) *UniverseRepository {
 		},
 
 		categories: tableConf{
-			table: "type_categories",
+			table: TableTypeCategories,
 			columns: []string{
 				CategoryID,
 				CategoryName,
@@ -221,7 +219,7 @@ func NewUniverseRepository(db QueryExecContext) *UniverseRepository {
 			},
 		},
 		groups: tableConf{
-			table: "type_groups",
+			table: TableTypeGroups,
 			columns: []string{
 				GroupID,
 				GroupName,
@@ -232,7 +230,7 @@ func NewUniverseRepository(db QueryExecContext) *UniverseRepository {
 			},
 		},
 		types: tableConf{
-			table: "types",
+			table: TableTypes,
 			columns: []string{
 				TypesID,
 				TypesName,
@@ -250,7 +248,7 @@ func NewUniverseRepository(db QueryExecContext) *UniverseRepository {
 			},
 		},
 		typeAttributes: tableConf{
-			table: "type_attributes",
+			table: TableTypeAttributes,
 			columns: []string{
 				TypeDogmaAttributesTypeID, TypeDogmaAttributeAttributeID,
 				TypeDogmaAttributeValue, ColumnCreatedAt,
@@ -259,7 +257,7 @@ func NewUniverseRepository(db QueryExecContext) *UniverseRepository {
 	}
 }
 
-func (r *UniverseRepository) Bloodline(ctx context.Context, bloodlineID uint) (*skillz.Bloodline, error) {
+func (r *universeRepository) Bloodline(ctx context.Context, bloodlineID uint) (*skillz.Bloodline, error) {
 
 	query, args, err := sq.Select(r.bloodlines.columns...).
 		From(r.bloodlines.table).
@@ -267,29 +265,29 @@ func (r *UniverseRepository) Bloodline(ctx context.Context, bloodlineID uint) (*
 		Limit(1).
 		ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, universeRepository, "Bloodline", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "Bloodline", "failed to generate sql")
 	}
 
 	var bloodline = new(skillz.Bloodline)
 	err = r.db.GetContext(ctx, bloodline, query, args...)
-	return bloodline, errors.Wrapf(err, prefixFormat, universeRepository, "Bloodline")
+	return bloodline, errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "Bloodline")
 
 }
 
-func (r *UniverseRepository) Bloodlines(ctx context.Context) ([]*skillz.Bloodline, error) {
+func (r *universeRepository) Bloodlines(ctx context.Context) ([]*skillz.Bloodline, error) {
 
 	query, args, err := sq.Select(r.bloodlines.columns...).From(r.bloodlines.table).ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, universeRepository, "Bloodlines", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "Bloodlines", "failed to generate sql")
 	}
 
 	var bloodlines = make([]*skillz.Bloodline, 0)
 	err = r.db.SelectContext(ctx, &bloodlines, query, args...)
-	return bloodlines, errors.Wrapf(err, prefixFormat, universeRepository, "Bloodlines")
+	return bloodlines, errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "Bloodlines")
 
 }
 
-func (r *UniverseRepository) CreateBloodline(ctx context.Context, bloodline *skillz.Bloodline) error {
+func (r *universeRepository) CreateBloodline(ctx context.Context, bloodline *skillz.Bloodline) error {
 
 	now := time.Now()
 	bloodline.CreatedAt = now
@@ -312,15 +310,15 @@ func (r *UniverseRepository) CreateBloodline(ctx context.Context, bloodline *ski
 		}).
 		ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, universeRepository, "CreateBloodline", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "CreateBloodline", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, universeRepository, "CreateBloodline")
+	return errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "CreateBloodline")
 
 }
 
-func (r *UniverseRepository) UpdateBloodline(ctx context.Context, bloodline *skillz.Bloodline) error {
+func (r *universeRepository) UpdateBloodline(ctx context.Context, bloodline *skillz.Bloodline) error {
 
 	bloodline.UpdatedAt = time.Now()
 
@@ -339,15 +337,15 @@ func (r *UniverseRepository) UpdateBloodline(ctx context.Context, bloodline *ski
 		}).
 		Where(sq.Eq{BloodlineID: bloodline.ID}).ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, universeRepository, "UpdateBloodline", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "UpdateBloodline", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, universeRepository, "CreateBloodline")
+	return errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "CreateBloodline")
 
 }
 
-func (r *UniverseRepository) Category(ctx context.Context, categoryID uint) (*skillz.Category, error) {
+func (r *universeRepository) Category(ctx context.Context, categoryID uint) (*skillz.Category, error) {
 
 	query, args, err := sq.Select(r.categories.columns...).
 		From(r.categories.table).
@@ -355,32 +353,32 @@ func (r *UniverseRepository) Category(ctx context.Context, categoryID uint) (*sk
 		Limit(1).
 		ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, universeRepository, "Category", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "Category", "failed to generate sql")
 	}
 
 	var category = new(skillz.Category)
 	err = r.db.GetContext(ctx, category, query, args...)
-	return category, errors.Wrapf(err, prefixFormat, universeRepository, "Category")
+	return category, errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "Category")
 
 }
 
-func (r *UniverseRepository) Categories(ctx context.Context) ([]*skillz.Category, error) {
+func (r *universeRepository) Categories(ctx context.Context) ([]*skillz.Category, error) {
 
 	query, args, err := sq.Select(r.categories.columns...).
 		From(r.categories.table).
 		ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, universeRepository, "Categories", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "Categories", "failed to generate sql")
 	}
 
 	var categories = make([]*skillz.Category, 0)
 	err = r.db.SelectContext(ctx, &categories, query, args...)
 
-	return categories, errors.Wrapf(err, prefixFormat, universeRepository, "Categories")
+	return categories, errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "Categories")
 
 }
 
-func (r *UniverseRepository) CreateCategory(ctx context.Context, category *skillz.Category) error {
+func (r *universeRepository) CreateCategory(ctx context.Context, category *skillz.Category) error {
 
 	now := time.Now()
 	category.CreatedAt = now
@@ -396,15 +394,15 @@ func (r *UniverseRepository) CreateCategory(ctx context.Context, category *skill
 		}).
 		ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, universeRepository, "CreateCategory", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "CreateCategory", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, universeRepository, "CreateCategory")
+	return errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "CreateCategory")
 
 }
 
-func (r *UniverseRepository) UpdateCategory(ctx context.Context, category *skillz.Category) error {
+func (r *universeRepository) UpdateCategory(ctx context.Context, category *skillz.Category) error {
 
 	category.UpdatedAt = time.Now()
 
@@ -417,15 +415,15 @@ func (r *UniverseRepository) UpdateCategory(ctx context.Context, category *skill
 		Where(sq.Eq{CategoryID: category.ID}).
 		ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, universeRepository, "UpdateCategory", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "UpdateCategory", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, universeRepository, "UpdateCategory")
+	return errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "UpdateCategory")
 
 }
 
-func (r *UniverseRepository) Constellation(ctx context.Context, constellationID uint) (*skillz.Constellation, error) {
+func (r *universeRepository) Constellation(ctx context.Context, constellationID uint) (*skillz.Constellation, error) {
 
 	query, args, err := sq.Select(r.constellations.columns...).
 		From(r.constellations.table).
@@ -433,31 +431,31 @@ func (r *UniverseRepository) Constellation(ctx context.Context, constellationID 
 		Limit(1).
 		ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, universeRepository, "Constellation", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "Constellation", "failed to generate sql")
 	}
 
 	var constellation = new(skillz.Constellation)
 	err = r.db.GetContext(ctx, constellation, query, args...)
-	return constellation, errors.Wrapf(err, prefixFormat, universeRepository, "Constellation")
+	return constellation, errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "Constellation")
 
 }
 
-func (r *UniverseRepository) Constellations(ctx context.Context) ([]*skillz.Constellation, error) {
+func (r *universeRepository) Constellations(ctx context.Context) ([]*skillz.Constellation, error) {
 
 	query, args, err := sq.Select(r.constellations.columns...).
 		From(r.constellations.table).
 		ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, universeRepository, "Constellations", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "Constellations", "failed to generate sql")
 	}
 
 	var constellations = make([]*skillz.Constellation, 0)
 	err = r.db.GetContext(ctx, &constellations, query, args...)
-	return constellations, errors.Wrapf(err, prefixFormat, universeRepository, "Constellations")
+	return constellations, errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "Constellations")
 
 }
 
-func (r *UniverseRepository) CreateConstellation(ctx context.Context, constellation *skillz.Constellation) error {
+func (r *universeRepository) CreateConstellation(ctx context.Context, constellation *skillz.Constellation) error {
 
 	now := time.Now()
 	constellation.CreatedAt = now
@@ -473,15 +471,15 @@ func (r *UniverseRepository) CreateConstellation(ctx context.Context, constellat
 		}).
 		ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, universeRepository, "CreateConstellation", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "CreateConstellation", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, universeRepository, "CreateConstellation")
+	return errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "CreateConstellation")
 
 }
 
-func (r *UniverseRepository) UpdateConstellation(ctx context.Context, constellation *skillz.Constellation) error {
+func (r *universeRepository) UpdateConstellation(ctx context.Context, constellation *skillz.Constellation) error {
 
 	constellation.UpdatedAt = time.Now()
 
@@ -495,15 +493,15 @@ func (r *UniverseRepository) UpdateConstellation(ctx context.Context, constellat
 		Where(sq.Eq{ConstellationID: constellation.ID}).
 		ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, universeRepository, "UpdateConstellation", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "UpdateConstellation", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, universeRepository, "UpdateConstellation")
+	return errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "UpdateConstellation")
 
 }
 
-func (r *UniverseRepository) Faction(ctx context.Context, factionID uint) (*skillz.Faction, error) {
+func (r *universeRepository) Faction(ctx context.Context, factionID uint) (*skillz.Faction, error) {
 
 	query, args, err := sq.Select(r.factions.columns...).
 		From(r.factions.table).
@@ -511,31 +509,31 @@ func (r *UniverseRepository) Faction(ctx context.Context, factionID uint) (*skil
 		Limit(1).
 		ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, universeRepository, "Faction", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "Faction", "failed to generate sql")
 	}
 
 	var faction = new(skillz.Faction)
 	err = r.db.GetContext(ctx, faction, query, args...)
-	return faction, errors.Wrapf(err, prefixFormat, universeRepository, "Faction")
+	return faction, errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "Faction")
 
 }
 
-func (r *UniverseRepository) Factions(ctx context.Context) ([]*skillz.Faction, error) {
+func (r *universeRepository) Factions(ctx context.Context) ([]*skillz.Faction, error) {
 
 	query, args, err := sq.Select(r.factions.columns...).
 		From(r.factions.table).
 		ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, universeRepository, "Factions", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "Factions", "failed to generate sql")
 	}
 
 	var factions = make([]*skillz.Faction, 0)
 	err = r.db.SelectContext(ctx, &factions, query, args...)
-	return factions, errors.Wrapf(err, prefixFormat, universeRepository, "Factions")
+	return factions, errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "Factions")
 
 }
 
-func (r *UniverseRepository) CreateFaction(ctx context.Context, faction *skillz.Faction) error {
+func (r *universeRepository) CreateFaction(ctx context.Context, faction *skillz.Faction) error {
 
 	now := time.Now()
 	faction.CreatedAt = now
@@ -557,15 +555,15 @@ func (r *UniverseRepository) CreateFaction(ctx context.Context, faction *skillz.
 		}).
 		ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, universeRepository, "CreateFaction", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "CreateFaction", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, universeRepository, "CreateFaction")
+	return errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "CreateFaction")
 
 }
 
-func (r *UniverseRepository) UpdateFaction(ctx context.Context, faction *skillz.Faction) error {
+func (r *universeRepository) UpdateFaction(ctx context.Context, faction *skillz.Faction) error {
 
 	faction.UpdatedAt = time.Now()
 
@@ -583,15 +581,15 @@ func (r *UniverseRepository) UpdateFaction(ctx context.Context, faction *skillz.
 		}).
 		Where(sq.Eq{FactionID: faction.ID}).ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, universeRepository, "UpdateFaction", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "UpdateFaction", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, universeRepository, "UpdateFaction")
+	return errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "UpdateFaction")
 
 }
 
-func (r *UniverseRepository) Group(ctx context.Context, groupID uint) (*skillz.Group, error) {
+func (r *universeRepository) Group(ctx context.Context, groupID uint) (*skillz.Group, error) {
 
 	query, args, err := sq.Select(r.groups.columns...).
 		From(r.groups.table).
@@ -599,33 +597,33 @@ func (r *UniverseRepository) Group(ctx context.Context, groupID uint) (*skillz.G
 		Limit(1).
 		ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, universeRepository, "Group", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "Group", "failed to generate sql")
 	}
 
 	var group = new(skillz.Group)
 	err = r.db.GetContext(ctx, group, query, args...)
 
-	return group, errors.Wrapf(err, prefixFormat, universeRepository, "Group")
+	return group, errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "Group")
 
 }
 
-func (r *UniverseRepository) Groups(ctx context.Context, operators ...*skillz.Operator) ([]*skillz.Group, error) {
+func (r *universeRepository) Groups(ctx context.Context, operators ...*skillz.Operator) ([]*skillz.Group, error) {
 
 	query, args, err := BuildOperators(operators...).Select(r.groups.columns...).
 		From(r.groups.table).
 		ToSQL()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, universeRepository, "Groups", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "Groups", "failed to generate sql")
 	}
 
 	var groups = make([]*skillz.Group, 0)
 	err = r.db.SelectContext(ctx, &groups, query, args...)
 
-	return groups, errors.Wrapf(err, prefixFormat, universeRepository, "Groups")
+	return groups, errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "Groups")
 
 }
 
-func (r *UniverseRepository) CreateGroup(ctx context.Context, group *skillz.Group) error {
+func (r *universeRepository) CreateGroup(ctx context.Context, group *skillz.Group) error {
 
 	now := time.Now()
 	group.CreatedAt = now
@@ -642,15 +640,15 @@ func (r *UniverseRepository) CreateGroup(ctx context.Context, group *skillz.Grou
 		}).
 		ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, universeRepository, "CreateGroup", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "CreateGroup", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, universeRepository, "CreateGroup")
+	return errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "CreateGroup")
 
 }
 
-func (r *UniverseRepository) UpdateGroup(ctx context.Context, group *skillz.Group) error {
+func (r *universeRepository) UpdateGroup(ctx context.Context, group *skillz.Group) error {
 
 	group.UpdatedAt = time.Now()
 
@@ -663,15 +661,15 @@ func (r *UniverseRepository) UpdateGroup(ctx context.Context, group *skillz.Grou
 		}).
 		Where(sq.Eq{GroupID: group.ID}).ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, universeRepository, "UpdateGroup", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "UpdateGroup", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, universeRepository, "UpdateGroup")
+	return errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "UpdateGroup")
 
 }
 
-func (r *UniverseRepository) Race(ctx context.Context, raceID uint) (*skillz.Race, error) {
+func (r *universeRepository) Race(ctx context.Context, raceID uint) (*skillz.Race, error) {
 
 	query, args, err := sq.Select(r.races.columns...).
 		From(r.races.table).
@@ -679,31 +677,31 @@ func (r *UniverseRepository) Race(ctx context.Context, raceID uint) (*skillz.Rac
 		Limit(1).
 		ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, universeRepository, "Race", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "Race", "failed to generate sql")
 	}
 
 	var race = new(skillz.Race)
 	err = r.db.GetContext(ctx, race, query, args...)
-	return race, errors.Wrapf(err, prefixFormat, universeRepository, "Race")
+	return race, errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "Race")
 
 }
 
-func (r *UniverseRepository) Races(ctx context.Context, operators ...*skillz.Operator) ([]*skillz.Race, error) {
+func (r *universeRepository) Races(ctx context.Context, operators ...*skillz.Operator) ([]*skillz.Race, error) {
 
 	query, args, err := sq.Select(r.races.columns...).
 		From(r.races.table).
 		ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, universeRepository, "Races", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "Races", "failed to generate sql")
 	}
 
 	var races = make([]*skillz.Race, 0)
 	err = r.db.SelectContext(ctx, &races, query, args...)
-	return races, errors.Wrapf(err, prefixFormat, universeRepository, "Races")
+	return races, errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "Races")
 
 }
 
-func (r *UniverseRepository) CreateRace(ctx context.Context, race *skillz.Race) error {
+func (r *universeRepository) CreateRace(ctx context.Context, race *skillz.Race) error {
 
 	now := time.Now()
 	race.CreatedAt = now
@@ -718,15 +716,15 @@ func (r *UniverseRepository) CreateRace(ctx context.Context, race *skillz.Race) 
 		}).
 		ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, universeRepository, "CreateRace", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "CreateRace", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, universeRepository, "CreateRace")
+	return errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "CreateRace")
 
 }
 
-func (r *UniverseRepository) UpdateRace(ctx context.Context, race *skillz.Race) error {
+func (r *universeRepository) UpdateRace(ctx context.Context, race *skillz.Race) error {
 
 	race.UpdatedAt = time.Now()
 
@@ -737,15 +735,15 @@ func (r *UniverseRepository) UpdateRace(ctx context.Context, race *skillz.Race) 
 		}).
 		Where(sq.Eq{RaceID: race.ID}).ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, universeRepository, "UpdateRace", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "UpdateRace", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, universeRepository, "UpdateRace")
+	return errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "UpdateRace")
 
 }
 
-func (r *UniverseRepository) Region(ctx context.Context, regionID uint) (*skillz.Region, error) {
+func (r *universeRepository) Region(ctx context.Context, regionID uint) (*skillz.Region, error) {
 
 	query, args, err := sq.Select(r.regions.columns...).
 		From(r.regions.table).
@@ -753,31 +751,31 @@ func (r *UniverseRepository) Region(ctx context.Context, regionID uint) (*skillz
 		Limit(1).
 		ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, universeRepository, "Region", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "Region", "failed to generate sql")
 	}
 
 	var region = new(skillz.Region)
 	err = r.db.GetContext(ctx, region, query, args...)
-	return region, errors.Wrapf(err, prefixFormat, universeRepository, "Region")
+	return region, errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "Region")
 
 }
 
-func (r *UniverseRepository) Regions(ctx context.Context) ([]*skillz.Region, error) {
+func (r *universeRepository) Regions(ctx context.Context) ([]*skillz.Region, error) {
 
 	query, args, err := sq.Select(r.regions.columns...).
 		From(r.regions.table).
 		ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, universeRepository, "Regions", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "Regions", "failed to generate sql")
 	}
 
 	var regions = make([]*skillz.Region, 0)
 	err = r.db.SelectContext(ctx, &regions, query, args...)
-	return regions, errors.Wrapf(err, prefixFormat, universeRepository, "Regions")
+	return regions, errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "Regions")
 
 }
 
-func (r *UniverseRepository) CreateRegion(ctx context.Context, region *skillz.Region) error {
+func (r *universeRepository) CreateRegion(ctx context.Context, region *skillz.Region) error {
 
 	now := time.Now()
 	region.CreatedAt = now
@@ -792,15 +790,15 @@ func (r *UniverseRepository) CreateRegion(ctx context.Context, region *skillz.Re
 		}).
 		ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, universeRepository, "CreateRegion", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "CreateRegion", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, universeRepository, "CreateRegion")
+	return errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "CreateRegion")
 
 }
 
-func (r *UniverseRepository) UpdateRegion(ctx context.Context, region *skillz.Region) error {
+func (r *universeRepository) UpdateRegion(ctx context.Context, region *skillz.Region) error {
 
 	region.UpdatedAt = time.Now()
 
@@ -811,15 +809,15 @@ func (r *UniverseRepository) UpdateRegion(ctx context.Context, region *skillz.Re
 		}).
 		Where(sq.Eq{RegionID: region.ID}).ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, universeRepository, "UpdateRegion", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "UpdateRegion", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, universeRepository, "UpdateRegion")
+	return errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "UpdateRegion")
 
 }
 
-func (r *UniverseRepository) SolarSystem(ctx context.Context, solarSystemID uint) (*skillz.SolarSystem, error) {
+func (r *universeRepository) SolarSystem(ctx context.Context, solarSystemID uint) (*skillz.SolarSystem, error) {
 
 	query, args, err := sq.Select(r.solarSystems.columns...).
 		From(r.solarSystems.table).
@@ -827,31 +825,31 @@ func (r *UniverseRepository) SolarSystem(ctx context.Context, solarSystemID uint
 		Limit(1).
 		ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, universeRepository, "SolarSystem", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "SolarSystem", "failed to generate sql")
 	}
 
 	var solarSystem = new(skillz.SolarSystem)
 	err = r.db.GetContext(ctx, solarSystem, query, args...)
-	return solarSystem, errors.Wrapf(err, prefixFormat, universeRepository, "SolarSystem")
+	return solarSystem, errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "SolarSystem")
 
 }
 
-func (r *UniverseRepository) SolarSystems(ctx context.Context, operators ...*skillz.Operator) ([]*skillz.SolarSystem, error) {
+func (r *universeRepository) SolarSystems(ctx context.Context, operators ...*skillz.Operator) ([]*skillz.SolarSystem, error) {
 
 	query, args, err := sq.Select(r.solarSystems.columns...).
 		From(r.solarSystems.table).
 		ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, universeRepository, "SolarSystems", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "SolarSystems", "failed to generate sql")
 	}
 
 	var solarSystems = make([]*skillz.SolarSystem, 0)
 	err = r.db.SelectContext(ctx, &solarSystems, query, args...)
-	return solarSystems, errors.Wrapf(err, prefixFormat, universeRepository, "SolarSystems")
+	return solarSystems, errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "SolarSystems")
 
 }
 
-func (r *UniverseRepository) CreateSolarSystem(ctx context.Context, solarSystem *skillz.SolarSystem) error {
+func (r *universeRepository) CreateSolarSystem(ctx context.Context, solarSystem *skillz.SolarSystem) error {
 
 	now := time.Now()
 	solarSystem.CreatedAt = now
@@ -868,15 +866,15 @@ func (r *UniverseRepository) CreateSolarSystem(ctx context.Context, solarSystem 
 		ColumnUpdatedAt:            solarSystem.UpdatedAt,
 	}).ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, universeRepository, "CreateSolarSystem", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "CreateSolarSystem", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, universeRepository, "CreateSolarSystem")
+	return errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "CreateSolarSystem")
 
 }
 
-func (r *UniverseRepository) UpdateSolarSystem(ctx context.Context, solarSystem *skillz.SolarSystem) error {
+func (r *universeRepository) UpdateSolarSystem(ctx context.Context, solarSystem *skillz.SolarSystem) error {
 
 	now := time.Now()
 	solarSystem.UpdatedAt = now
@@ -891,15 +889,15 @@ func (r *UniverseRepository) UpdateSolarSystem(ctx context.Context, solarSystem 
 		ColumnUpdatedAt:            solarSystem.UpdatedAt,
 	}).Where(sq.Eq{SolarSystemID: solarSystem.ID}).ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, universeRepository, "UpdateSolarSystem", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "UpdateSolarSystem", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, universeRepository, "UpdateSolarSystem")
+	return errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "UpdateSolarSystem")
 
 }
 
-func (r *UniverseRepository) Station(ctx context.Context, stationID uint) (*skillz.Station, error) {
+func (r *universeRepository) Station(ctx context.Context, stationID uint) (*skillz.Station, error) {
 
 	query, args, err := sq.Select(r.stations.columns...).
 		From(r.stations.table).
@@ -907,31 +905,31 @@ func (r *UniverseRepository) Station(ctx context.Context, stationID uint) (*skil
 		Limit(1).
 		ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, universeRepository, "Station", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "Station", "failed to generate sql")
 	}
 
 	var station = new(skillz.Station)
 	err = r.db.GetContext(ctx, station, query, args...)
-	return station, errors.Wrapf(err, prefixFormat, universeRepository, "Station")
+	return station, errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "Station")
 
 }
 
-func (r *UniverseRepository) Stations(ctx context.Context, operators ...*skillz.Operator) ([]*skillz.Station, error) {
+func (r *universeRepository) Stations(ctx context.Context, operators ...*skillz.Operator) ([]*skillz.Station, error) {
 
 	query, args, err := sq.Select(r.stations.columns...).
 		From(r.stations.table).
 		ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, universeRepository, "Stations", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "Stations", "failed to generate sql")
 	}
 
 	var stations = make([]*skillz.Station, 0)
 	err = r.db.SelectContext(ctx, &stations, query, args...)
-	return stations, errors.Wrapf(err, prefixFormat, universeRepository, "Stations")
+	return stations, errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "Stations")
 
 }
 
-func (r *UniverseRepository) CreateStation(ctx context.Context, station *skillz.Station) error {
+func (r *universeRepository) CreateStation(ctx context.Context, station *skillz.Station) error {
 
 	now := time.Now()
 	station.CreatedAt = now
@@ -953,15 +951,15 @@ func (r *UniverseRepository) CreateStation(ctx context.Context, station *skillz.
 			ColumnUpdatedAt:                 station.UpdatedAt,
 		}).ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, universeRepository, "CreateStation", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "CreateStation", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, universeRepository, "CreateStation")
+	return errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "CreateStation")
 
 }
 
-func (r *UniverseRepository) UpdateStation(ctx context.Context, station *skillz.Station) error {
+func (r *universeRepository) UpdateStation(ctx context.Context, station *skillz.Station) error {
 
 	station.UpdatedAt = time.Now()
 
@@ -980,15 +978,15 @@ func (r *UniverseRepository) UpdateStation(ctx context.Context, station *skillz.
 		}).
 		Where(sq.Eq{StationID: station.ID}).ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, universeRepository, "UpdateStation", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "UpdateStation", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, universeRepository, "UpdateStation")
+	return errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "UpdateStation")
 
 }
 
-func (r *UniverseRepository) Structure(ctx context.Context, structureID uint64) (*skillz.Structure, error) {
+func (r *universeRepository) Structure(ctx context.Context, structureID uint64) (*skillz.Structure, error) {
 
 	query, args, err := sq.Select(r.structures.columns...).
 		From(r.structures.table).
@@ -996,31 +994,31 @@ func (r *UniverseRepository) Structure(ctx context.Context, structureID uint64) 
 		Limit(1).
 		ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, universeRepository, "Structure", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "Structure", "failed to generate sql")
 	}
 
 	var structure = new(skillz.Structure)
 	err = r.db.GetContext(ctx, structure, query, args...)
-	return structure, errors.Wrapf(err, prefixFormat, universeRepository, "Structure")
+	return structure, errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "Structure")
 
 }
 
-func (r *UniverseRepository) Structures(ctx context.Context) ([]*skillz.Structure, error) {
+func (r *universeRepository) Structures(ctx context.Context) ([]*skillz.Structure, error) {
 
 	query, args, err := sq.Select(r.structures.columns...).
 		From(r.structures.table).
 		ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, universeRepository, "Structures", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "Structures", "failed to generate sql")
 	}
 
 	var structures = make([]*skillz.Structure, 0)
 	err = r.db.SelectContext(ctx, &structures, query, args...)
-	return structures, errors.Wrapf(err, prefixFormat, universeRepository, "Structures")
+	return structures, errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "Structures")
 
 }
 
-func (r *UniverseRepository) CreateStructure(ctx context.Context, structure *skillz.Structure) error {
+func (r *universeRepository) CreateStructure(ctx context.Context, structure *skillz.Structure) error {
 
 	now := time.Now()
 	structure.CreatedAt = now
@@ -1037,15 +1035,15 @@ func (r *UniverseRepository) CreateStructure(ctx context.Context, structure *ski
 			ColumnUpdatedAt:        structure.UpdatedAt,
 		}).ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, universeRepository, "CreateStructure", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "CreateStructure", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, universeRepository, "CreateStructure")
+	return errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "CreateStructure")
 
 }
 
-func (r *UniverseRepository) UpdateStructure(ctx context.Context, structure *skillz.Structure) error {
+func (r *universeRepository) UpdateStructure(ctx context.Context, structure *skillz.Structure) error {
 
 	structure.UpdatedAt = time.Now()
 
@@ -1058,15 +1056,15 @@ func (r *UniverseRepository) UpdateStructure(ctx context.Context, structure *ski
 			ColumnUpdatedAt:        structure.UpdatedAt,
 		}).Where(sq.Eq{StructureID: structure.ID}).ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, universeRepository, "UpdateStructure", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "UpdateStructure", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, universeRepository, "UpdateStructure")
+	return errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "UpdateStructure")
 
 }
 
-func (r *UniverseRepository) Type(ctx context.Context, typeID uint) (*skillz.Type, error) {
+func (r *universeRepository) Type(ctx context.Context, typeID uint) (*skillz.Type, error) {
 
 	query, args, err := sq.Select(r.types.columns...).
 		From(r.types.table).
@@ -1074,31 +1072,31 @@ func (r *UniverseRepository) Type(ctx context.Context, typeID uint) (*skillz.Typ
 		Limit(1).
 		ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, universeRepository, "Type", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "Type", "failed to generate sql")
 	}
 
 	var item = new(skillz.Type)
 	err = r.db.GetContext(ctx, item, query, args...)
-	return item, errors.Wrapf(err, prefixFormat, universeRepository, "Type")
+	return item, errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "Type")
 
 }
 
-func (r *UniverseRepository) Types(ctx context.Context, operators ...*skillz.Operator) ([]*skillz.Type, error) {
+func (r *universeRepository) Types(ctx context.Context, operators ...*skillz.Operator) ([]*skillz.Type, error) {
 
 	query, args, err := BuildOperators(operators...).Select(r.types.columns...).
 		From(r.types.table).
 		ToSQL()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, universeRepository, "Types", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "Types", "failed to generate sql")
 	}
 
 	var types = make([]*skillz.Type, 0)
 	err = r.db.SelectContext(ctx, &types, query, args...)
-	return types, errors.Wrapf(err, prefixFormat, universeRepository, "Types")
+	return types, errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "Types")
 
 }
 
-func (r *UniverseRepository) CreateType(ctx context.Context, item *skillz.Type) error {
+func (r *universeRepository) CreateType(ctx context.Context, item *skillz.Type) error {
 
 	now := time.Now()
 	item.CreatedAt = now
@@ -1121,15 +1119,15 @@ func (r *UniverseRepository) CreateType(ctx context.Context, item *skillz.Type) 
 			ColumnUpdatedAt:     item.UpdatedAt,
 		}).ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, universeRepository, "CreateType", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "CreateType", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, universeRepository, "CreateType")
+	return errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "CreateType")
 
 }
 
-func (r *UniverseRepository) UpdateType(ctx context.Context, item *skillz.Type) error {
+func (r *universeRepository) UpdateType(ctx context.Context, item *skillz.Type) error {
 
 	item.UpdatedAt = time.Now()
 
@@ -1149,28 +1147,28 @@ func (r *UniverseRepository) UpdateType(ctx context.Context, item *skillz.Type) 
 		}).
 		Where(sq.Eq{TypesID: item.ID}).ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, universeRepository, "UpdateType", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "UpdateType", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, universeRepository, "UpdateType")
+	return errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "UpdateType")
 
 }
-func (r *UniverseRepository) TypeDogmaAttributes(ctx context.Context, typeID uint) ([]*skillz.TypeDogmaAttribute, error) {
+func (r *universeRepository) TypeDogmaAttributes(ctx context.Context, typeID uint) ([]*skillz.TypeDogmaAttribute, error) {
 
 	query, args, err := builder.Select(r.typeAttributes.columns...).From(r.typeAttributes.table).
 		Where(builder.Eq{TypeDogmaAttributesTypeID: typeID}).ToSQL()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, universeRepository, "TypeDogmaAttributes", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "TypeDogmaAttributes", "failed to generate sql")
 	}
 
 	var typeAttributes = make([]*skillz.TypeDogmaAttribute, 0)
 	err = r.db.SelectContext(ctx, &typeAttributes, query, args...)
-	return typeAttributes, errors.Wrapf(err, prefixFormat, universeRepository, "TypeDogmaAttributes")
+	return typeAttributes, errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "TypeDogmaAttributes")
 
 }
 
-func (r *UniverseRepository) CreateTypeDogmaAttributes(ctx context.Context, attributes []*skillz.TypeDogmaAttribute) error {
+func (r *universeRepository) CreateTypeDogmaAttributes(ctx context.Context, attributes []*skillz.TypeDogmaAttribute) error {
 
 	now := time.Now()
 	i := sq.Insert(r.typeAttributes.table).Columns(r.typeAttributes.columns...)
@@ -1181,22 +1179,22 @@ func (r *UniverseRepository) CreateTypeDogmaAttributes(ctx context.Context, attr
 
 	query, args, err := i.ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, universeRepository, "CreateTypeDogmaAttributes", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "CreateTypeDogmaAttributes", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, universeRepository, "CreateTypeDogmaAttributes")
+	return errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "CreateTypeDogmaAttributes")
 
 }
 
-func (r *UniverseRepository) DeleteTypeDogmaAttributes(ctx context.Context, typeID uint) error {
+func (r *universeRepository) DeleteTypeDogmaAttributes(ctx context.Context, typeID uint) error {
 
 	query, args, err := sq.Delete(r.typeAttributes.table).Where(sq.Eq{TypeDogmaAttributesTypeID: typeID}).ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, universeRepository, "DeleteTypeDogmaAttributes", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "DeleteTypeDogmaAttributes", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, universeRepository, "DeleteTypeDogmaAttributes")
+	return errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "DeleteTypeDogmaAttributes")
 
 }

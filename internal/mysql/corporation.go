@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-type CorporationRepository struct {
+type corporationRepository struct {
 	db          QueryExecContext
 	corporation tableConf
 	history     tableConf
@@ -38,14 +38,12 @@ const (
 	AllianceHistoryStartDate     string = "start_date"
 )
 
-var _ skillz.CorporationRepository = (*CorporationRepository)(nil)
+func NewCorporationRepository(db QueryExecContext) skillz.CorporationRepository {
 
-func NewCorporationRepository(db QueryExecContext) *CorporationRepository {
-
-	return &CorporationRepository{
+	return &corporationRepository{
 		db: db,
 		corporation: tableConf{
-			table: "corporations",
+			table: TableCorporations,
 			columns: []string{
 				CorporationID, CorporationAllianceID, CorporationCeoID,
 				CorporationCreatorID, CorporationDateFounded, CorporationFactionID,
@@ -56,7 +54,7 @@ func NewCorporationRepository(db QueryExecContext) *CorporationRepository {
 			},
 		},
 		history: tableConf{
-			table: "corporation_alliance_history",
+			table: TableCorporationAllianceHistory,
 			columns: []string{
 				AllianceHistoryCorporationID, AllianceHistoryRecordID,
 				AllianceHistoryAllianceID, AllianceHistoryIsDeleteed,
@@ -66,7 +64,7 @@ func NewCorporationRepository(db QueryExecContext) *CorporationRepository {
 	}
 }
 
-func (r *CorporationRepository) Corporation(ctx context.Context, corporationID uint) (*skillz.Corporation, error) {
+func (r *corporationRepository) Corporation(ctx context.Context, corporationID uint) (*skillz.Corporation, error) {
 
 	query, args, err := sq.Select(r.corporation.columns...).
 		From(r.corporation.table).
@@ -74,16 +72,16 @@ func (r *CorporationRepository) Corporation(ctx context.Context, corporationID u
 		Limit(1).
 		ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, corporationRepository, "Corporation", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, corporationRepositoryIdentifier, "Corporation", "failed to generate sql")
 	}
 
 	var corporation = new(skillz.Corporation)
 	err = r.db.GetContext(ctx, corporation, query, args...)
-	return corporation, errors.Wrapf(err, prefixFormat, corporationRepository, "Corporation")
+	return corporation, errors.Wrapf(err, prefixFormat, corporationRepositoryIdentifier, "Corporation")
 
 }
 
-func (r *CorporationRepository) CreateCorporation(ctx context.Context, corporation *skillz.Corporation) error {
+func (r *corporationRepository) CreateCorporation(ctx context.Context, corporation *skillz.Corporation) error {
 
 	now := time.Now()
 	corporation.CreatedAt = now
@@ -108,15 +106,15 @@ func (r *CorporationRepository) CreateCorporation(ctx context.Context, corporati
 		ColumnUpdatedAt:          corporation.UpdatedAt,
 	}).ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, corporationRepository, "CreateCorporation", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, corporationRepositoryIdentifier, "CreateCorporation", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, corporationRepository, "CreateCorporation")
+	return errors.Wrapf(err, prefixFormat, corporationRepositoryIdentifier, "CreateCorporation")
 
 }
 
-func (r *CorporationRepository) UpdateCorporation(ctx context.Context, corporation *skillz.Corporation) error {
+func (r *corporationRepository) UpdateCorporation(ctx context.Context, corporation *skillz.Corporation) error {
 	corporation.UpdatedAt = time.Now()
 
 	query, args, err := sq.Update(r.corporation.table).SetMap(map[string]interface{}{
@@ -136,28 +134,28 @@ func (r *CorporationRepository) UpdateCorporation(ctx context.Context, corporati
 		ColumnUpdatedAt:          corporation.UpdatedAt,
 	}).Where(sq.Eq{CorporationID: corporation.ID}).ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, corporationRepository, "UpdateCorporation", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, corporationRepositoryIdentifier, "UpdateCorporation", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, corporationRepository, "UpdateCorporation")
+	return errors.Wrapf(err, prefixFormat, corporationRepositoryIdentifier, "UpdateCorporation")
 }
 
-func (r *CorporationRepository) CorporationAllianceHistory(ctx context.Context, corporationID uint) ([]*skillz.CorporationAllianceHistory, error) {
+func (r *corporationRepository) CorporationAllianceHistory(ctx context.Context, corporationID uint) ([]*skillz.CorporationAllianceHistory, error) {
 	query, args, err := sq.Select(r.history.columns...).
 		From(r.history.table).
 		Where(sq.Eq{HistoryCorporationID: corporationID}).
 		ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, corporationRepository, "CorporationAllianceHistory", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, corporationRepositoryIdentifier, "CorporationAllianceHistory", "failed to generate sql")
 	}
 
 	var records = make([]*skillz.CorporationAllianceHistory, 0)
 	err = r.db.SelectContext(ctx, &records, query, args...)
-	return records, errors.Wrapf(err, prefixFormat, corporationRepository, "CorporationAllianceHistory")
+	return records, errors.Wrapf(err, prefixFormat, corporationRepositoryIdentifier, "CorporationAllianceHistory")
 }
 
-func (r *CorporationRepository) CreateCorporationAllianceHistory(ctx context.Context, records []*skillz.CorporationAllianceHistory) ([]*skillz.CorporationAllianceHistory, error) {
+func (r *corporationRepository) CreateCorporationAllianceHistory(ctx context.Context, records []*skillz.CorporationAllianceHistory) ([]*skillz.CorporationAllianceHistory, error) {
 
 	i := sq.Insert(r.history.table).Columns(r.history.columns...)
 	now := time.Now()
@@ -185,10 +183,10 @@ func (r *CorporationRepository) CreateCorporationAllianceHistory(ctx context.Con
 
 	query, args, err := i.ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, corporationRepository, "CreateCorporationAllianceHistory", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, corporationRepositoryIdentifier, "CreateCorporationAllianceHistory", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return records, errors.Wrapf(err, prefixFormat, corporationRepository, "CreateCorporationAllianceHistory")
+	return records, errors.Wrapf(err, prefixFormat, corporationRepositoryIdentifier, "CreateCorporationAllianceHistory")
 
 }

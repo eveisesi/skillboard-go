@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-type AllianceRepository struct {
+type allianceRepository struct {
 	db       QueryExecContext
 	alliance tableConf
 }
@@ -26,13 +26,11 @@ const (
 	AllianceIsClosed              string = "is_closed"
 )
 
-var _ skillz.AllianceRepository = (*AllianceRepository)(nil)
-
-func NewAllianceRepository(db QueryExecContext) *AllianceRepository {
-	return &AllianceRepository{
+func NewAllianceRepository(db QueryExecContext) skillz.AllianceRepository {
+	return &allianceRepository{
 		db: db,
 		alliance: tableConf{
-			table: "alliances",
+			table: TableAlliances,
 			columns: []string{
 				AllianceID, AllianceName, AllianceTicker,
 				AllianceDateFounded, AllianceCreatorID, AllianceCreatorCorporationID,
@@ -43,7 +41,7 @@ func NewAllianceRepository(db QueryExecContext) *AllianceRepository {
 	}
 }
 
-func (r *AllianceRepository) Alliance(ctx context.Context, allianceID uint) (*skillz.Alliance, error) {
+func (r *allianceRepository) Alliance(ctx context.Context, allianceID uint) (*skillz.Alliance, error) {
 
 	query, args, err := sq.Select(r.alliance.columns...).
 		From(r.alliance.table).
@@ -51,16 +49,16 @@ func (r *AllianceRepository) Alliance(ctx context.Context, allianceID uint) (*sk
 		Limit(1).
 		ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, allianceRepository, "Alliance", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, allianceRepositoryIdentifier, "Alliance", "failed to generate sql")
 	}
 
 	var alliance = new(skillz.Alliance)
 	err = r.db.GetContext(ctx, alliance, query, args...)
-	return alliance, errors.Wrapf(err, prefixFormat, allianceRepository, "Alliance")
+	return alliance, errors.Wrapf(err, prefixFormat, allianceRepositoryIdentifier, "Alliance")
 
 }
 
-func (r *AllianceRepository) CreateAlliance(ctx context.Context, alliance *skillz.Alliance) error {
+func (r *allianceRepository) CreateAlliance(ctx context.Context, alliance *skillz.Alliance) error {
 
 	now := time.Now()
 	alliance.CreatedAt = now
@@ -80,15 +78,15 @@ func (r *AllianceRepository) CreateAlliance(ctx context.Context, alliance *skill
 		ColumnUpdatedAt:               alliance.UpdatedAt,
 	}).ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, allianceRepository, "CreateAlliance", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, allianceRepositoryIdentifier, "CreateAlliance", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, allianceRepository, "CreateAlliance")
+	return errors.Wrapf(err, prefixFormat, allianceRepositoryIdentifier, "CreateAlliance")
 
 }
 
-func (r *AllianceRepository) UpdateAlliance(ctx context.Context, alliance *skillz.Alliance) error {
+func (r *allianceRepository) UpdateAlliance(ctx context.Context, alliance *skillz.Alliance) error {
 	alliance.UpdatedAt = time.Now()
 
 	query, args, err := sq.Update(r.alliance.table).SetMap(map[string]interface{}{
@@ -103,9 +101,9 @@ func (r *AllianceRepository) UpdateAlliance(ctx context.Context, alliance *skill
 		ColumnUpdatedAt:               alliance.UpdatedAt,
 	}).Where(sq.Eq{AllianceID: alliance.ID}).ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, allianceRepository, "UpdateAlliance", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, allianceRepositoryIdentifier, "UpdateAlliance", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, allianceRepository, "UpdateAlliance")
+	return errors.Wrapf(err, prefixFormat, allianceRepositoryIdentifier, "UpdateAlliance")
 }

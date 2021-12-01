@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-type SkillRepository struct {
+type skillRepository struct {
 	db               QueryExecContext
 	attributes, meta tableConf
 	skills, queue    tableConf
@@ -43,14 +43,12 @@ const (
 	AttributesAccruedRemapCooldownDate string = "accrued_remap_cooldown_date"
 )
 
-var _ skillz.CharacterSkillRepository = (*SkillRepository)(nil)
+func NewSkillRepository(db QueryExecContext) skillz.CharacterSkillRepository {
 
-func NewSkillRepository(db QueryExecContext) *SkillRepository {
-
-	return &SkillRepository{
+	return &skillRepository{
 		db: db,
 		attributes: tableConf{
-			table: "character_attributes",
+			table: TableCharacterAttributes,
 			columns: []string{
 				AttributesCharisma, AttributesIntelligence,
 				AttributesMemory, AttributesPerception,
@@ -60,7 +58,7 @@ func NewSkillRepository(db QueryExecContext) *SkillRepository {
 			},
 		},
 		meta: tableConf{
-			table: "character_skill_meta",
+			table: TableCharacterSkillMeta,
 			columns: []string{
 				MetaTotalSP, MetaUnallocatedSP,
 				ColumnCharacterID, ColumnCreatedAt,
@@ -68,7 +66,7 @@ func NewSkillRepository(db QueryExecContext) *SkillRepository {
 			},
 		},
 		skills: tableConf{
-			table: "character_skills",
+			table: TableCharacterSkills,
 			columns: []string{
 				SkillsActiveSkillLevel, SkillsSkillID,
 				SkillsSkillpointsInSkill, SkillsTrainedSkillLevel,
@@ -77,7 +75,7 @@ func NewSkillRepository(db QueryExecContext) *SkillRepository {
 			},
 		},
 		queue: tableConf{
-			table: "character_skillqueue",
+			table: TableCharacterSkillQueue,
 			columns: []string{
 				QueueQueuePosition, QueueSkillID,
 				QueueFinishedLevel, QueueTrainingStartSP,
@@ -97,12 +95,12 @@ func (r *SkillRepository) CharacterAttributes(ctx context.Context, characterID u
 		Where(sq.Eq{ColumnCharacterID: characterID}).
 		ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, skillsRepository, "CharacterAttributes", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, skillsRepositoryIdentifier, "CharacterAttributes", "failed to generate sql")
 	}
 
 	var attributes = new(skillz.CharacterAttributes)
 	err = r.db.GetContext(ctx, attributes, query, args...)
-	return attributes, errors.Wrapf(err, prefixFormat, skillsRepository, "CharacterAttributes")
+	return attributes, errors.Wrapf(err, prefixFormat, skillsRepositoryIdentifier, "CharacterAttributes")
 
 }
 
@@ -138,11 +136,11 @@ func (r *SkillRepository) CreateCharacterAttributes(ctx context.Context, attribu
 		)).
 		ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, skillsRepository, "CreateCharacterAttributes", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, skillsRepositoryIdentifier, "CreateCharacterAttributes", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, skillsRepository, "CreateCharacterAttributes")
+	return errors.Wrapf(err, prefixFormat, skillsRepositoryIdentifier, "CreateCharacterAttributes")
 
 }
 
@@ -161,11 +159,11 @@ func (r *SkillRepository) UpdateCharacterAttributes(ctx context.Context, attribu
 		ColumnUpdatedAt:                    attributes.UpdatedAt,
 	}).Where(sq.Eq{ColumnCharacterID: attributes.CharacterID}).ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, skillsRepository, "UpdateCharacterAttributes", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, skillsRepositoryIdentifier, "UpdateCharacterAttributes", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, skillsRepository, "UpdateCharacterAttributes")
+	return errors.Wrapf(err, prefixFormat, skillsRepositoryIdentifier, "UpdateCharacterAttributes")
 
 }
 
@@ -173,11 +171,11 @@ func (r *SkillRepository) DeleteCharacterAttributes(ctx context.Context, charact
 
 	query, args, err := sq.Delete(r.attributes.table).Where(sq.Eq{ColumnCharacterID: characterID}).ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, skillsRepository, "DeleteCharacterAttributes", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, skillsRepositoryIdentifier, "DeleteCharacterAttributes", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, skillsRepository, "DeleteCharacterAttributes")
+	return errors.Wrapf(err, prefixFormat, skillsRepositoryIdentifier, "DeleteCharacterAttributes")
 
 }
 
@@ -188,12 +186,12 @@ func (r *SkillRepository) CharacterSkillMeta(ctx context.Context, characterID ui
 		Where(sq.Eq{ColumnCharacterID: characterID}).
 		ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, skillsRepository, "CharacterSkillMeta", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, skillsRepositoryIdentifier, "CharacterSkillMeta", "failed to generate sql")
 	}
 
 	var meta = new(skillz.CharacterSkillMeta)
 	err = r.db.GetContext(ctx, meta, query, args...)
-	return meta, errors.Wrapf(err, prefixFormat, skillsRepository, "CharacterSkillMeta")
+	return meta, errors.Wrapf(err, prefixFormat, skillsRepositoryIdentifier, "CharacterSkillMeta")
 
 }
 
@@ -213,11 +211,11 @@ func (r *SkillRepository) CreateCharacterSkillMeta(ctx context.Context, meta *sk
 		Suffix(OnDuplicateKeyStmt(MetaTotalSP, MetaUnallocatedSP, ColumnUpdatedAt)).
 		ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, skillsRepository, "CreateCharacterSkillMeta", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, skillsRepositoryIdentifier, "CreateCharacterSkillMeta", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, skillsRepository, "CreateCharacterSkillMeta")
+	return errors.Wrapf(err, prefixFormat, skillsRepositoryIdentifier, "CreateCharacterSkillMeta")
 
 }
 
@@ -232,11 +230,11 @@ func (r *SkillRepository) CreateCharacterSkillMeta(ctx context.Context, meta *sk
 // 		ColumnUpdatedAt: meta.UpdatedAt,
 // 	}).Where(sq.Eq{ColumnCharacterID: meta.CharacterID}).ToSql()
 // 	if err != nil {
-// 		return errors.Wrapf(err, errorFFormat, skillsRepository, "UpdateCharacterSkillMeta", "failed to generate sql")
+// 		return errors.Wrapf(err, errorFFormat, skillsRepositoryIdentifier, "UpdateCharacterSkillMeta", "failed to generate sql")
 // 	}
 
 // 	_, err = r.db.ExecContext(ctx, query, args...)
-// 	return errors.Wrapf(err, prefixFormat, skillsRepository, "UpdateCharacterSkillMeta")
+// 	return errors.Wrapf(err, prefixFormat, skillsRepositoryIdentifier, "UpdateCharacterSkillMeta")
 
 // }
 
@@ -244,11 +242,11 @@ func (r *SkillRepository) DeleteCharacterSkillMeta(ctx context.Context, characte
 
 	query, args, err := sq.Delete(r.meta.table).Where(sq.Eq{ColumnCharacterID: characterID}).ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, skillsRepository, "DeleteCharacterSkillMeta", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, skillsRepositoryIdentifier, "DeleteCharacterSkillMeta", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, skillsRepository, "DeleteCharacterSkillMeta")
+	return errors.Wrapf(err, prefixFormat, skillsRepositoryIdentifier, "DeleteCharacterSkillMeta")
 
 }
 
@@ -259,12 +257,12 @@ func (r *SkillRepository) CharacterSkills(ctx context.Context, characterID uint6
 		Where(sq.Eq{ColumnCharacterID: characterID}).
 		ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, skillsRepository, "CharacterSkills", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, skillsRepositoryIdentifier, "CharacterSkills", "failed to generate sql")
 	}
 
 	var skills = make([]*skillz.CharacterSkill, 0, 1024)
 	err = r.db.SelectContext(ctx, &skills, query, args...)
-	return skills, errors.Wrapf(err, prefixFormat, skillsRepository, "CharacterSkills")
+	return skills, errors.Wrapf(err, prefixFormat, skillsRepositoryIdentifier, "CharacterSkills")
 
 }
 
@@ -291,11 +289,11 @@ func (r *SkillRepository) CreateCharacterSkills(ctx context.Context, skills []*s
 
 	query, args, err := i.ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, skillsRepository, "CreateCharacterSkillMeta", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, skillsRepositoryIdentifier, "CreateCharacterSkillMeta", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, skillsRepository, "CreateCharacterSkillMeta")
+	return errors.Wrapf(err, prefixFormat, skillsRepositoryIdentifier, "CreateCharacterSkillMeta")
 
 }
 
@@ -303,11 +301,11 @@ func (r *SkillRepository) DeleteCharacterSkills(ctx context.Context, characterID
 
 	query, args, err := sq.Delete(r.skills.table).Where(sq.Eq{ColumnCharacterID: characterID}).ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, skillsRepository, "DeleteCharacterSkills", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, skillsRepositoryIdentifier, "DeleteCharacterSkills", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, skillsRepository, "DeleteCharacterSkills")
+	return errors.Wrapf(err, prefixFormat, skillsRepositoryIdentifier, "DeleteCharacterSkills")
 
 }
 
@@ -318,12 +316,12 @@ func (r *SkillRepository) CharacterSkillQueue(ctx context.Context, characterID u
 		Where(sq.Eq{ColumnCharacterID: characterID}).
 		ToSql()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, skillsRepository, "CharacterSkillQueue", "failed to generate sql")
+		return nil, errors.Wrapf(err, errorFFormat, skillsRepositoryIdentifier, "CharacterSkillQueue", "failed to generate sql")
 	}
 
 	var positions = make([]*skillz.CharacterSkillQueue, 0, 50)
 	err = r.db.SelectContext(ctx, &positions, query, args...)
-	return positions, errors.Wrapf(err, prefixFormat, skillsRepository, "CharacterSkillQueue")
+	return positions, errors.Wrapf(err, prefixFormat, skillsRepositoryIdentifier, "CharacterSkillQueue")
 
 }
 
@@ -346,11 +344,11 @@ func (r *SkillRepository) CreateCharacterSkillQueue(ctx context.Context, positio
 
 	query, args, err := i.ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, skillsRepository, "CreateCharacterSkillQueue", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, skillsRepositoryIdentifier, "CreateCharacterSkillQueue", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, skillsRepository, "CreateCharacterSkillQueue")
+	return errors.Wrapf(err, prefixFormat, skillsRepositoryIdentifier, "CreateCharacterSkillQueue")
 
 }
 
@@ -360,10 +358,10 @@ func (r *SkillRepository) DeleteCharacterSkillQueue(ctx context.Context, charact
 		Where(sq.Eq{ColumnCharacterID: characterID}).
 		ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, skillsRepository, "DeleteCharacterSkillQueue", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, skillsRepositoryIdentifier, "DeleteCharacterSkillQueue", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, skillsRepository, "DeleteCharacterSkillQueue")
+	return errors.Wrapf(err, prefixFormat, skillsRepositoryIdentifier, "DeleteCharacterSkillQueue")
 
 }
