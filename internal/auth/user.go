@@ -5,7 +5,7 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"strings"
@@ -29,16 +29,13 @@ func (s *Service) CookieForUserID(ctx context.Context, cookie *http.Cookie, user
 		return nil, errors.Wrap(err, "failed to hash user id")
 	}
 
-	signature, err := s.userAuth.rsaKey.Sign(rand.Reader, hash, &rsa.PSSOptions{SaltLength: 32, Hash: crypto.SHA256})
+	signature, err := s.userAuth.rsaKey.Sign(rand.Reader, hash, &rsa.PSSOptions{Hash: crypto.SHA256})
 	if err != nil {
 		return cookie, err
 	}
 
-	cookie.Value = fmt.Sprintf("%s.%x", userIDString, signature)
-	cookie.Value = userIDString
+	cookie.Value = fmt.Sprintf("%s.%s", userIDString, hex.EncodeToString(signature))
 	cookie.Expires = time.Now().Add(s.userAuth.tokenExpiry)
-
-	fmt.Println(cookie.Value, cookie.Expires.Format("2006-01-02 15:04:05"))
 
 	return cookie, nil
 
@@ -53,14 +50,19 @@ func (s *Service) UserIDFromCookie(ctx context.Context, cookie *http.Cookie) (uu
 	}
 
 	userIDStr := vp[0]
-	signature := vp[1]
+	signatureStr := vp[1]
+
+	signature, err := hex.DecodeString(signatureStr)
+	if err != nil {
+		return uuid.Nil, errors.Wrap(err, "failed to decode signature string to hex")
+	}
 
 	userIDHash, err := s.hash([]byte(userIDStr))
 	if err != nil {
 		return uuid.Nil, errors.Wrap(err, "failed to hash user id")
 	}
 
-	err = rsa.VerifyPSS(&s.userAuth.rsaKey.PublicKey, crypto.SHA256, []byte(userIDHash), []byte(signature), &rsa.PSSOptions{SaltLength: 32, Hash: crypto.SHA256})
+	err = rsa.VerifyPSS(&s.userAuth.rsaKey.PublicKey, crypto.SHA256, []byte(userIDHash), []byte(signature), &rsa.PSSOptions{Hash: crypto.SHA256})
 	if err != nil {
 		return uuid.Nil, errors.Wrap(err, "failed to verify signature")
 	}
@@ -76,7 +78,7 @@ func (s *Service) UserIDFromCookie(ctx context.Context, cookie *http.Cookie) (uu
 
 func (s *Service) hash(in []byte) ([]byte, error) {
 
-	hasher := sha256.New()
+	hasher := crypto.SHA256.New()
 	_, err := hasher.Write(in)
 	if err != nil {
 		return nil, err

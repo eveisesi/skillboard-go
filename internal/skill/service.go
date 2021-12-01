@@ -303,14 +303,16 @@ func (s *Service) updateSkillQueue(ctx context.Context, user *skillz.User) error
 			return errors.Wrap(err, "failed to delete character skill queue")
 		}
 
-		err = s.skills.CreateCharacterSkillQueue(ctx, updatedQueue)
-		if err != nil {
-			return errors.Wrap(err, "failed to create character skill queue")
-		}
+		if len(updatedQueue) > 0 {
+			err = s.skills.CreateCharacterSkillQueue(ctx, updatedQueue)
+			if err != nil {
+				return errors.Wrap(err, "failed to create character skill queue")
+			}
 
-		err = s.cache.SetCharacterSkillQueue(ctx, user.CharacterID, updatedQueue, time.Hour)
-		if err != nil {
-			return errors.Wrap(err, "failed to create character skill queue")
+			err = s.cache.SetCharacterSkillQueue(ctx, user.CharacterID, updatedQueue, time.Hour)
+			if err != nil {
+				return errors.Wrap(err, "failed to create character skill queue")
+			}
 		}
 	}
 

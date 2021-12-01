@@ -232,6 +232,8 @@ func (s *Service) UserByCookie(ctx context.Context, cookie *http.Cookie) (*skill
 		return nil, err
 	}
 
+	fmt.Println("s.UserByCookie", userID.String())
+
 	return s.User(ctx, userID)
 
 }

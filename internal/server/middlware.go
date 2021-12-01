@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	CookieID = "skillz-authed-user"
+	CookieID = "skillz-authed-user-id"
 )
 
 // Cors middleware to allow frontend consumption
@@ -84,6 +84,7 @@ func (s *server) authorization(next http.Handler) http.Handler {
 		if err == nil {
 			user, err := s.user.UserByCookie(ctx, cookie)
 			if err != nil {
+				s.logger.WithError(err).Error("failed to fetch user by cookie value")
 				http.SetCookie(w, &http.Cookie{
 					Name:   CookieID,
 					MaxAge: -1,

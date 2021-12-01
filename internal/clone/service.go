@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/eveisesi/skillz"
 	"github.com/eveisesi/skillz/internal/cache"
 	"github.com/eveisesi/skillz/internal/esi"
@@ -112,6 +113,8 @@ func (s *Service) updateClones(ctx context.Context, user *skillz.User) error {
 		return errors.Wrap(err, "failed to fetch character clones from ESI")
 	}
 
+	spew.Dump(updatedClones)
+
 	if updatedClones != nil {
 		err = s.insertCharacterClones(ctx, updatedClones)
 		if err != nil {
@@ -146,9 +149,11 @@ func (s *Service) insertCharacterClones(ctx context.Context, clones *skillz.Char
 		return err
 	}
 
-	err = s.clones.CreateCharacterJumpClones(ctx, clones.JumpClones)
-	if err != nil {
-		return err
+	if len(clones.JumpClones) > 0 {
+		err = s.clones.CreateCharacterJumpClones(ctx, clones.JumpClones)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -201,14 +206,16 @@ func (s *Service) updateImplants(ctx context.Context, user *skillz.User) error {
 			return errors.Wrap(err, "failed to update character implants")
 		}
 
-		err = s.clones.CreateCharacterImplants(ctx, implants)
-		if err != nil {
-			return errors.Wrap(err, "failed to update character implants")
-		}
+		if len(implants) > 0 {
+			err = s.clones.CreateCharacterImplants(ctx, implants)
+			if err != nil {
+				return errors.Wrap(err, "failed to update character implants")
+			}
 
-		err = s.cache.SetCharacterImplants(ctx, user.CharacterID, implants, time.Hour)
-		if err != nil {
-			return errors.Wrap(err, "failed to cache character implants")
+			err = s.cache.SetCharacterImplants(ctx, user.CharacterID, implants, time.Hour)
+			if err != nil {
+				return errors.Wrap(err, "failed to cache character implants")
+			}
 		}
 
 	}
