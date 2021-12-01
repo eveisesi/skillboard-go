@@ -88,7 +88,7 @@ func NewSkillRepository(db QueryExecContext) skillz.CharacterSkillRepository {
 
 }
 
-func (r *SkillRepository) CharacterAttributes(ctx context.Context, characterID uint64) (*skillz.CharacterAttributes, error) {
+func (r *skillRepository) CharacterAttributes(ctx context.Context, characterID uint64) (*skillz.CharacterAttributes, error) {
 
 	query, args, err := sq.Select(r.attributes.columns...).
 		From(r.attributes.table).
@@ -104,7 +104,7 @@ func (r *SkillRepository) CharacterAttributes(ctx context.Context, characterID u
 
 }
 
-func (r *SkillRepository) CreateCharacterAttributes(ctx context.Context, attributes *skillz.CharacterAttributes) error {
+func (r *skillRepository) CreateCharacterAttributes(ctx context.Context, attributes *skillz.CharacterAttributes) error {
 
 	now := time.Now()
 	attributes.CreatedAt = now
@@ -144,7 +144,7 @@ func (r *SkillRepository) CreateCharacterAttributes(ctx context.Context, attribu
 
 }
 
-func (r *SkillRepository) UpdateCharacterAttributes(ctx context.Context, attributes *skillz.CharacterAttributes) error {
+func (r *skillRepository) UpdateCharacterAttributes(ctx context.Context, attributes *skillz.CharacterAttributes) error {
 
 	attributes.UpdatedAt = time.Now()
 	query, args, err := sq.Update(r.attributes.table).SetMap(map[string]interface{}{
@@ -167,7 +167,7 @@ func (r *SkillRepository) UpdateCharacterAttributes(ctx context.Context, attribu
 
 }
 
-func (r *SkillRepository) DeleteCharacterAttributes(ctx context.Context, characterID uint64) error {
+func (r *skillRepository) DeleteCharacterAttributes(ctx context.Context, characterID uint64) error {
 
 	query, args, err := sq.Delete(r.attributes.table).Where(sq.Eq{ColumnCharacterID: characterID}).ToSql()
 	if err != nil {
@@ -179,7 +179,7 @@ func (r *SkillRepository) DeleteCharacterAttributes(ctx context.Context, charact
 
 }
 
-func (r *SkillRepository) CharacterSkillMeta(ctx context.Context, characterID uint64) (*skillz.CharacterSkillMeta, error) {
+func (r *skillRepository) CharacterSkillMeta(ctx context.Context, characterID uint64) (*skillz.CharacterSkillMeta, error) {
 
 	query, args, err := sq.Select(r.meta.columns...).
 		From(r.meta.table).
@@ -195,7 +195,7 @@ func (r *SkillRepository) CharacterSkillMeta(ctx context.Context, characterID ui
 
 }
 
-func (r *SkillRepository) CreateCharacterSkillMeta(ctx context.Context, meta *skillz.CharacterSkillMeta) error {
+func (r *skillRepository) CreateCharacterSkillMeta(ctx context.Context, meta *skillz.CharacterSkillMeta) error {
 
 	now := time.Now()
 	meta.CreatedAt = now
@@ -219,7 +219,7 @@ func (r *SkillRepository) CreateCharacterSkillMeta(ctx context.Context, meta *sk
 
 }
 
-// func (r *SkillRepository) UpdateCharacterSkillMeta(ctx context.Context, meta *skillz.CharacterSkillMeta) error {
+// func (r *skillRepository) UpdateCharacterSkillMeta(ctx context.Context, meta *skillz.CharacterSkillMeta) error {
 
 // 	meta.UpdatedAt = time.Now()
 
@@ -238,7 +238,7 @@ func (r *SkillRepository) CreateCharacterSkillMeta(ctx context.Context, meta *sk
 
 // }
 
-func (r *SkillRepository) DeleteCharacterSkillMeta(ctx context.Context, characterID uint64) error {
+func (r *skillRepository) DeleteCharacterSkillMeta(ctx context.Context, characterID uint64) error {
 
 	query, args, err := sq.Delete(r.meta.table).Where(sq.Eq{ColumnCharacterID: characterID}).ToSql()
 	if err != nil {
@@ -250,7 +250,7 @@ func (r *SkillRepository) DeleteCharacterSkillMeta(ctx context.Context, characte
 
 }
 
-func (r *SkillRepository) CharacterSkills(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkill, error) {
+func (r *skillRepository) CharacterSkills(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkill, error) {
 
 	query, args, err := sq.Select(r.skills.columns...).
 		From(r.skills.table).
@@ -266,7 +266,7 @@ func (r *SkillRepository) CharacterSkills(ctx context.Context, characterID uint6
 
 }
 
-func (r *SkillRepository) CreateCharacterSkills(ctx context.Context, skills []*skillz.CharacterSkill) error {
+func (r *skillRepository) CreateCharacterSkills(ctx context.Context, skills []*skillz.CharacterSkill) error {
 
 	now := time.Now()
 
@@ -297,7 +297,7 @@ func (r *SkillRepository) CreateCharacterSkills(ctx context.Context, skills []*s
 
 }
 
-func (r *SkillRepository) DeleteCharacterSkills(ctx context.Context, characterID uint64) error {
+func (r *skillRepository) DeleteCharacterSkills(ctx context.Context, characterID uint64) error {
 
 	query, args, err := sq.Delete(r.skills.table).Where(sq.Eq{ColumnCharacterID: characterID}).ToSql()
 	if err != nil {
@@ -309,7 +309,7 @@ func (r *SkillRepository) DeleteCharacterSkills(ctx context.Context, characterID
 
 }
 
-func (r *SkillRepository) CharacterSkillQueue(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkillQueue, error) {
+func (r *skillRepository) CharacterSkillQueue(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkillQueue, error) {
 
 	query, args, err := sq.Select(r.queue.columns...).
 		From(r.queue.table).
@@ -325,7 +325,7 @@ func (r *SkillRepository) CharacterSkillQueue(ctx context.Context, characterID u
 
 }
 
-func (r *SkillRepository) CreateCharacterSkillQueue(ctx context.Context, positions []*skillz.CharacterSkillQueue) error {
+func (r *skillRepository) CreateCharacterSkillQueue(ctx context.Context, positions []*skillz.CharacterSkillQueue) error {
 
 	now := time.Now()
 
@@ -352,7 +352,7 @@ func (r *SkillRepository) CreateCharacterSkillQueue(ctx context.Context, positio
 
 }
 
-func (r *SkillRepository) DeleteCharacterSkillQueue(ctx context.Context, characterID uint64) error {
+func (r *skillRepository) DeleteCharacterSkillQueue(ctx context.Context, characterID uint64) error {
 
 	query, args, err := sq.Delete(r.queue.table).
 		Where(sq.Eq{ColumnCharacterID: characterID}).
