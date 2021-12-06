@@ -20,12 +20,15 @@ type SkillAPI interface {
 	SetCharacterSkills(ctx context.Context, characterID uint64, skills []*skillz.CharacterSkill, expires time.Duration) error
 	CharacterSkillQueue(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkillQueue, error)
 	SetCharacterSkillQueue(ctx context.Context, characterID uint64, positions []*skillz.CharacterSkillQueue, expires time.Duration) error
+	CharacterFlyableShips(ctx context.Context, characterID uint64) ([]*skillz.CharacterFlyableShip, error)
+	SetCharacterFlyableShips(ctx context.Context, characterID uint64, flyable []*skillz.CharacterFlyableShip, expires time.Duration) error
 }
 
 const (
 	characterAttributesKeyPrefix = "character::attributes"
 	characterSkillMetaKeyPrefix  = "character::skill::meta"
 	characterSkillsKeyPrefix     = "character::skills"
+	characterFlyableKeyPrefix    = "character::flyable"
 	characterSkillQueueKeyPrefix = "character::skillqueue"
 )
 
@@ -194,5 +197,60 @@ func (s *Service) SetCharacterSkillQueue(ctx context.Context, characterID uint64
 	err = s.redis.Expire(ctx, key, expires).Err()
 
 	return errors.Wrapf(err, errorFFormat, skillAPI, "SetCharacterSkillQueue", "failed to set expiry on set")
+
+}
+
+func (s *Service) CharacterFlyableShips(ctx context.Context, characterID uint64) ([]*skillz.CharacterFlyableShip, error) {
+
+	key := generateKey(characterFlyableKeyPrefix, strconv.FormatUint(characterID, 10))
+	results, err := s.redis.SMembers(ctx, key).Result()
+	if err != nil && !errors.Is(err, redis.Nil) {
+		return nil, errors.Wrapf(err, errorFFormat, skillAPI, "CharacterSkills", "failed to fetch results from cache")
+	}
+
+	if errors.Is(err, redis.Nil) || len(results) == 0 {
+		return nil, nil
+	}
+
+	flyables := make([]*skillz.CharacterFlyableShip, 0, len(results))
+	for _, result := range results {
+		var flyable = new(skillz.CharacterFlyableShip)
+		err = json.Unmarshal([]byte(result), flyable)
+		if err != nil {
+			return flyables, errors.Wrapf(err, errorFFormat, skillAPI, "CharacterSkills", "failed to decode json to structure")
+		}
+
+		flyables = append(flyables, flyable)
+	}
+
+	return flyables, nil
+
+}
+
+func (s *Service) SetCharacterFlyableShips(ctx context.Context, characterID uint64, flyable []*skillz.CharacterFlyableShip, expires time.Duration) error {
+
+	members := make([]interface{}, 0, len(flyable))
+	for _, skill := range flyable {
+		data, err := json.Marshal(skill)
+		if err != nil {
+			return errors.Wrapf(err, errorFFormat, skillAPI, "SetCharacterSkills", "failed to encode struct as json")
+		}
+
+		members = append(members, string(data))
+	}
+
+	if len(members) == 0 {
+		return nil
+	}
+
+	key := generateKey(characterFlyableKeyPrefix, strconv.FormatUint(characterID, 10))
+	err := s.redis.SAdd(ctx, key, members...).Err()
+	if err != nil {
+		return errors.Wrapf(err, errorFFormat, skillAPI, "SetCharacterSkills", "failed to write cache")
+	}
+
+	err = s.redis.Expire(ctx, key, expires).Err()
+
+	return errors.Wrapf(err, errorFFormat, skillAPI, "SetCharacterSkills", "failed to set expiry on set")
 
 }

@@ -5,6 +5,7 @@ import (
 	"github.com/eveisesi/skillz/internal/auth"
 	"github.com/eveisesi/skillz/internal/character"
 	"github.com/eveisesi/skillz/internal/clone"
+	"github.com/eveisesi/skillz/internal/contact"
 	"github.com/eveisesi/skillz/internal/corporation"
 	"github.com/eveisesi/skillz/internal/graphql/dataloaders"
 	"github.com/eveisesi/skillz/internal/skill"
@@ -20,6 +21,7 @@ type Resolver struct {
 	alliance    alliance.API
 	character   character.API
 	clone       clone.API
+	contact     contact.API
 	corporation corporation.API
 	dataloaders dataloaders.API
 	skill       skill.API
@@ -31,6 +33,7 @@ func New(
 	auth auth.API,
 	character character.API,
 	clone clone.API,
+	contact contact.API,
 	corporation corporation.API,
 	dataloaders dataloaders.API,
 	skill skill.API,
@@ -41,6 +44,7 @@ func New(
 		auth:        auth,
 		character:   character,
 		clone:       clone,
+		contact:     contact,
 		corporation: corporation,
 		dataloaders: dataloaders,
 		skill:       skill,

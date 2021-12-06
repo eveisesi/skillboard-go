@@ -34,7 +34,27 @@ func init() {
 			Description: "Start the Job Processor",
 			Action:      processorCommand,
 		},
-
+		{
+			Name:        "cron",
+			Description: "Start the Cron Scheduler",
+			Action:      cronCommand,
+		},
+		{
+			Name:        "importTypes",
+			Description: "Run an types importer",
+			Action:      importTypes,
+			Flags: []cli.Flag{
+				&cli.UintFlag{
+					Name:  "categoryID",
+					Usage: "ID for the Category that we need to import groups and types for",
+				},
+			},
+		},
+		{
+			Name:        "importMap",
+			Description: "Run an map importer",
+			Action:      importMap,
+		},
 		{
 			Name:   "test",
 			Action: testCommand,

@@ -14,7 +14,7 @@ import (
 type modifiers interface {
 	AddIfNoneMatchHeader(ctx context.Context, etag string) ModifierFunc
 	AddAuthorizationHeader(ctx context.Context, token string) ModifierFunc
-	CacheEtag(ctx context.Context, hash string) ModifierFunc
+	CacheEtag(ctx context.Context, hash string, expiration *time.Time) ModifierFunc
 	BaseCharacterModifiers(ctx context.Context, user *skillz.User, etagID string, etag *skillz.Etag) []ModifierFunc
 }
 
@@ -50,7 +50,7 @@ func (s *Service) AddAuthorizationHeader(ctx context.Context, token string) Modi
 	}
 }
 
-func (s *Service) CacheEtag(ctx context.Context, hash string) ModifierFunc {
+func (s *Service) CacheEtag(ctx context.Context, hash string, expiration *time.Time) ModifierFunc {
 	return func(req *http.Request, res *http.Response) error {
 		if res == nil {
 			return nil
@@ -62,6 +62,10 @@ func (s *Service) CacheEtag(ctx context.Context, hash string) ModifierFunc {
 			d, err := time.Parse(headerTimestampFormat, header)
 			if err != nil {
 				return errors.Wrap(err, "failed to parse ESI Expires header")
+			}
+
+			if expiration != nil && expiration.Unix() > d.Unix() {
+				d = *expiration
 			}
 
 			duration = d
@@ -85,7 +89,7 @@ func (s *Service) CacheEtag(ctx context.Context, hash string) ModifierFunc {
 }
 
 func (s *Service) BaseCharacterModifiers(ctx context.Context, user *skillz.User, etagID string, etag *skillz.Etag) []ModifierFunc {
-	mods := append(make([]ModifierFunc, 0, 3), s.CacheEtag(ctx, etagID), s.AddAuthorizationHeader(ctx, user.AccessToken))
+	mods := append(make([]ModifierFunc, 0, 3), s.CacheEtag(ctx, etagID, nil), s.AddAuthorizationHeader(ctx, user.AccessToken))
 	if etag != nil && etag.Etag != "" {
 		mods = append(mods, s.AddIfNoneMatchHeader(ctx, etag.Etag))
 	}

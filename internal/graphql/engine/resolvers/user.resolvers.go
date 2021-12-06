@@ -35,20 +35,6 @@ func (r *userResolver) SkillMeta(ctx context.Context, obj *skillz.User) (*skillz
 }
 
 func (r *userResolver) Skills(ctx context.Context, obj *skillz.User) ([]*skillz.CharacterSkillGroup, error) {
-	// meta, err := r.skill.Meta(ctx, obj.CharacterID)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// skills, err := r.skill.Skillz(ctx, obj.CharacterID)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// return &engine.CharacterSkills{
-	// 	Meta:   meta,
-	// 	Skills: skills,
-	// }, nil
 	return r.skill.SkillsGrouped(ctx, obj.CharacterID)
 }
 
@@ -58,6 +44,14 @@ func (r *userResolver) Queue(ctx context.Context, obj *skillz.User) ([]*skillz.C
 
 func (r *userResolver) Attributes(ctx context.Context, obj *skillz.User) (*skillz.CharacterAttributes, error) {
 	return r.skill.Attributes(ctx, obj.CharacterID)
+}
+
+func (r *userResolver) Flyable(ctx context.Context, obj *skillz.User) ([]*skillz.CharacterFlyableShip, error) {
+	return r.skill.Flyable(ctx, obj.CharacterID)
+}
+
+func (r *userResolver) Contacts(ctx context.Context, obj *skillz.User) ([]*skillz.CharacterContact, error) {
+	return r.contact.Contacts(ctx, obj)
 }
 
 // User returns engine.UserResolver implementation.

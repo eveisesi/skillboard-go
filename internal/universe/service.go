@@ -3,7 +3,6 @@ package universe
 import (
 	"context"
 	"database/sql"
-	"time"
 
 	"github.com/eveisesi/skillz"
 	"github.com/eveisesi/skillz/internal"
@@ -59,8 +58,8 @@ func (s *Service) Bloodline(ctx context.Context, bloodlineID uint) (*skillz.Bloo
 	}
 
 	bloodline, err = s.universe.Bloodline(ctx, bloodlineID)
-	if err != nil {
-		return nil, err
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, errors.Wrap(err, "failed to fetch bloodline from data store")
 	}
 
 	err = s.cache.SetBloodline(ctx, bloodline)
@@ -80,46 +79,9 @@ func (s *Service) Category(ctx context.Context, categoryID uint) (*skillz.Catego
 		return category, nil
 	}
 
-	etagID, etag, err := s.esi.Etag(ctx, esi.GetCategory, &esi.Params{CategoryID: null.UintFrom(categoryID)})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to fetch etag for expiry check")
-	}
-
 	category, err = s.universe.Category(ctx, categoryID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.Wrap(err, "failed to fetch category from data store")
-	}
-
-	exists := err == nil
-	if !exists || etag == nil || etag.CachedUntil.Unix() < time.Now().Add(-1*time.Minute).Unix() {
-		mods := append(make([]esi.ModifierFunc, 0, 2), s.esi.CacheEtag(ctx, etagID))
-		if etag != nil && etag.Etag != "" {
-			mods = append(mods, s.esi.AddIfNoneMatchHeader(ctx, etag.Etag))
-		}
-
-		updatedCategory, err := s.esi.GetCategory(ctx, categoryID, mods...)
-		if err != nil {
-			return nil, err
-		}
-
-		if updatedCategory != nil {
-			switch exists {
-			case true:
-				err = s.universe.UpdateCategory(ctx, updatedCategory)
-				if err != nil {
-					return nil, errors.Wrap(err, "failed to save character to data store")
-				}
-			case false:
-				err = s.universe.CreateCategory(ctx, updatedCategory)
-				if err != nil {
-					return nil, errors.Wrap(err, "failed to save character to data store")
-				}
-
-			}
-
-			category = updatedCategory
-		}
-
 	}
 
 	return category, s.cache.SetCategory(ctx, category)
@@ -137,46 +99,9 @@ func (s *Service) Constellation(ctx context.Context, constellationID uint) (*ski
 		return constellation, nil
 	}
 
-	etagID, etag, err := s.esi.Etag(ctx, esi.GetConstellation, &esi.Params{ConstellationID: null.UintFrom(constellationID)})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to fetch etag for expiry check")
-	}
-
 	constellation, err = s.universe.Constellation(ctx, constellationID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.Wrap(err, "failed to fetch constellation from data store")
-	}
-
-	exists := err == nil
-	if !exists || etag == nil || etag.CachedUntil.Unix() < time.Now().Add(-1*time.Minute).Unix() {
-		mods := append(make([]esi.ModifierFunc, 0, 2), s.esi.CacheEtag(ctx, etagID))
-		if etag != nil && etag.Etag != "" {
-			mods = append(mods, s.esi.AddIfNoneMatchHeader(ctx, etag.Etag))
-		}
-
-		updatedConstellation, err := s.esi.GetConstellation(ctx, constellationID, mods...)
-		if err != nil {
-			return nil, err
-		}
-
-		if updatedConstellation != nil {
-			switch exists {
-			case true:
-				err = s.universe.UpdateConstellation(ctx, updatedConstellation)
-				if err != nil {
-					return nil, errors.Wrap(err, "failed to save character to data store")
-				}
-			case false:
-				err = s.universe.CreateConstellation(ctx, updatedConstellation)
-				if err != nil {
-					return nil, errors.Wrap(err, "failed to save character to data store")
-				}
-
-			}
-
-			constellation = updatedConstellation
-		}
-
 	}
 
 	return constellation, s.cache.SetConstellation(ctx, constellation)
@@ -194,13 +119,11 @@ func (s *Service) Faction(ctx context.Context, id uint) (*skillz.Faction, error)
 	}
 
 	faction, err = s.universe.Faction(ctx, id)
-	if err != nil {
-		return nil, err
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, errors.Wrap(err, "failed to fetch faction from data store")
 	}
 
-	err = s.cache.SetFaction(ctx, faction)
-
-	return faction, err
+	return faction, s.cache.SetFaction(ctx, faction)
 }
 
 func (s *Service) Group(ctx context.Context, groupID uint) (*skillz.Group, error) {
@@ -214,46 +137,9 @@ func (s *Service) Group(ctx context.Context, groupID uint) (*skillz.Group, error
 		return group, nil
 	}
 
-	etagID, etag, err := s.esi.Etag(ctx, esi.GetGroup, &esi.Params{GroupID: null.UintFrom(groupID)})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to fetch etag for expiry check")
-	}
-
 	group, err = s.universe.Group(ctx, groupID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.Wrap(err, "failed to fetch group from data store")
-	}
-
-	exists := err == nil
-	if !exists || etag == nil || etag.CachedUntil.Unix() < time.Now().Add(-1*time.Minute).Unix() {
-		mods := append(make([]esi.ModifierFunc, 0, 2), s.esi.CacheEtag(ctx, etagID))
-		if etag != nil && etag.Etag != "" {
-			mods = append(mods, s.esi.AddIfNoneMatchHeader(ctx, etag.Etag))
-		}
-
-		updatedGroup, err := s.esi.GetGroup(ctx, groupID, mods...)
-		if err != nil {
-			return nil, err
-		}
-
-		if updatedGroup != nil {
-			switch exists {
-			case true:
-				err = s.universe.UpdateGroup(ctx, updatedGroup)
-				if err != nil {
-					return nil, errors.Wrap(err, "failed to save character to data store")
-				}
-			case false:
-				err = s.universe.CreateGroup(ctx, updatedGroup)
-				if err != nil {
-					return nil, errors.Wrap(err, "failed to save character to data store")
-				}
-
-			}
-
-			group = updatedGroup
-		}
-
 	}
 
 	return group, s.cache.SetGroup(ctx, group)
@@ -273,12 +159,10 @@ func (s *Service) GroupsByCategory(ctx context.Context, categoryID uint) ([]*ski
 
 	groups, err = s.universe.Groups(ctx, skillz.NewEqualOperator(mysql.GroupCategoryID, categoryID))
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to fetch groups from data store")
 	}
 
-	err = s.cache.SetGroupsByCategoryID(ctx, categoryID, groups)
-
-	return groups, errors.Wrap(err, "failed to cache groups by category ID")
+	return groups, s.cache.SetGroupsByCategoryID(ctx, categoryID, groups)
 
 }
 
@@ -294,13 +178,11 @@ func (s *Service) Race(ctx context.Context, id uint) (*skillz.Race, error) {
 	}
 
 	race, err = s.universe.Race(ctx, id)
-	if err != nil {
-		return nil, err
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, errors.Wrap(err, "failed to fetch race from data store")
 	}
 
-	err = s.cache.SetRace(ctx, race)
-
-	return race, err
+	return race, s.cache.SetRace(ctx, race)
 
 }
 
@@ -315,46 +197,9 @@ func (s *Service) Region(ctx context.Context, regionID uint) (*skillz.Region, er
 		return region, nil
 	}
 
-	etagID, etag, err := s.esi.Etag(ctx, esi.GetRegion, &esi.Params{RegionID: null.UintFrom(regionID)})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to fetch etag for expiry check")
-	}
-
 	region, err = s.universe.Region(ctx, regionID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.Wrap(err, "failed to fetch region from data store")
-	}
-
-	exists := err == nil
-	if !exists || etag == nil || etag.CachedUntil.Unix() < time.Now().Add(-1*time.Minute).Unix() {
-		mods := append(make([]esi.ModifierFunc, 0, 2), s.esi.CacheEtag(ctx, etagID))
-		if etag != nil && etag.Etag != "" {
-			mods = append(mods, s.esi.AddIfNoneMatchHeader(ctx, etag.Etag))
-		}
-
-		updatedRegion, err := s.esi.GetRegion(ctx, regionID, mods...)
-		if err != nil {
-			return nil, err
-		}
-
-		if updatedRegion != nil {
-			switch exists {
-			case true:
-				err = s.universe.UpdateRegion(ctx, updatedRegion)
-				if err != nil {
-					return nil, errors.Wrap(err, "failed to save character to data store")
-				}
-			case false:
-				err = s.universe.CreateRegion(ctx, updatedRegion)
-				if err != nil {
-					return nil, errors.Wrap(err, "failed to save character to data store")
-				}
-
-			}
-
-			region = updatedRegion
-		}
-
 	}
 
 	return region, s.cache.SetRegion(ctx, region)
@@ -372,46 +217,9 @@ func (s *Service) SolarSystem(ctx context.Context, solarSystemID uint) (*skillz.
 		return solarSystem, nil
 	}
 
-	etagID, etag, err := s.esi.Etag(ctx, esi.GetSolarSystem, &esi.Params{SolarSystemID: null.UintFrom(solarSystemID)})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to fetch etag for expiry check")
-	}
-
 	solarSystem, err = s.universe.SolarSystem(ctx, solarSystemID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.Wrap(err, "failed to fetch solarSystem from data store")
-	}
-
-	exists := err == nil
-	if !exists || etag == nil || etag.CachedUntil.Unix() < time.Now().Add(-1*time.Minute).Unix() {
-		mods := append(make([]esi.ModifierFunc, 0, 2), s.esi.CacheEtag(ctx, etagID))
-		if etag != nil && etag.Etag != "" {
-			mods = append(mods, s.esi.AddIfNoneMatchHeader(ctx, etag.Etag))
-		}
-
-		updatedSolarSystem, err := s.esi.GetSolarSystem(ctx, solarSystemID, mods...)
-		if err != nil {
-			return nil, err
-		}
-
-		if updatedSolarSystem != nil {
-			switch exists {
-			case true:
-				err = s.universe.UpdateSolarSystem(ctx, updatedSolarSystem)
-				if err != nil {
-					return nil, errors.Wrap(err, "failed to save character to data store")
-				}
-			case false:
-				err = s.universe.CreateSolarSystem(ctx, updatedSolarSystem)
-				if err != nil {
-					return nil, errors.Wrap(err, "failed to save character to data store")
-				}
-
-			}
-
-			solarSystem = updatedSolarSystem
-		}
-
 	}
 
 	return solarSystem, s.cache.SetSolarSystem(ctx, solarSystem)
@@ -429,46 +237,9 @@ func (s *Service) Station(ctx context.Context, stationID uint) (*skillz.Station,
 		return station, nil
 	}
 
-	etagID, etag, err := s.esi.Etag(ctx, esi.GetStation, &esi.Params{StationID: null.UintFrom(stationID)})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to fetch etag for expiry check")
-	}
-
 	station, err = s.universe.Station(ctx, stationID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.Wrap(err, "failed to fetch station from data store")
-	}
-
-	exists := err == nil
-	if !exists || etag == nil || etag.CachedUntil.Unix() < time.Now().Add(-1*time.Minute).Unix() {
-		mods := append(make([]esi.ModifierFunc, 0, 2), s.esi.CacheEtag(ctx, etagID))
-		if etag != nil && etag.Etag != "" {
-			mods = append(mods, s.esi.AddIfNoneMatchHeader(ctx, etag.Etag))
-		}
-
-		updatedStation, err := s.esi.GetStation(ctx, stationID, mods...)
-		if err != nil {
-			return nil, err
-		}
-
-		if updatedStation != nil {
-			switch exists {
-			case true:
-				err = s.universe.UpdateStation(ctx, updatedStation)
-				if err != nil {
-					return nil, errors.Wrap(err, "failed to save character to data store")
-				}
-			case false:
-				err = s.universe.CreateStation(ctx, updatedStation)
-				if err != nil {
-					return nil, errors.Wrap(err, "failed to save character to data store")
-				}
-
-			}
-
-			station = updatedStation
-		}
-
 	}
 
 	return station, s.cache.SetStation(ctx, station)
@@ -504,7 +275,7 @@ func (s *Service) Structure(ctx context.Context, structureID uint64) (*skillz.St
 			return nil, errors.Wrap(err, "failed to resolve structure id, no user available to query esi with")
 		}
 
-		mods := append(make([]esi.ModifierFunc, 0, 2), s.esi.CacheEtag(ctx, etagID), s.esi.AddAuthorizationHeader(ctx, user.AccessToken))
+		mods := append(make([]esi.ModifierFunc, 0, 2), s.esi.CacheEtag(ctx, etagID, nil), s.esi.AddAuthorizationHeader(ctx, user.AccessToken))
 		if etag != nil && etag.Etag != "" {
 			mods = append(mods, s.esi.AddIfNoneMatchHeader(ctx, etag.Etag))
 		}
@@ -549,65 +320,9 @@ func (s *Service) Type(ctx context.Context, itemID uint) (*skillz.Type, error) {
 		return item, nil
 	}
 
-	etagID, etag, err := s.esi.Etag(ctx, esi.GetType, &esi.Params{ItemID: null.UintFrom(itemID)})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to fetch etag for expiry check")
-	}
-
 	item, err = s.universe.Type(ctx, itemID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.Wrap(err, "failed to fetch item from data store")
-	}
-
-	exists := err == nil
-	if !exists || etag == nil || etag.CachedUntil.Unix() < time.Now().Add(-1*time.Minute).Unix() {
-		mods := append(make([]esi.ModifierFunc, 0, 2), s.esi.CacheEtag(ctx, etagID))
-		if etag != nil && etag.Etag != "" {
-			mods = append(mods, s.esi.AddIfNoneMatchHeader(ctx, etag.Etag))
-		}
-
-		updatedType, err := s.esi.GetType(ctx, itemID, mods...)
-		if err != nil {
-			return nil, err
-		}
-
-		if updatedType != nil {
-			switch exists {
-			case true:
-				err = s.universe.UpdateType(ctx, updatedType)
-				if err != nil {
-					return nil, errors.Wrap(err, "failed to save item to data store")
-				}
-				if len(updatedType.Attributes) > 0 {
-					err = s.universe.DeleteTypeDogmaAttributes(ctx, itemID)
-					if err != nil {
-						return nil, errors.Wrap(err, "failed to save item attributes to data store")
-					}
-
-					err = s.universe.CreateTypeDogmaAttributes(ctx, updatedType.Attributes)
-					if err != nil {
-						return nil, errors.Wrap(err, "failed to save item attributes to data store")
-					}
-				}
-
-			case false:
-				err = s.universe.CreateType(ctx, updatedType)
-				if err != nil {
-					return nil, errors.Wrap(err, "failed to save item to data store")
-				}
-
-				if len(updatedType.Attributes) > 0 {
-					err = s.universe.CreateTypeDogmaAttributes(ctx, updatedType.Attributes)
-					if err != nil {
-						return nil, errors.Wrap(err, "failed to save item attributes to data store")
-					}
-				}
-
-			}
-
-			item = updatedType
-		}
-
 	}
 
 	attributes, err := s.universe.TypeDogmaAttributes(ctx, item.ID)
@@ -634,7 +349,7 @@ func (s *Service) TypeAttributes(ctx context.Context, id uint) ([]*skillz.TypeDo
 
 	attributes, err = s.universe.TypeDogmaAttributes(ctx, id)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to fetch type attributes from data store")
 	}
 
 	return attributes, s.cache.SetTypeAttributes(ctx, id, attributes)
@@ -657,8 +372,6 @@ func (s *Service) TypesByGroup(ctx context.Context, groupID uint) ([]*skillz.Typ
 		return nil, err
 	}
 
-	err = s.cache.SetTypesByGroupID(ctx, groupID, types)
-
-	return types, errors.Wrap(err, "failed to cache types by group ID")
+	return types, s.cache.SetTypesByGroupID(ctx, groupID, types)
 
 }

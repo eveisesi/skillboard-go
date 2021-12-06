@@ -2,5 +2,7 @@
 redis.conf
 logs/*.log
 cmd/skillz/underscore.go
+cmd/skillz/test.go
+cmd/skillz/token.go
 .config/backup.env
 .config/.key

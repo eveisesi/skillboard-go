@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -42,7 +41,9 @@ type Config struct {
 type ResolverRoot interface {
 	Character() CharacterResolver
 	CharacterClone() CharacterCloneResolver
+	CharacterContact() CharacterContactResolver
 	CharacterDeathClone() CharacterDeathCloneResolver
+	CharacterFlyableShip() CharacterFlyableShipResolver
 	CharacterImplant() CharacterImplantResolver
 	CharacterJumpClone() CharacterJumpCloneResolver
 	CharacterSkill() CharacterSkillResolver
@@ -116,12 +117,25 @@ type ComplexityRoot struct {
 		LastStationChangeDate func(childComplexity int) int
 	}
 
+	CharacterContact struct {
+		CharacterID func(childComplexity int) int
+		ContactID   func(childComplexity int) int
+		ContactType func(childComplexity int) int
+		Standing    func(childComplexity int) int
+	}
+
 	CharacterDeathClone struct {
 		CharacterID  func(childComplexity int) int
 		LocationID   func(childComplexity int) int
 		LocationType func(childComplexity int) int
 		Station      func(childComplexity int) int
 		Structure    func(childComplexity int) int
+	}
+
+	CharacterFlyableShip struct {
+		CharacterID func(childComplexity int) int
+		Flyable     func(childComplexity int) int
+		Info        func(childComplexity int) int
 	}
 
 	CharacterImplant struct {
@@ -215,6 +229,7 @@ type ComplexityRoot struct {
 		Character      func(childComplexity int, id uint64) int
 		FinalizeAuth   func(childComplexity int, code string, state string) int
 		InitializeAuth func(childComplexity int) int
+		SearchUser     func(childComplexity int, term string) int
 		User           func(childComplexity int, id uint64) int
 	}
 
@@ -277,6 +292,8 @@ type ComplexityRoot struct {
 		Character   func(childComplexity int) int
 		CharacterID func(childComplexity int) int
 		Clone       func(childComplexity int) int
+		Contacts    func(childComplexity int) int
+		Flyable     func(childComplexity int) int
 		Implants    func(childComplexity int) int
 		IsNew       func(childComplexity int) int
 		LastLogin   func(childComplexity int) int
@@ -294,10 +311,16 @@ type CharacterCloneResolver interface {
 	Jump(ctx context.Context, obj *skillz.CharacterCloneMeta) ([]*skillz.CharacterJumpClone, error)
 	Death(ctx context.Context, obj *skillz.CharacterCloneMeta) (*skillz.CharacterDeathClone, error)
 }
+type CharacterContactResolver interface {
+	ContactType(ctx context.Context, obj *skillz.CharacterContact) (string, error)
+}
 type CharacterDeathCloneResolver interface {
 	LocationType(ctx context.Context, obj *skillz.CharacterDeathClone) (string, error)
 	Station(ctx context.Context, obj *skillz.CharacterDeathClone) (*skillz.Station, error)
 	Structure(ctx context.Context, obj *skillz.CharacterDeathClone) (*skillz.Structure, error)
+}
+type CharacterFlyableShipResolver interface {
+	Info(ctx context.Context, obj *skillz.CharacterFlyableShip) (*skillz.Type, error)
 }
 type CharacterImplantResolver interface {
 	Implant(ctx context.Context, obj *skillz.CharacterImplant) (*skillz.Type, error)
@@ -326,6 +349,7 @@ type QueryResolver interface {
 	InitializeAuth(ctx context.Context) (string, error)
 	FinalizeAuth(ctx context.Context, code string, state string) (*skillz.User, error)
 	User(ctx context.Context, id uint64) (*skillz.User, error)
+	SearchUser(ctx context.Context, term string) ([]*skillz.User, error)
 	Character(ctx context.Context, id uint64) (*skillz.Character, error)
 }
 type SolarSystemResolver interface {
@@ -351,6 +375,8 @@ type UserResolver interface {
 	Skills(ctx context.Context, obj *skillz.User) ([]*skillz.CharacterSkillGroup, error)
 	Queue(ctx context.Context, obj *skillz.User) ([]*skillz.CharacterSkillQueue, error)
 	Attributes(ctx context.Context, obj *skillz.User) (*skillz.CharacterAttributes, error)
+	Flyable(ctx context.Context, obj *skillz.User) ([]*skillz.CharacterFlyableShip, error)
+	Contacts(ctx context.Context, obj *skillz.User) ([]*skillz.CharacterContact, error)
 }
 
 type executableSchema struct {
@@ -634,6 +660,34 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.CharacterClone.LastStationChangeDate(childComplexity), true
 
+	case "CharacterContact.characterID":
+		if e.complexity.CharacterContact.CharacterID == nil {
+			break
+		}
+
+		return e.complexity.CharacterContact.CharacterID(childComplexity), true
+
+	case "CharacterContact.contactID":
+		if e.complexity.CharacterContact.ContactID == nil {
+			break
+		}
+
+		return e.complexity.CharacterContact.ContactID(childComplexity), true
+
+	case "CharacterContact.contactType":
+		if e.complexity.CharacterContact.ContactType == nil {
+			break
+		}
+
+		return e.complexity.CharacterContact.ContactType(childComplexity), true
+
+	case "CharacterContact.standing":
+		if e.complexity.CharacterContact.Standing == nil {
+			break
+		}
+
+		return e.complexity.CharacterContact.Standing(childComplexity), true
+
 	case "CharacterDeathClone.characterID":
 		if e.complexity.CharacterDeathClone.CharacterID == nil {
 			break
@@ -668,6 +722,27 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.CharacterDeathClone.Structure(childComplexity), true
+
+	case "CharacterFlyableShip.characterID":
+		if e.complexity.CharacterFlyableShip.CharacterID == nil {
+			break
+		}
+
+		return e.complexity.CharacterFlyableShip.CharacterID(childComplexity), true
+
+	case "CharacterFlyableShip.flyable":
+		if e.complexity.CharacterFlyableShip.Flyable == nil {
+			break
+		}
+
+		return e.complexity.CharacterFlyableShip.Flyable(childComplexity), true
+
+	case "CharacterFlyableShip.info":
+		if e.complexity.CharacterFlyableShip.Info == nil {
+			break
+		}
+
+		return e.complexity.CharacterFlyableShip.Info(childComplexity), true
 
 	case "CharacterImplant.characterID":
 		if e.complexity.CharacterImplant.CharacterID == nil {
@@ -1099,6 +1174,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.InitializeAuth(childComplexity), true
 
+	case "Query.searchUser":
+		if e.complexity.Query.SearchUser == nil {
+			break
+		}
+
+		args, err := ec.field_Query_searchUser_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.SearchUser(childComplexity, args["term"].(string)), true
+
 	case "Query.user":
 		if e.complexity.Query.User == nil {
 			break
@@ -1412,6 +1499,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.Clone(childComplexity), true
 
+	case "User.contacts":
+		if e.complexity.User.Contacts == nil {
+			break
+		}
+
+		return e.complexity.User.Contacts(childComplexity), true
+
+	case "User.flyable":
+		if e.complexity.User.Flyable == nil {
+			break
+		}
+
+		return e.complexity.User.Flyable(childComplexity), true
+
 	case "User.implants":
 		if e.complexity.User.Implants == nil {
 			break
@@ -1541,7 +1642,7 @@ extend type Corporation {
     raceID: Uint!
 }
 `, BuiltIn: false},
-	{Name: "internal/graphql/engine/schema/clone.graphqls", Input: `type CharacterClone @isAuthed @goModel(model: "github.com/eveisesi/skillz.CharacterCloneMeta") {
+	{Name: "internal/graphql/engine/schema/clone.graphqls", Input: `type CharacterClone @goModel(model: "github.com/eveisesi/skillz.CharacterCloneMeta") {
     characterID: Uint64!
     lastCloneJumpDate: Time
     lastStationChangeDate: Time
@@ -1549,7 +1650,7 @@ extend type Corporation {
     death: CharacterDeathClone!
 }
 
-type CharacterJumpClone @isAuthed @goModel(model: "github.com/eveisesi/skillz.CharacterJumpClone") {
+type CharacterJumpClone @goModel(model: "github.com/eveisesi/skillz.CharacterJumpClone") {
     characterID: Uint64!
     jumpCloneID: Uint!
     locationID: Uint64!
@@ -1559,7 +1660,7 @@ type CharacterJumpClone @isAuthed @goModel(model: "github.com/eveisesi/skillz.Ch
     structure: Structure
 }
 
-type CharacterDeathClone @isAuthed @goModel(model: "github.com/eveisesi/skillz.CharacterDeathClone") {
+type CharacterDeathClone @goModel(model: "github.com/eveisesi/skillz.CharacterDeathClone") {
     characterID: Uint64!
     locationID: Uint64!
     locationType: String!
@@ -1576,6 +1677,12 @@ type CharacterImplant @goModel(model: "github.com/eveisesi/skillz.CharacterImpla
 }
 
 `, BuiltIn: false},
+	{Name: "internal/graphql/engine/schema/contact.graphqls", Input: `type CharacterContact @goModel(model: "github.com/eveisesi/skillz.CharacterContact") {
+    characterID: Uint64!
+    contactID: Uint!
+    contactType: String!
+    standing: Float!
+}`, BuiltIn: false},
 	{Name: "internal/graphql/engine/schema/corporation.graphqls", Input: `type Corporation @goModel(model: "github.com/eveisesi/skillz.Corporation") {
     id: Uint!
     allianceID: Uint
@@ -1602,6 +1709,7 @@ extend type Character {
     finalizeAuth(code: String!, state: String!): User!
     # user: User! @isAuthed
     user(id: Uint64!): User!
+    searchUser(term: String!): [User]!
     character(id: Uint64!): Character
 }
 
@@ -1668,7 +1776,13 @@ type CharacterSkill @goModel(model: "github.com/eveisesi/skillz.CharacterSkill")
 
     info: Type!
 }
-`, BuiltIn: false},
+
+type CharacterFlyableShip @goModel(model: "github.com/eveisesi/skillz.CharacterFlyableShip") {
+    characterID: Uint64!
+    flyable: Boolean!
+
+    info: Type!
+}`, BuiltIn: false},
 	{Name: "internal/graphql/engine/schema/universe.graphqls", Input: `type Structure @goModel(model: "github.com/eveisesi/skillz.Structure") {
     id: Uint64!
     name: String!
@@ -1769,6 +1883,8 @@ type Category @goModel(model: "github.com/eveisesi/skillz.Category") {
     skills: [CharacterSkillGroup]!
     queue: [CharacterSkillQueue]!
     attributes: CharacterAttributes!
+    flyable: [CharacterFlyableShip]!
+    contacts: [CharacterContact]!
 }
 `, BuiltIn: false},
 }
@@ -1829,6 +1945,21 @@ func (ec *executionContext) field_Query_finalizeAuth_args(ctx context.Context, r
 		}
 	}
 	args["state"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_searchUser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["term"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("term"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["term"] = arg0
 	return args, nil
 }
 
@@ -3132,28 +3263,8 @@ func (ec *executionContext) _CharacterClone_jump(ctx context.Context, field grap
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.CharacterClone().Jump(rctx, obj)
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			if ec.directives.IsAuthed == nil {
-				return nil, errors.New("directive isAuthed is not implemented")
-			}
-			return ec.directives.IsAuthed(ctx, obj, directive0)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.([]*skillz.CharacterJumpClone); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*github.com/eveisesi/skillz.CharacterJumpClone`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.CharacterClone().Jump(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3187,28 +3298,8 @@ func (ec *executionContext) _CharacterClone_death(ctx context.Context, field gra
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.CharacterClone().Death(rctx, obj)
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			if ec.directives.IsAuthed == nil {
-				return nil, errors.New("directive isAuthed is not implemented")
-			}
-			return ec.directives.IsAuthed(ctx, obj, directive0)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(*skillz.CharacterDeathClone); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/eveisesi/skillz.CharacterDeathClone`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.CharacterClone().Death(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3223,6 +3314,146 @@ func (ec *executionContext) _CharacterClone_death(ctx context.Context, field gra
 	res := resTmp.(*skillz.CharacterDeathClone)
 	fc.Result = res
 	return ec.marshalNCharacterDeathClone2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacterDeathClone(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CharacterContact_characterID(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterContact) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CharacterContact",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CharacterID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uint64)
+	fc.Result = res
+	return ec.marshalNUint642uint64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CharacterContact_contactID(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterContact) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CharacterContact",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ContactID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uint)
+	fc.Result = res
+	return ec.marshalNUint2uint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CharacterContact_contactType(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterContact) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CharacterContact",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.CharacterContact().ContactType(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CharacterContact_standing(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterContact) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CharacterContact",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Standing, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _CharacterDeathClone_characterID(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterDeathClone) (ret graphql.Marshaler) {
@@ -3392,6 +3623,111 @@ func (ec *executionContext) _CharacterDeathClone_structure(ctx context.Context, 
 	res := resTmp.(*skillz.Structure)
 	fc.Result = res
 	return ec.marshalOStructure2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐStructure(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CharacterFlyableShip_characterID(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterFlyableShip) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CharacterFlyableShip",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CharacterID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uint64)
+	fc.Result = res
+	return ec.marshalNUint642uint64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CharacterFlyableShip_flyable(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterFlyableShip) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CharacterFlyableShip",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Flyable, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CharacterFlyableShip_info(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterFlyableShip) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CharacterFlyableShip",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.CharacterFlyableShip().Info(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*skillz.Type)
+	fc.Result = res
+	return ec.marshalNType2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐType(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _CharacterImplant_characterID(ctx context.Context, field graphql.CollectedField, obj *skillz.CharacterImplant) (ret graphql.Marshaler) {
@@ -5466,6 +5802,48 @@ func (ec *executionContext) _Query_user(ctx context.Context, field graphql.Colle
 	return ec.marshalNUser2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐUser(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Query_searchUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_searchUser_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().SearchUser(rctx, args["term"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*skillz.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋeveisesiᚋskillzᚐUser(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_character(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -7097,28 +7475,8 @@ func (ec *executionContext) _User_clone(ctx context.Context, field graphql.Colle
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.User().Clone(rctx, obj)
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			if ec.directives.IsAuthed == nil {
-				return nil, errors.New("directive isAuthed is not implemented")
-			}
-			return ec.directives.IsAuthed(ctx, obj, directive0)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(*skillz.CharacterCloneMeta); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/eveisesi/skillz.CharacterCloneMeta`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().Clone(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -7305,6 +7663,76 @@ func (ec *executionContext) _User_attributes(ctx context.Context, field graphql.
 	res := resTmp.(*skillz.CharacterAttributes)
 	fc.Result = res
 	return ec.marshalNCharacterAttributes2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacterAttributes(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_flyable(ctx context.Context, field graphql.CollectedField, obj *skillz.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().Flyable(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*skillz.CharacterFlyableShip)
+	fc.Result = res
+	return ec.marshalNCharacterFlyableShip2ᚕᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacterFlyableShip(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_contacts(ctx context.Context, field graphql.CollectedField, obj *skillz.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().Contacts(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*skillz.CharacterContact)
+	fc.Result = res
+	return ec.marshalNCharacterContact2ᚕᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacterContact(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
@@ -8734,6 +9162,57 @@ func (ec *executionContext) _CharacterClone(ctx context.Context, sel ast.Selecti
 	return out
 }
 
+var characterContactImplementors = []string{"CharacterContact"}
+
+func (ec *executionContext) _CharacterContact(ctx context.Context, sel ast.SelectionSet, obj *skillz.CharacterContact) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, characterContactImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CharacterContact")
+		case "characterID":
+			out.Values[i] = ec._CharacterContact_characterID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "contactID":
+			out.Values[i] = ec._CharacterContact_contactID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "contactType":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._CharacterContact_contactType(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "standing":
+			out.Values[i] = ec._CharacterContact_standing(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var characterDeathCloneImplementors = []string{"CharacterDeathClone"}
 
 func (ec *executionContext) _CharacterDeathClone(ctx context.Context, sel ast.SelectionSet, obj *skillz.CharacterDeathClone) graphql.Marshaler {
@@ -8789,6 +9268,52 @@ func (ec *executionContext) _CharacterDeathClone(ctx context.Context, sel ast.Se
 					}
 				}()
 				res = ec._CharacterDeathClone_structure(ctx, field, obj)
+				return res
+			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var characterFlyableShipImplementors = []string{"CharacterFlyableShip"}
+
+func (ec *executionContext) _CharacterFlyableShip(ctx context.Context, sel ast.SelectionSet, obj *skillz.CharacterFlyableShip) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, characterFlyableShipImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CharacterFlyableShip")
+		case "characterID":
+			out.Values[i] = ec._CharacterFlyableShip_characterID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "flyable":
+			out.Values[i] = ec._CharacterFlyableShip_flyable(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "info":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._CharacterFlyableShip_info(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			})
 		default:
@@ -9403,6 +9928,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
+		case "searchUser":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_searchUser(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "character":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -9878,6 +10417,34 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 				}
 				return res
 			})
+		case "flyable":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_flyable(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "contacts":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_contacts(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -10196,6 +10763,44 @@ func (ec *executionContext) marshalNCharacterAttributes2ᚖgithubᚗcomᚋeveise
 	return ec._CharacterAttributes(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNCharacterContact2ᚕᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacterContact(ctx context.Context, sel ast.SelectionSet, v []*skillz.CharacterContact) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOCharacterContact2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacterContact(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
+}
+
 func (ec *executionContext) marshalNCharacterDeathClone2githubᚗcomᚋeveisesiᚋskillzᚐCharacterDeathClone(ctx context.Context, sel ast.SelectionSet, v skillz.CharacterDeathClone) graphql.Marshaler {
 	return ec._CharacterDeathClone(ctx, sel, &v)
 }
@@ -10208,6 +10813,44 @@ func (ec *executionContext) marshalNCharacterDeathClone2ᚖgithubᚗcomᚋeveise
 		return graphql.Null
 	}
 	return ec._CharacterDeathClone(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNCharacterFlyableShip2ᚕᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacterFlyableShip(ctx context.Context, sel ast.SelectionSet, v []*skillz.CharacterFlyableShip) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOCharacterFlyableShip2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacterFlyableShip(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
 }
 
 func (ec *executionContext) marshalNCharacterImplant2ᚕᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacterImplant(ctx context.Context, sel ast.SelectionSet, v []*skillz.CharacterImplant) graphql.Marshaler {
@@ -10630,6 +11273,44 @@ func (ec *executionContext) marshalNUser2githubᚗcomᚋeveisesiᚋskillzᚐUser
 	return ec._User(ctx, sel, &v)
 }
 
+func (ec *executionContext) marshalNUser2ᚕᚖgithubᚗcomᚋeveisesiᚋskillzᚐUser(ctx context.Context, sel ast.SelectionSet, v []*skillz.User) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOUser2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐUser(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
+}
+
 func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐUser(ctx context.Context, sel ast.SelectionSet, v *skillz.User) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -10942,6 +11623,20 @@ func (ec *executionContext) marshalOCharacterClone2ᚖgithubᚗcomᚋeveisesiᚋ
 	return ec._CharacterClone(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalOCharacterContact2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacterContact(ctx context.Context, sel ast.SelectionSet, v *skillz.CharacterContact) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._CharacterContact(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOCharacterFlyableShip2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacterFlyableShip(ctx context.Context, sel ast.SelectionSet, v *skillz.CharacterFlyableShip) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._CharacterFlyableShip(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalOCharacterImplant2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacterImplant(ctx context.Context, sel ast.SelectionSet, v *skillz.CharacterImplant) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -11107,6 +11802,13 @@ func (ec *executionContext) unmarshalOUint2githubᚗcomᚋvolatiletechᚋnullᚐ
 
 func (ec *executionContext) marshalOUint2githubᚗcomᚋvolatiletechᚋnullᚐUint(ctx context.Context, sel ast.SelectionSet, v null.Uint) graphql.Marshaler {
 	return null1.MarshalUint(v)
+}
+
+func (ec *executionContext) marshalOUser2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐUser(ctx context.Context, sel ast.SelectionSet, v *skillz.User) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._User(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

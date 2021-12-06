@@ -17,5 +17,17 @@
             "showLog": true,
             "envFile": "${workspaceFolder}/.config/.env"
         },
+        {
+            "name": "Debug Processor",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceFolder}/cmd/skillz",
+            "args": [
+                "processor"
+            ],
+            "showLog": true,
+            "envFile": "${workspaceFolder}/.config/.env"
+        },
     ]
 }

@@ -1,0 +1,6 @@
+type CharacterContact @goModel(model: "github.com/eveisesi/skillz.CharacterContact") {
+    characterID: Uint64!
+    contactID: Uint!
+    contactType: String!
+    standing: Float!
+}

@@ -13,10 +13,9 @@ import (
 	"github.com/eveisesi/skillz/internal"
 	"github.com/eveisesi/skillz/internal/alliance"
 	"github.com/eveisesi/skillz/internal/auth"
+	"github.com/eveisesi/skillz/internal/cache"
 	"github.com/eveisesi/skillz/internal/character"
-	"github.com/eveisesi/skillz/internal/clone"
 	"github.com/eveisesi/skillz/internal/corporation"
-	"github.com/eveisesi/skillz/internal/skill"
 	"github.com/go-redis/redis/v8"
 	"github.com/gofrs/uuid"
 	"github.com/lestrrat-go/jwx/jwt"
@@ -31,21 +30,20 @@ type API interface {
 	User(ctx context.Context, id uuid.UUID) (*skillz.User, error)
 	UserByCharacterID(ctx context.Context, characterID uint64) (*skillz.User, error)
 	UserByCookie(ctx context.Context, cookie *http.Cookie) (*skillz.User, error)
+	SearchUsers(ctx context.Context, q string) ([]*skillz.User, error)
 	UpdateUser(ctx context.Context, user *skillz.User) error
 
-	// OverviewData(ctx context.Context, characterID string)
+	ProcessUpdatableUsers(ctx context.Context) error
 }
 
 type Service struct {
 	redis *redis.Client
+	cache cache.UserAPI
 
 	auth        auth.API
 	character   character.API
 	corporation corporation.API
 	alliance    alliance.API
-
-	clone  clone.API
-	skillz skill.API
 
 	skillz.UserRepository
 }
@@ -54,6 +52,7 @@ var _ API = new(Service)
 
 func New(
 	redis *redis.Client,
+	cache cache.UserAPI,
 	auth auth.API,
 	alliance alliance.API,
 	character character.API,
@@ -62,12 +61,35 @@ func New(
 ) *Service {
 	return &Service{
 		redis:          redis,
+		cache:          cache,
 		alliance:       alliance,
 		auth:           auth,
 		character:      character,
 		corporation:    corporation,
 		UserRepository: user,
 	}
+}
+
+func (s *Service) SearchUsers(ctx context.Context, q string) ([]*skillz.User, error) {
+
+	users, err := s.cache.SearchUsers(ctx, q)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(users) > 0 {
+		return users, nil
+	}
+
+	users, err = s.UserRepository.SearchUsers(ctx, q)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
+
+	err = s.cache.SetSearchUsersResults(ctx, q, users, time.Minute*10)
+
+	return users, errors.Wrap(err, "failed to cache user search results")
+
 }
 
 func (s *Service) Login(ctx context.Context, code, state string) (*skillz.User, error) {
@@ -263,5 +285,25 @@ func memberIDFromSubject(sub string) (uint64, error) {
 	}
 
 	return strconv.ParseUint(parts[2], 10, 64)
+
+}
+
+func (s *Service) ProcessUpdatableUsers(ctx context.Context) error {
+
+	users, err := s.UserRepository.UsersSortedByProcessedAtLimit(ctx, 100)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return errors.Wrap(err, "failed to query users table for processable users")
+	}
+
+	for _, user := range users {
+		err = s.redis.ZAdd(ctx, internal.UpdateQueue, &redis.Z{Score: float64(time.Now().Unix()), Member: user.ID.String()}).Err()
+		if err != nil {
+			return errors.Wrap(err, "failed to push user id to processing queue")
+		}
+
+		time.Sleep(time.Second)
+	}
+
+	return nil
 
 }

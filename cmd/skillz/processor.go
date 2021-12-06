@@ -7,6 +7,7 @@ import (
 	"github.com/eveisesi/skillz/internal/cache"
 	"github.com/eveisesi/skillz/internal/character"
 	"github.com/eveisesi/skillz/internal/clone"
+	"github.com/eveisesi/skillz/internal/contact"
 	"github.com/eveisesi/skillz/internal/corporation"
 	"github.com/eveisesi/skillz/internal/esi"
 	"github.com/eveisesi/skillz/internal/etag"
@@ -29,6 +30,7 @@ func processorCommand(c *cli.Context) error {
 	allianceRepo := mysql.NewAllianceRepository(mysqlClient)
 	corporationRepo := mysql.NewCorporationRepository(mysqlClient)
 	characterRepo := mysql.NewCharacterRepository(mysqlClient)
+	contactRepo := mysql.NewContactRepository(mysqlClient)
 	cloneRepo := mysql.NewCloneRepository(mysqlClient)
 	skillsRepo := mysql.NewSkillRepository(mysqlClient)
 	userRepo := mysql.NewUserRepository(mysqlClient)
@@ -47,14 +49,16 @@ func processorCommand(c *cli.Context) error {
 		cfg.Auth.TokenExpiry,
 	)
 
-	user := user.New(redisClient, auth, alliance, character, corporation, userRepo)
-	clone := clone.New(cache, etag, esi, cloneRepo)
+	user := user.New(redisClient, cache, auth, alliance, character, corporation, userRepo)
+	contact := contact.New(logger, cache, etag, esi, character, corporation, alliance, contactRepo)
+	clone := clone.New(logger, cache, etag, esi, cloneRepo)
 	universe := universe.New(cache, esi, universeRepo)
-	skills := skill.New(cache, esi, universe, skillsRepo)
+	skills := skill.New(logger, cache, esi, universe, skillsRepo)
 
 	return processor.New(logger, redisClient, user, skillz.ScopeProcessors{
 		clone,
 		skills,
+		contact,
 	}).Run()
 
 }

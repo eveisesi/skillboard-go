@@ -59,8 +59,9 @@ func (s *Service) Character(ctx context.Context, characterID uint64) (*skillz.Ch
 	}
 
 	exists := err == nil
-	if !exists || etag == nil || etag.CachedUntil.Unix() < time.Now().Add(-1*time.Minute).Unix() {
-		mods := append(make([]esi.ModifierFunc, 0, 2), s.esi.CacheEtag(ctx, etagID))
+	now := time.Now()
+	if !exists || etag == nil || etag.CachedUntil.Unix() < now.Add(-1*time.Minute).Unix() {
+		mods := append(make([]esi.ModifierFunc, 0, 2), s.esi.CacheEtag(ctx, etagID, null.TimeFrom(now.AddDate(0, 0, 3)).Ptr()))
 		if etag != nil && etag.Etag != "" {
 			mods = append(mods, s.esi.AddIfNoneMatchHeader(ctx, etag.Etag))
 		}

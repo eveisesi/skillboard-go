@@ -29,6 +29,7 @@ const (
 	UserDisabledReason    = "disabled_reason"
 	UserDisabledTimestamp = "disabled_timestamp"
 	UserLastLogin         = "last_login"
+	UserLastProcessed     = "last_processed"
 )
 
 func NewUserRepository(db QueryExecContext) skillz.UserRepository {
@@ -84,7 +85,12 @@ func (r *userRepository) UserByCharacterID(ctx context.Context, characterID uint
 
 func (r *userRepository) SearchUsers(ctx context.Context, q string) ([]*skillz.User, error) {
 
-	query, args, err := sq.Select(r.users.columns...).
+	columns := make([]string, 0, len(r.users.columns))
+	for _, column := range r.users.columns {
+		columns = append(columns, fmt.Sprintf("%s.%s", TableUsers, column))
+	}
+
+	query, args, err := sq.Select(columns...).
 		From(r.users.table).
 		InnerJoin(
 			fmt.Sprintf(
@@ -93,7 +99,7 @@ func (r *userRepository) SearchUsers(ctx context.Context, q string) ([]*skillz.U
 				TableCharacters,
 				CharacterID,
 				TableUsers,
-				UserID,
+				UserCharacterID,
 			),
 		).
 		Where(sq.Like{fmt.Sprintf("%s.%s", TableCharacters, CharacterName): fmt.Sprintf("%%%s%%", q)}).
@@ -162,5 +168,18 @@ func (r *userRepository) UpdateUser(ctx context.Context, user *skillz.User) erro
 
 	_, err = r.db.ExecContext(ctx, query, args...)
 	return errors.Wrapf(err, prefixFormat, userRepositoryIdentifier, "UpdateUser")
+
+}
+
+func (r *userRepository) UsersSortedByProcessedAtLimit(ctx context.Context, limit uint64) ([]*skillz.User, error) {
+
+	query, args, err := sq.Select(r.users.columns...).From(r.users.table).OrderBy(fmt.Sprintf("%s %s", UserLastProcessed, "DESC")).Limit(limit).ToSql()
+	if err != nil {
+		return nil, errors.Wrapf(err, errorFFormat, userRepositoryIdentifier, "UsersSortedByProcessedAtLimit", "failed to generate sql")
+	}
+
+	var users = make([]*skillz.User, 0)
+	err = r.db.SelectContext(ctx, &users, query, args...)
+	return users, err
 
 }

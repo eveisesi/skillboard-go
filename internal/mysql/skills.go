@@ -10,9 +10,9 @@ import (
 )
 
 type skillRepository struct {
-	db               QueryExecContext
-	attributes, meta tableConf
-	skills, queue    tableConf
+	db                        QueryExecContext
+	attributes, flyable, meta tableConf
+	skills, queue             tableConf
 }
 
 const (
@@ -41,6 +41,10 @@ const (
 	AttributesBonusRemaps              string = "bonus_remaps"
 	AttributesLastRemapDate            string = "last_remap_date"
 	AttributesAccruedRemapCooldownDate string = "accrued_remap_cooldown_date"
+
+	FlyableCharacterID string = "character_id"
+	FlyableShipTypeID  string = "ship_type_id"
+	FlyableFlyable     string = "flyable"
 )
 
 func NewSkillRepository(db QueryExecContext) skillz.CharacterSkillRepository {
@@ -55,6 +59,15 @@ func NewSkillRepository(db QueryExecContext) skillz.CharacterSkillRepository {
 				AttributesWillpower, AttributesBonusRemaps,
 				AttributesLastRemapDate, AttributesAccruedRemapCooldownDate,
 				ColumnCharacterID, ColumnCreatedAt, ColumnUpdatedAt,
+			},
+		},
+		flyable: tableConf{
+			table: TableCharacterFlyableShips,
+			columns: []string{
+				FlyableCharacterID,
+				FlyableShipTypeID,
+				FlyableFlyable,
+				ColumnCreatedAt,
 			},
 		},
 		meta: tableConf{
@@ -179,6 +192,60 @@ func (r *skillRepository) DeleteCharacterAttributes(ctx context.Context, charact
 
 }
 
+func (r *skillRepository) CharacterFlyableShips(ctx context.Context, characterID uint64) ([]*skillz.CharacterFlyableShip, error) {
+
+	query, args, err := sq.Select(r.flyable.columns...).
+		From(r.flyable.table).
+		Where(sq.Eq{ColumnCharacterID: characterID}).
+		ToSql()
+	if err != nil {
+		return nil, errors.Wrapf(err, errorFFormat, skillsRepositoryIdentifier, "CharacterFlyableShips", "failed to generate sql")
+	}
+
+	var flyable = make([]*skillz.CharacterFlyableShip, 0, 1024)
+	err = r.db.SelectContext(ctx, &flyable, query, args...)
+	return flyable, errors.Wrapf(err, prefixFormat, skillsRepositoryIdentifier, "CharacterFlyableShips")
+
+}
+
+func (r *skillRepository) CreateCharacterFlyableShips(ctx context.Context, ships []*skillz.CharacterFlyableShip) error {
+
+	now := time.Now()
+
+	i := sq.Insert(r.flyable.table).Columns(r.flyable.columns...)
+	for _, ship := range ships {
+		ship.CreatedAt = now
+
+		i = i.Values(
+			ship.CharacterID,
+			ship.ShipTypeID,
+			ship.Flyable,
+			ship.CreatedAt,
+		)
+	}
+	i = i.Suffix(OnDuplicateKeyStmt(FlyableFlyable))
+
+	query, args, err := i.ToSql()
+	if err != nil {
+		return errors.Wrapf(err, errorFFormat, skillsRepositoryIdentifier, "CreateCharacterFlyableShips", "failed to generate sql")
+	}
+
+	_, err = r.db.ExecContext(ctx, query, args...)
+	return errors.Wrapf(err, prefixFormat, skillsRepositoryIdentifier, "CreateCharacterFlyableShips")
+}
+
+func (r *skillRepository) DeleteCharacterFlyableShips(ctx context.Context, characterID uint64) error {
+
+	query, args, err := sq.Delete(r.flyable.table).Where(sq.Eq{FlyableCharacterID: characterID}).ToSql()
+	if err != nil {
+		return errors.Wrapf(err, errorFFormat, skillsRepositoryIdentifier, "CreateCharacterFlyableShips", "failed to generate sql")
+	}
+
+	_, err = r.db.ExecContext(ctx, query, args...)
+	return errors.Wrapf(err, prefixFormat, skillsRepositoryIdentifier, "DeleteCharacterFlyableShips")
+
+}
+
 func (r *skillRepository) CharacterSkillMeta(ctx context.Context, characterID uint64) (*skillz.CharacterSkillMeta, error) {
 
 	query, args, err := sq.Select(r.meta.columns...).
@@ -218,25 +285,6 @@ func (r *skillRepository) CreateCharacterSkillMeta(ctx context.Context, meta *sk
 	return errors.Wrapf(err, prefixFormat, skillsRepositoryIdentifier, "CreateCharacterSkillMeta")
 
 }
-
-// func (r *skillRepository) UpdateCharacterSkillMeta(ctx context.Context, meta *skillz.CharacterSkillMeta) error {
-
-// 	meta.UpdatedAt = time.Now()
-
-// 	query, args, err := sq.Update(r.meta.table).SetMap(map[string]interface{}{
-// 		MetaTotalSP:       meta.TotalSP,
-// 		MetaUnallocatedSP: meta.UnallocatedSP,
-
-// 		ColumnUpdatedAt: meta.UpdatedAt,
-// 	}).Where(sq.Eq{ColumnCharacterID: meta.CharacterID}).ToSql()
-// 	if err != nil {
-// 		return errors.Wrapf(err, errorFFormat, skillsRepositoryIdentifier, "UpdateCharacterSkillMeta", "failed to generate sql")
-// 	}
-
-// 	_, err = r.db.ExecContext(ctx, query, args...)
-// 	return errors.Wrapf(err, prefixFormat, skillsRepositoryIdentifier, "UpdateCharacterSkillMeta")
-
-// }
 
 func (r *skillRepository) DeleteCharacterSkillMeta(ctx context.Context, characterID uint64) error {
 

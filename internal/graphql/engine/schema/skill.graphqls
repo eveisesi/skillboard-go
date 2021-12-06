@@ -52,3 +52,10 @@ type CharacterSkill @goModel(model: "github.com/eveisesi/skillz.CharacterSkill")
 
     info: Type!
 }
+
+type CharacterFlyableShip @goModel(model: "github.com/eveisesi/skillz.CharacterFlyableShip") {
+    characterID: Uint64!
+    flyable: Boolean!
+
+    info: Type!
+}

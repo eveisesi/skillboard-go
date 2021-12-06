@@ -88,6 +88,7 @@ var Resolvers = endpointResolvers{
 
 	GetCharacter:                   resolverFuncs["characterID"](GetCharacter),
 	GetCharacterCorporationHistory: resolverFuncs["characterID"](GetCharacterCorporationHistory),
+	GetCharacterContacts:           resolverFuncs["characterID"](GetCharacterContacts),
 	GetCharacterClones:             resolverFuncs["characterID"](GetCharacterClones),
 	GetCharacterImplants:           resolverFuncs["characterID"](GetCharacterImplants),
 	GetCharacterSkills:             resolverFuncs["characterID"](GetCharacterSkills),
@@ -122,6 +123,7 @@ var endpoints = endpointMap{
 	GetAlliance:                    "/v4/alliances/%d/",
 	GetCharacter:                   "/v5/characters/%d/",
 	GetCharacterClones:             "/v4/characters/%d/clones/",
+	GetCharacterContacts:           "/v2/characters/%d/contacts/",
 	GetCharacterImplants:           "/v2/characters/%d/implants/",
 	GetCharacterSkills:             "/v4/characters/%d/skills/",
 	GetCharacterSkillQueue:         "/v2/characters/%d/skillqueue/",

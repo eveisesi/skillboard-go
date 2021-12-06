@@ -5,13 +5,13 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/eveisesi/skillz"
 	"github.com/eveisesi/skillz/internal/cache"
 	"github.com/eveisesi/skillz/internal/esi"
 	"github.com/eveisesi/skillz/internal/etag"
 	"github.com/go-redis/redis/v8"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/null"
 )
 
@@ -22,9 +22,10 @@ type API interface {
 }
 
 type Service struct {
-	cache cache.CloneAPI
-	etag  etag.API
-	esi   esi.CloneAPI
+	logger *logrus.Logger
+	cache  cache.CloneAPI
+	etag   etag.API
+	esi    esi.CloneAPI
 
 	clones skillz.CloneRepository
 
@@ -33,8 +34,9 @@ type Service struct {
 
 var _ API = (*Service)(nil)
 
-func New(cache cache.CloneAPI, etag etag.API, esi esi.CloneAPI, clones skillz.CloneRepository) *Service {
+func New(logger *logrus.Logger, cache cache.CloneAPI, etag etag.API, esi esi.CloneAPI, clones skillz.CloneRepository) *Service {
 	return &Service{
+		logger: logger,
 		cache:  cache,
 		etag:   etag,
 		esi:    esi,
@@ -53,6 +55,8 @@ func (s *Service) Process(ctx context.Context, user *skillz.User) error {
 		if err != nil {
 			break
 		}
+
+		time.Sleep(time.Second)
 	}
 
 	return err
@@ -97,6 +101,11 @@ func (s *Service) Clones(ctx context.Context, user *skillz.User) (*skillz.Charac
 
 func (s *Service) updateClones(ctx context.Context, user *skillz.User) error {
 
+	s.logger.WithFields(logrus.Fields{
+		"service": "clone",
+		"userID":  user.ID.String(),
+	}).Info("updating clones")
+
 	etagID, etag, err := s.esi.Etag(ctx, esi.GetCharacterClones, &esi.Params{CharacterID: null.Uint64From(user.CharacterID)})
 	if err != nil {
 		return errors.Wrap(err, "failed to fetch tag for expiry check")
@@ -112,8 +121,6 @@ func (s *Service) updateClones(ctx context.Context, user *skillz.User) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to fetch character clones from ESI")
 	}
-
-	spew.Dump(updatedClones)
 
 	if updatedClones != nil {
 		err = s.insertCharacterClones(ctx, updatedClones)
@@ -161,6 +168,11 @@ func (s *Service) insertCharacterClones(ctx context.Context, clones *skillz.Char
 }
 
 func (s *Service) Implants(ctx context.Context, user *skillz.User) ([]*skillz.CharacterImplant, error) {
+
+	s.logger.WithFields(logrus.Fields{
+		"service": "clone",
+		"userID":  user.ID.String(),
+	}).Info("updating implants")
 
 	implants, err := s.cache.CharacterImplants(ctx, user.CharacterID)
 	if err != nil && !errors.Is(err, redis.Nil) {

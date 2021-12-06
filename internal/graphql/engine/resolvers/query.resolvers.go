@@ -27,6 +27,10 @@ func (r *queryResolver) User(ctx context.Context, id uint64) (*skillz.User, erro
 	return r.user.UserByCharacterID(ctx, id)
 }
 
+func (r *queryResolver) SearchUser(ctx context.Context, term string) ([]*skillz.User, error) {
+	return r.user.SearchUsers(ctx, term)
+}
+
 func (r *queryResolver) Character(ctx context.Context, id uint64) (*skillz.Character, error) {
 	return r.character.Character(ctx, id)
 }

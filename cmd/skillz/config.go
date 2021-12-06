@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -32,7 +33,7 @@ type config struct {
 	}
 
 	Auth struct {
-		PrivateKey     []byte `envconfig:"AUTH_KEY" required:"true"`
+		PrivateKey     []byte `envconfig:"AUTH_KEY"`
 		TokenExpiryStr string `envconfig:"AUTH_EXPIRY" required:"true"`
 		TokenExpiry    time.Duration
 	}
@@ -53,6 +54,20 @@ func buildConfig() {
 	err := envconfig.Process("", cfg)
 	if err != nil {
 		panic(fmt.Sprintf("failed to config env: %s", err))
+	}
+
+	// TODO (@ddouglas): Remove ME
+	if len(cfg.Auth.PrivateKey) == 0 {
+		if cfg.Environment == "production" {
+			panic("failed to config env: AUTH_KEY is required but has a length of 0")
+		}
+
+		cfg.Auth.PrivateKey, err = os.ReadFile("../../.config/.key")
+		if err != nil {
+			err = fmt.Errorf("failed to config env: AUTH_KEY is required and an error was encountered reading key file: %w", err)
+			fmt.Println(err)
+			panic(err)
+		}
 	}
 
 	dur, err := time.ParseDuration(cfg.Auth.TokenExpiryStr)

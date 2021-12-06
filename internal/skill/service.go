@@ -11,6 +11,7 @@ import (
 	"github.com/eveisesi/skillz/internal/universe"
 	"github.com/go-redis/redis/v8"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/null"
 )
 
@@ -19,13 +20,15 @@ type API interface {
 	Meta(ctx context.Context, characterID uint64) (*skillz.CharacterSkillMeta, error)
 	Skillz(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkill, error)
 	Attributes(ctx context.Context, characterID uint64) (*skillz.CharacterAttributes, error)
+	Flyable(ctx context.Context, characterID uint64) ([]*skillz.CharacterFlyableShip, error)
 	SkillQueue(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkillQueue, error)
 	SkillsGrouped(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkillGroup, error)
 }
 
 type Service struct {
-	cache cache.SkillAPI
-	esi   esi.SkillAPI
+	logger *logrus.Logger
+	cache  cache.SkillAPI
+	esi    esi.SkillAPI
 
 	universe universe.API
 
@@ -36,8 +39,9 @@ type Service struct {
 
 var _ API = (*Service)(nil)
 
-func New(cache cache.SkillAPI, esi esi.SkillAPI, universe universe.API, skills skillz.CharacterSkillRepository) *Service {
+func New(logger *logrus.Logger, cache cache.SkillAPI, esi esi.SkillAPI, universe universe.API, skills skillz.CharacterSkillRepository) *Service {
 	return &Service{
+		logger:   logger,
 		cache:    cache,
 		esi:      esi,
 		universe: universe,
@@ -59,6 +63,8 @@ func (s *Service) Process(ctx context.Context, user *skillz.User) error {
 		if err != nil {
 			break
 		}
+
+		time.Sleep(time.Second)
 	}
 
 	return err
@@ -89,6 +95,26 @@ func (s *Service) Meta(ctx context.Context, characterID uint64) (*skillz.Charact
 
 }
 
+func (s *Service) Flyable(ctx context.Context, characterID uint64) ([]*skillz.CharacterFlyableShip, error) {
+
+	flyable, err := s.cache.CharacterFlyableShips(ctx, characterID)
+	if err != nil && !errors.Is(err, redis.Nil) {
+		return nil, err
+	}
+
+	if flyable != nil {
+		return flyable, nil
+	}
+
+	flyable, err = s.skills.CharacterFlyableShips(ctx, characterID)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, errors.Wrap(err, "failed to fetch character skills from data store")
+	}
+
+	return flyable, s.cache.SetCharacterFlyableShips(ctx, characterID, flyable, time.Hour)
+
+}
+
 func (s *Service) Skillz(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkill, error) {
 
 	skillz, err := s.cache.CharacterSkills(ctx, characterID)
@@ -105,7 +131,7 @@ func (s *Service) Skillz(ctx context.Context, characterID uint64) ([]*skillz.Cha
 		return nil, err
 	}
 
-	return skillz, err
+	return skillz, s.cache.SetCharacterSkills(ctx, characterID, skillz, time.Hour)
 
 }
 
@@ -158,6 +184,11 @@ func (s *Service) SkillsGrouped(ctx context.Context, characterID uint64) ([]*ski
 
 func (s *Service) updateSkills(ctx context.Context, user *skillz.User) error {
 
+	s.logger.WithFields(logrus.Fields{
+		"service": "skill",
+		"userID":  user.ID.String(),
+	}).Info("updating skills")
+
 	etagID, etag, err := s.esi.Etag(ctx, esi.GetCharacterSkills, &esi.Params{CharacterID: null.Uint64From(user.CharacterID)})
 	if err != nil {
 		return errors.Wrap(err, "failed to fetch tag for expiry check")
@@ -199,7 +230,8 @@ func (s *Service) updateSkills(ctx context.Context, user *skillz.User) error {
 
 	}
 
-	return nil
+	return s.processFlyableShips(ctx, user)
+
 }
 
 func (s *Service) Attributes(ctx context.Context, characterID uint64) (*skillz.CharacterAttributes, error) {
@@ -223,6 +255,11 @@ func (s *Service) Attributes(ctx context.Context, characterID uint64) (*skillz.C
 }
 
 func (s *Service) updateAttributes(ctx context.Context, user *skillz.User) error {
+
+	s.logger.WithFields(logrus.Fields{
+		"service": "skill",
+		"userID":  user.ID.String(),
+	}).Info("updating attributes")
 
 	etagID, etag, err := s.esi.Etag(ctx, esi.GetCharacterAttributes, &esi.Params{CharacterID: null.Uint64From(user.CharacterID)})
 	if err != nil {
@@ -280,6 +317,11 @@ func (s *Service) SkillQueue(ctx context.Context, characterID uint64) ([]*skillz
 
 func (s *Service) updateSkillQueue(ctx context.Context, user *skillz.User) error {
 
+	s.logger.WithFields(logrus.Fields{
+		"service": "skill",
+		"userID":  user.ID.String(),
+	}).Info("updating skill queue")
+
 	etagID, etag, err := s.esi.Etag(ctx, esi.GetCharacterSkillQueue, &esi.Params{CharacterID: null.Uint64From(user.CharacterID)})
 	if err != nil {
 		return errors.Wrap(err, "failed to fetch etag for expiry check")
@@ -313,6 +355,133 @@ func (s *Service) updateSkillQueue(ctx context.Context, user *skillz.User) error
 			if err != nil {
 				return errors.Wrap(err, "failed to create character skill queue")
 			}
+		}
+	}
+
+	return nil
+
+}
+
+func (s *Service) processFlyableShips(ctx context.Context, user *skillz.User) error {
+
+	s.logger.WithFields(logrus.Fields{
+		"service": "skill",
+		"userID":  user.ID.String(),
+	}).Info("updating flyable ships")
+
+	err := s.skills.DeleteCharacterFlyableShips(ctx, user.CharacterID)
+	if err != nil {
+		return errors.Wrap(err, "failed to remove character flyables")
+	}
+
+	skills, err := s.Skillz(ctx, user.CharacterID)
+	if err != nil {
+		return errors.Wrap(err, "failed to fetch character skillz")
+	}
+
+	skillzMap := make(map[uint]*skillz.CharacterSkill)
+	for _, skill := range skills {
+		skillzMap[skill.SkillID] = skill
+	}
+
+	groups, err := s.universe.GroupsByCategory(ctx, 6)
+	if err != nil {
+		return errors.Wrap(err, "failed to fetch ship groups by category")
+	}
+
+	shipData := make([]*skillz.Type, 0)
+	for _, group := range groups {
+
+		groupShips, err := s.universe.TypesByGroup(ctx, group.ID)
+		if err != nil {
+			return errors.Wrap(err, "failed to fetch types by group id")
+		}
+
+		for _, ship := range groupShips {
+
+			dogma, err := s.universe.TypeAttributes(ctx, ship.ID)
+			if err != nil {
+				return errors.Wrap(err, "failed to fetch attributes for type")
+			}
+
+			ship.Attributes = dogma
+			shipData = append(shipData, ship)
+		}
+
+	}
+
+	flyableShips := make([]*skillz.CharacterFlyableShip, 0, len(shipData))
+
+OUTER:
+	for _, ship := range shipData {
+		mapShipDogma := make(map[uint]*skillz.TypeDogmaAttribute)
+		for _, attribute := range ship.Attributes {
+			mapShipDogma[attribute.AttributeID] = attribute
+		}
+
+		flyable := &skillz.CharacterFlyableShip{
+			CharacterID: user.CharacterID,
+			ShipTypeID:  ship.ID,
+		}
+
+		for _, nameAttributeID := range skillNameDogmaSlice {
+			if _, ok := mapShipDogma[nameAttributeID]; !ok {
+				// Skill Level Name Attribute for the level is missing, can break and save as flyable
+				break
+			}
+
+			if _, ok := mapShipDogma[skillNameToLevelDogmaMap[nameAttributeID]]; !ok {
+				// Skill Level Attribute is missing, this is an error,
+				// log the missing attribute, continue outer loop
+				// Save that the ship is not flyable
+				flyableShips = append(flyableShips, flyable)
+				continue OUTER
+			}
+
+			skillID := uint(mapShipDogma[nameAttributeID].Value)
+			level := uint(mapShipDogma[skillNameToLevelDogmaMap[nameAttributeID]].Value)
+
+			skill := skillFromSkillSlice(skillID, skills)
+			if skill == nil {
+				flyableShips = append(flyableShips, flyable)
+				continue OUTER
+			}
+
+			if skill.TrainedSkillLevel < level {
+				flyableShips = append(flyableShips, flyable)
+				continue OUTER
+			}
+
+		}
+
+		flyable.Flyable = true
+		flyableShips = append(flyableShips, flyable)
+	}
+
+	err = s.skills.CreateCharacterFlyableShips(ctx, flyableShips)
+	if err != nil {
+		return errors.Wrap(err, "failed to save flyable ships to data store")
+	}
+
+	return s.cache.SetCharacterFlyableShips(ctx, user.CharacterID, flyableShips, time.Hour)
+
+}
+
+var skillNameDogmaSlice = []uint{182, 183, 184, 1285, 1289, 1290}
+
+var skillNameToLevelDogmaMap = map[uint]uint{
+	182:  277,
+	183:  278,
+	184:  279,
+	1285: 1286,
+	1289: 1287,
+	1290: 1288,
+}
+
+func skillFromSkillSlice(skillID uint, skills []*skillz.CharacterSkill) *skillz.CharacterSkill {
+	for _, skill := range skills {
+		if skill.SkillID == skillID {
+			return skill
 		}
 	}
 

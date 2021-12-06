@@ -64,9 +64,9 @@ func (s *Service) Corporation(ctx context.Context, corporationID uint) (*skillz.
 	}
 
 	exists := err == nil
-
-	if !exists || etag == nil || etag.CachedUntil.Unix() < time.Now().Add(-1*time.Minute).Unix() {
-		mods := append(make([]esi.ModifierFunc, 0, 2), s.esi.CacheEtag(ctx, etagID))
+	var n = time.Now()
+	if !exists || etag == nil || etag.CachedUntil.Unix() < n.Add(-1*time.Minute).Unix() {
+		mods := append(make([]esi.ModifierFunc, 0, 2), s.esi.CacheEtag(ctx, etagID, null.TimeFrom(n.AddDate(0, 0, 14)).Ptr()))
 		if etag != nil && etag.Etag != "" {
 			mods = append(mods, s.esi.AddIfNoneMatchHeader(ctx, etag.Etag))
 		}

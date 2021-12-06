@@ -11,4 +11,6 @@ type User @goModel(model: "github.com/eveisesi/skillz.User") {
     skills: [CharacterSkillGroup]!
     queue: [CharacterSkillQueue]!
     attributes: CharacterAttributes!
+    flyable: [CharacterFlyableShip]!
+    contacts: [CharacterContact]!
 }

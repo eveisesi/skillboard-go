@@ -26,16 +26,16 @@ func NewQueryLogger(execer QueryExecContext, logger *logrus.Logger) *queryLogger
 }
 
 func (s *queryLogger) SelectContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
-	s.logger.WithField("service", "mysql").Info(query)
+	s.logger.WithField("service", "mysql").Debug(query)
 	return s.queryExecr.SelectContext(ctx, dest, query, args...)
 }
 
 func (s *queryLogger) GetContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
-	s.logger.WithField("service", "mysql").Info(query)
+	s.logger.WithField("service", "mysql").Debug(query)
 	return s.queryExecr.GetContext(ctx, dest, query, args...)
 }
 
 func (s *queryLogger) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
-	s.logger.WithField("service", "mysql").Info(query)
+	s.logger.WithField("service", "mysql").Debug(query)
 	return s.queryExecr.ExecContext(ctx, query, args...)
 }

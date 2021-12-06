@@ -9,6 +9,7 @@ import (
 	"github.com/eveisesi/skillz/internal/auth"
 	"github.com/eveisesi/skillz/internal/character"
 	"github.com/eveisesi/skillz/internal/clone"
+	"github.com/eveisesi/skillz/internal/contact"
 	"github.com/eveisesi/skillz/internal/corporation"
 	"github.com/eveisesi/skillz/internal/graphql/dataloaders"
 	"github.com/eveisesi/skillz/internal/graphql/engine"
@@ -32,6 +33,7 @@ func New(
 	auth auth.API,
 	character character.API,
 	clone clone.API,
+	contact contact.API,
 	corporation corporation.API,
 	skill skill.API,
 	universe universe.API,
@@ -43,7 +45,11 @@ func New(
 	)
 
 	es := engine.NewExecutableSchema(engine.Config{
-		Resolvers: resolvers.New(alliance, auth, character, clone, corporation, dl, skill, user),
+		Resolvers: resolvers.New(
+			alliance, auth, character,
+			clone, contact, corporation,
+			dl, skill, user,
+		),
 		Directives: engine.DirectiveRoot{
 			IsAuthed: IsAuthed,
 		},

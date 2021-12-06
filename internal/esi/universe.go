@@ -176,7 +176,7 @@ func (s *Service) GetRegions(ctx context.Context, mods ...ModifierFunc) ([]uint,
 
 	var regions = make([]uint, 0)
 	var out = &out{Data: &regions}
-	endpoint := endpoints[GetRegion]
+	endpoint := endpoints[GetRegions]
 	err := s.request(ctx, http.MethodGet, endpoint, nil, http.StatusOK, out, mods...)
 	if err != nil {
 		return regions, errors.Wrap(err, "encounted error requesting regions from ESI")

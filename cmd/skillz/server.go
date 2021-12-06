@@ -13,6 +13,7 @@ import (
 	"github.com/eveisesi/skillz/internal/cache"
 	"github.com/eveisesi/skillz/internal/character"
 	"github.com/eveisesi/skillz/internal/clone"
+	"github.com/eveisesi/skillz/internal/contact"
 	"github.com/eveisesi/skillz/internal/corporation"
 	"github.com/eveisesi/skillz/internal/esi"
 	"github.com/eveisesi/skillz/internal/etag"
@@ -39,6 +40,7 @@ func serverCommand(_ *cli.Context) error {
 	allianceRepo := mysql.NewAllianceRepository(mysqlClient)
 	characterRepo := mysql.NewCharacterRepository(mysqlClient)
 	clonesRepo := mysql.NewCloneRepository(mysqlClient)
+	contactRepo := mysql.NewContactRepository(mysqlClient)
 	corporationRepo := mysql.NewCorporationRepository(mysqlClient)
 	etagRepo := mysql.NewETagRepository(mysqlClient)
 	skillsRepo := mysql.NewSkillRepository(mysqlClient)
@@ -58,11 +60,12 @@ func serverCommand(_ *cli.Context) error {
 	character := character.New(cache, esi, etag, characterRepo)
 	corporation := corporation.New(cache, esi, etag, corporationRepo)
 	alliance := alliance.New(cache, esi, etag, allianceRepo)
-	user := user.New(redisClient, auth, alliance, character, corporation, userRepo)
-	clone := clone.New(cache, etag, esi, clonesRepo)
+	user := user.New(redisClient, cache, auth, alliance, character, corporation, userRepo)
+	clone := clone.New(logger, cache, etag, esi, clonesRepo)
 	universe := universe.New(cache, esi, universeRepo)
-	skill := skill.New(cache, esi, universe, skillsRepo)
-	graphql := graphql.New(alliance, auth, character, clone, corporation, skill, universe, user)
+	contact := contact.New(logger, cache, etag, esi, character, corporation, alliance, contactRepo)
+	skill := skill.New(logger, cache, esi, universe, skillsRepo)
+	graphql := graphql.New(alliance, auth, character, clone, contact, corporation, skill, universe, user)
 	server := server.New(cfg.Server.Port, env, logger, auth, graphql, user)
 	errChan := make(chan error, 1)
 	go func() {

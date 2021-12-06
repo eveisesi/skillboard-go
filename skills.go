@@ -11,6 +11,7 @@ type CharacterSkillRepository interface {
 	memberAttributesRepository
 	memberSkillsRepository
 	memberSkillQueueRepository
+	memberFlyableShipRepository
 }
 
 type memberAttributesRepository interface {
@@ -37,6 +38,12 @@ type memberSkillQueueRepository interface {
 	DeleteCharacterSkillQueue(ctx context.Context, characterID uint64) error
 }
 
+type memberFlyableShipRepository interface {
+	CharacterFlyableShips(ctx context.Context, characterID uint64) ([]*CharacterFlyableShip, error)
+	CreateCharacterFlyableShips(ctx context.Context, ships []*CharacterFlyableShip) error
+	DeleteCharacterFlyableShips(ctx context.Context, characterID uint64) error
+}
+
 type CharacterAttributes struct {
 	CharacterID              uint64    `db:"character_id" json:"character_id"`
 	Charisma                 uint      `db:"charisma" json:"charisma"`
@@ -49,6 +56,13 @@ type CharacterAttributes struct {
 	AccruedRemapCooldownDate null.Time `db:"accrued_remap_cooldown_date,omitempty" json:"accrued_remap_cooldown_date,omitempty"`
 	CreatedAt                time.Time `db:"created_at" json:"created_at" deep:"-"`
 	UpdatedAt                time.Time `db:"updated_at" json:"updated_at" deep:"-"`
+}
+
+type CharacterFlyableShip struct {
+	CharacterID uint64    `db:"character_id" json:"character_id"`
+	ShipTypeID  uint      `db:"ship_type_id" json:"ship_type_id"`
+	Flyable     bool      `db:"flyable" json:"flyable"`
+	CreatedAt   time.Time `db:"created_at" json:"-"`
 }
 
 type CharacterSkillQueue struct {
@@ -80,16 +94,12 @@ type CharacterSkill struct {
 	SkillID            uint      `db:"skill_id" json:"skill_id"`
 	SkillpointsInSkill uint      `db:"skillpoints_in_skill" json:"skillpoints_in_skill"`
 	TrainedSkillLevel  uint      `db:"trained_skill_level" json:"trained_skill_level"`
-	CreatedAt          time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt          time.Time `db:"updated_at" json:"updated_at"`
+	CreatedAt          time.Time `db:"created_at" json:"-"`
+	UpdatedAt          time.Time `db:"updated_at" json:"-"`
 }
 
 type CharacterSkillGroup struct {
-	Info   *Group            `json:"info"`
-	Skills []*CharacterSkill `json:"skills"`
-	// ActualSP     uint
-	// ActualSkillz uint
-
+	Info         *Group            `json:"info"`
+	Skills       []*CharacterSkill `json:"skills"`
 	TotalGroupSP uint
-	// TotalSkillz uint
 }

@@ -3,6 +3,7 @@ type Query {
     finalizeAuth(code: String!, state: String!): User!
     # user: User! @isAuthed
     user(id: Uint64!): User!
+    searchUser(term: String!): [User]!
     character(id: Uint64!): Character
 }
 

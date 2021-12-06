@@ -54,7 +54,7 @@ const (
 	keyTypesByGroup    = "types-by-group"
 	keyRegion          = "region"
 	keyConstellation   = "constellation"
-	keySolarSystem     = "solar_system"
+	keySolarSystem     = "solar-system"
 	keyStation         = "station"
 	keyStructure       = "structure"
 )

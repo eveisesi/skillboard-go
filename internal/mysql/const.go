@@ -12,7 +12,9 @@ const (
 	TableCharacters                  string = "characters"
 	TableCharacterAttributes         string = "character_attributes"
 	TableCharacterCloneMeta          string = "character_clone_meta"
+	TableCharacterContacts           string = "character_contacts"
 	TableCharacterCorporationHistory string = "character_corporation_history"
+	TableCharacterFlyableShips       string = "character_flyable_ships"
 	TableCharacterHomeClone          string = "character_home_clone"
 	TableCharacterImplants           string = "character_implants"
 	TableCharacterJumpClones         string = "character_jump_clones"
@@ -43,6 +45,7 @@ const (
 const (
 	allianceRepositoryIdentifier    string = "AllianceRepository"
 	characterRepositoryIdentifier   string = "CharacterRepository"
+	contactRepositoryIdentifier     string = "ContactRepository"
 	cloneRepositoryIdentifier       string = "CloneRepository"
 	corporationRepositoryIdentifier string = "CorporationRepository"
 	etagRepositoryIdentifier        string = "ETagRepository"

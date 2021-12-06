@@ -392,6 +392,9 @@ func (r *universeRepository) CreateCategory(ctx context.Context, category *skill
 			ColumnCreatedAt:   category.CreatedAt,
 			ColumnUpdatedAt:   category.UpdatedAt,
 		}).
+		Suffix(OnDuplicateKeyStmt(
+			CategoryName, CategoryPublished, ColumnUpdatedAt,
+		)).
 		ToSql()
 	if err != nil {
 		return errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "CreateCategory", "failed to generate sql")
@@ -469,6 +472,9 @@ func (r *universeRepository) CreateConstellation(ctx context.Context, constellat
 			ColumnCreatedAt:       constellation.CreatedAt,
 			ColumnUpdatedAt:       constellation.UpdatedAt,
 		}).
+		Suffix(OnDuplicateKeyStmt(
+			ConstellationName, ConstellationRegionID, ColumnUpdatedAt,
+		)).
 		ToSql()
 	if err != nil {
 		return errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "CreateConstellation", "failed to generate sql")
@@ -638,6 +644,9 @@ func (r *universeRepository) CreateGroup(ctx context.Context, group *skillz.Grou
 			ColumnCreatedAt: group.CreatedAt,
 			ColumnUpdatedAt: group.UpdatedAt,
 		}).
+		Suffix(OnDuplicateKeyStmt(
+			GroupName, GroupPublished, GroupCategoryID, ColumnUpdatedAt,
+		)).
 		ToSql()
 	if err != nil {
 		return errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "CreateGroup", "failed to generate sql")
@@ -788,6 +797,7 @@ func (r *universeRepository) CreateRegion(ctx context.Context, region *skillz.Re
 			ColumnCreatedAt: region.CreatedAt,
 			ColumnUpdatedAt: region.UpdatedAt,
 		}).
+		Suffix(OnDuplicateKeyStmt(RegionName, ColumnUpdatedAt)).
 		ToSql()
 	if err != nil {
 		return errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "CreateRegion", "failed to generate sql")
@@ -864,7 +874,13 @@ func (r *universeRepository) CreateSolarSystem(ctx context.Context, solarSystem 
 		SolarSystemSecurityClass:   solarSystem.SecurityClass,
 		ColumnCreatedAt:            solarSystem.CreatedAt,
 		ColumnUpdatedAt:            solarSystem.UpdatedAt,
-	}).ToSql()
+	}).
+		Suffix(OnDuplicateKeyStmt(
+			SolarSystemName, SolarSystemConstellationID,
+			SolarSystemSecurityStatus, SolarSystemStarID,
+			SolarSystemSecurityClass, ColumnUpdatedAt,
+		)).
+		ToSql()
 	if err != nil {
 		return errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "CreateSolarSystem", "failed to generate sql")
 	}
@@ -949,7 +965,13 @@ func (r *universeRepository) CreateStation(ctx context.Context, station *skillz.
 			StationReprocessingStationsTake: station.ReprocessingStationsTake,
 			ColumnCreatedAt:                 station.CreatedAt,
 			ColumnUpdatedAt:                 station.UpdatedAt,
-		}).ToSql()
+		}).
+		Suffix(OnDuplicateKeyStmt(
+			StationName, StationSystemID, StationTypeID, StationRaceID,
+			StationOwnerCorporationID, StationMaxDockableShipVolume, StationOfficeRentalCost,
+			StationReprocessingEfficiency, StationReprocessingStationsTake, ColumnUpdatedAt,
+		)).
+		ToSql()
 	if err != nil {
 		return errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "CreateStation", "failed to generate sql")
 	}
@@ -1033,7 +1055,9 @@ func (r *universeRepository) CreateStructure(ctx context.Context, structure *ski
 			StructureTypeID:        structure.TypeID,
 			ColumnCreatedAt:        structure.CreatedAt,
 			ColumnUpdatedAt:        structure.UpdatedAt,
-		}).ToSql()
+		}).
+		Suffix(OnDuplicateKeyStmt(StructureName, StructureOwnerID, StructureSolarSystemID, StructureTypeID)).
+		ToSql()
 	if err != nil {
 		return errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "CreateStructure", "failed to generate sql")
 	}
@@ -1117,7 +1141,14 @@ func (r *universeRepository) CreateType(ctx context.Context, item *skillz.Type) 
 			TypesVolume:         item.Volume,
 			ColumnCreatedAt:     item.CreatedAt,
 			ColumnUpdatedAt:     item.UpdatedAt,
-		}).ToSql()
+		}).
+		Suffix(OnDuplicateKeyStmt(
+			TypesName, TypesGroupID, TypesPublished,
+			TypesCapacity, TypesMarketGroupID, TypesMass,
+			TypesPackagedVolume, TypesPortionSize, TypesRadius,
+			TypesVolume, ColumnUpdatedAt,
+		)).
+		ToSql()
 	if err != nil {
 		return errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "CreateType", "failed to generate sql")
 	}
@@ -1177,7 +1208,7 @@ func (r *universeRepository) CreateTypeDogmaAttributes(ctx context.Context, attr
 		i = i.Values(attribute.TypeID, attribute.AttributeID, attribute.Value, attribute.CreatedAt)
 	}
 
-	query, args, err := i.ToSql()
+	query, args, err := i.Suffix(OnDuplicateKeyStmt(TypeDogmaAttributeValue)).ToSql()
 	if err != nil {
 		return errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "CreateTypeDogmaAttributes", "failed to generate sql")
 	}

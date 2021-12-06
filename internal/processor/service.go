@@ -2,6 +2,8 @@ package processor
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/eveisesi/skillz"
 	"github.com/eveisesi/skillz/internal"
@@ -32,27 +34,6 @@ func New(logger *logrus.Logger, redisClient *redis.Client, user user.API, scopes
 func (s *Service) Run() error {
 
 	s.logger.Info("Processor has started....")
-
-	// for {
-
-	// 	value, err := s.redis.BLMove(ctx, UpdateQueue, UpdatingQueue, "left", "right", time.Second*10).Result()
-	// 	// values, err := s.redis.BRPop(ctx, time.Second*10, UpdateQueue).Result()
-	// 	if err != nil && !errors.Is(err, redis.Nil) {
-	// 		return errors.Wrap(err, "failed to BRPop from List")
-	// 	}
-	// 	if value == "" {
-	// 		continue
-	// 	}
-
-	// 	fmt.Println(value)
-	// 	fmt.Println("------")
-	// 	time.Sleep(time.Second * 30)
-
-	// 	_, err = s.redis.LRem(ctx, UpdatingQueue, 0, value).Result()
-	// 	if err != nil {
-	// 		return errors.Wrap(err, "failed to BRPop from List")
-	// 	}
-	// }
 
 	for {
 		var entry = logrus.NewEntry(s.logger)
@@ -111,7 +92,9 @@ processorLoop:
 	for _, processor := range s.scopes {
 		scopes := processor.Scopes()
 		for _, scope := range user.Scopes {
+			fmt.Println("Scope ::", scope)
 			if scopeInSlcScopes(scope, scopes) {
+				fmt.Println("Scope is Available ::", scope)
 				err = processor.Process(ctx, user)
 				if err != nil {
 					return errors.Wrap(err, "processor failed to process user")
@@ -120,14 +103,14 @@ processorLoop:
 				continue processorLoop
 			}
 		}
+		time.Sleep(time.Second)
 	}
 
-	if user.IsNew {
-		user.IsNew = false
-		err = s.user.UpdateUser(ctx, user)
-		if err != nil {
-			return errors.Wrap(err, "failed to update user and set is_new to false")
-		}
+	user.IsNew = false
+	user.LastProcessed = time.Now()
+	err = s.user.UpdateUser(ctx, user)
+	if err != nil {
+		return errors.Wrap(err, "failed to update user and set is_new to false")
 	}
 
 	return nil

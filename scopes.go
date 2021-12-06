@@ -30,6 +30,7 @@ type ScopeResolver struct {
 type Scope string
 
 const (
+	ReadContactsV1   Scope = "esi-characters.read_contacts.v1"
 	ReadClonesV1     Scope = "esi-clones.read_clones.v1"
 	ReadImplantsV1   Scope = "esi-clones.read_implants.v1"
 	ReadLocationV1   Scope = "esi-location.read_location.v1"
@@ -41,7 +42,7 @@ const (
 )
 
 var AllScopes = []Scope{
-	ReadImplantsV1, ReadClonesV1,
+	ReadImplantsV1, ReadClonesV1, ReadContactsV1,
 	ReadLocationV1, ReadOnlineV1, ReadShipV1,
 	ReadSkillQueueV1, ReadSkillsV1, ReadStructuresV1,
 }

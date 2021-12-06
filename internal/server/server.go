@@ -88,9 +88,11 @@ func (s *server) buildRouter() *chi.Mux {
 		handler := handler.New(s.graphql.ExecutableSchema())
 
 		handler.AddTransport(transport.POST{})
-		handler.Use(extension.Introspection{})
+		if s.env != skillz.Production {
+			handler.Use(extension.Introspection{})
+			r.Get("/playground", playground.Handler("GraphQL playground", "/graphql"))
+		}
 		r.Handle("/graphql", handler)
-		r.Get("/playground", playground.Handler("GraphQL playground", "/graphql"))
 
 	})
 
