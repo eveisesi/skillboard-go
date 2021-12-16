@@ -24,6 +24,6 @@ type Alliance struct {
 	ExecutorCorporationID uint      `db:"executor_corporation_id" json:"executor_corporation_id"`
 	FactionID             null.Uint `db:"faction_id,omitempty" json:"faction_id,omitempty"`
 	IsClosed              bool      `db:"is_closed" json:"is_closed"`
-	CreatedAt             time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt             time.Time `db:"updated_at" json:"updated_at"`
+	CreatedAt             time.Time `db:"created_at" json:"-"`
+	UpdatedAt             time.Time `db:"updated_at" json:"-"`
 }

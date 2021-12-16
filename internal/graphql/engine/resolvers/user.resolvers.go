@@ -23,11 +23,11 @@ func (r *userResolver) Character(ctx context.Context, obj *skillz.User) (*skillz
 }
 
 func (r *userResolver) Clone(ctx context.Context, obj *skillz.User) (*skillz.CharacterCloneMeta, error) {
-	return r.clone.Clones(ctx, obj)
+	return r.clone.Clones(ctx, obj.CharacterID)
 }
 
 func (r *userResolver) Implants(ctx context.Context, obj *skillz.User) ([]*skillz.CharacterImplant, error) {
-	return r.clone.Implants(ctx, obj)
+	return r.clone.Implants(ctx, obj.CharacterID)
 }
 
 func (r *userResolver) SkillMeta(ctx context.Context, obj *skillz.User) (*skillz.CharacterSkillMeta, error) {
@@ -51,7 +51,7 @@ func (r *userResolver) Flyable(ctx context.Context, obj *skillz.User) ([]*skillz
 }
 
 func (r *userResolver) Contacts(ctx context.Context, obj *skillz.User) ([]*skillz.CharacterContact, error) {
-	return r.contact.Contacts(ctx, obj)
+	return r.contact.Contacts(ctx, obj.CharacterID)
 }
 
 // User returns engine.UserResolver implementation.

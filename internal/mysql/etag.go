@@ -44,7 +44,10 @@ func (r *etagRepository) Etag(ctx context.Context, path string) (*skillz.Etag, e
 
 	var etag = new(skillz.Etag)
 	err = r.db.GetContext(ctx, etag, query, args...)
-	return etag, errors.Wrapf(err, prefixFormat, etagRepositoryIdentifier, "Etag")
+	if err != nil {
+		return nil, errors.Wrapf(err, prefixFormat, etagRepositoryIdentifier, "Etag")
+	}
+	return etag, nil
 
 }
 

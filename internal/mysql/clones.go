@@ -173,7 +173,7 @@ func (r *cloneRepository) CreateCharacterJumpClones(ctx context.Context, clones 
 
 		i = i.Values(
 			clone.JumpCloneID, clone.LocationID,
-			clone.LocationType, clone.Implants,
+			clone.LocationType, clone.ImplantIDs,
 			clone.CharacterID, clone.CreatedAt,
 		)
 	}

@@ -107,7 +107,7 @@ processorLoop:
 	}
 
 	user.IsNew = false
-	user.LastProcessed = time.Now()
+	user.LastProcessed.SetValid(time.Now())
 	err = s.user.UpdateUser(ctx, user)
 	if err != nil {
 		return errors.Wrap(err, "failed to update user and set is_new to false")

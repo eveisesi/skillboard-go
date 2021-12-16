@@ -79,8 +79,8 @@ type Bloodline struct {
 	Memory        uint      `db:"memory" json:"memory"`
 	Perception    uint      `db:"perception" json:"perception"`
 	Willpower     uint      `db:"willpower" json:"willpower"`
-	CreatedAt     time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt     time.Time `db:"updated_at" json:"updated_at"`
+	CreatedAt     time.Time `db:"created_at" json:"-"`
+	UpdatedAt     time.Time `db:"updated_at" json:"-"`
 }
 
 type Category struct {
@@ -88,8 +88,8 @@ type Category struct {
 	Name      string    `db:"name" json:"name"`
 	Published bool      `db:"published" json:"published"`
 	Groups    []uint    `db:"-" json:"groups,omitempty"`
-	CreatedAt time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
+	CreatedAt time.Time `db:"created_at" json:"-"`
+	UpdatedAt time.Time `db:"updated_at" json:"-"`
 }
 
 type Constellation struct {
@@ -97,8 +97,8 @@ type Constellation struct {
 	Name      string    `db:"name" json:"name"`
 	RegionID  uint      `db:"region_id" json:"region_id"`
 	SystemIDs []uint    `db:"-" json:"systems,omitempty"`
-	CreatedAt time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
+	CreatedAt time.Time `db:"created_at" json:"-"`
+	UpdatedAt time.Time `db:"updated_at" json:"-"`
 }
 
 type Faction struct {
@@ -111,8 +111,8 @@ type Faction struct {
 	CorporationID        null.Uint `db:"corporation_id,omitempty" json:"corporation_id,omitempty"`
 	MilitiaCorporationID null.Uint `db:"militia_corporation_id,omitempty" json:"militia_corporation_id,omitempty"`
 	SolarSystemID        null.Uint `db:"solar_system_id,omitempty" json:"solar_system_id,omitempty"`
-	CreatedAt            time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt            time.Time `db:"updated_at" json:"updated_at"`
+	CreatedAt            time.Time `db:"created_at" json:"-"`
+	UpdatedAt            time.Time `db:"updated_at" json:"-"`
 }
 
 func (Faction) IsContactInfo() {}
@@ -123,25 +123,25 @@ type Group struct {
 	Published  bool      `db:"published" json:"published"`
 	CategoryID uint      `db:"category_id" json:"category_id"`
 	TypeIDs    []uint    `db:"-" json:"types,omitempty"`
-	CreatedAt  time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt  time.Time `db:"updated_at" json:"updated_at"`
+	CreatedAt  time.Time `db:"created_at" json:"-"`
+	UpdatedAt  time.Time `db:"updated_at" json:"-"`
 
-	Types []*Type
+	Types []*Type `json:"items"`
 }
 
 type Race struct {
 	ID        uint      `db:"id" json:"race_id"`
 	Name      string    `db:"name" json:"name"`
-	CreatedAt time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
+	CreatedAt time.Time `db:"created_at" json:"-"`
+	UpdatedAt time.Time `db:"updated_at" json:"-"`
 }
 
 type Region struct {
 	ID               uint      `db:"id" json:"id"`
 	Name             string    `db:"name" json:"name"`
 	ConstellationIDs []uint    `db:"-" json:"constellations,omitempty"`
-	CreatedAt        time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt        time.Time `db:"updated_at" json:"updated_at"`
+	CreatedAt        time.Time `db:"created_at" json:"-"`
+	UpdatedAt        time.Time `db:"updated_at" json:"-"`
 }
 
 type SolarSystem struct {
@@ -151,8 +151,8 @@ type SolarSystem struct {
 	SecurityStatus  float64     `db:"security_status" json:"security_status"`
 	StarID          null.Uint   `db:"star_id,omitempty" json:"star_id,omitempty"`
 	SecurityClass   null.String `db:"security_class,omitempty" json:"security_class,omitempty"`
-	CreatedAt       time.Time   `db:"created_at" json:"created_at"`
-	UpdatedAt       time.Time   `db:"updated_at" json:"updated_at"`
+	CreatedAt       time.Time   `db:"created_at" json:"-"`
+	UpdatedAt       time.Time   `db:"updated_at" json:"-"`
 }
 
 type Station struct {
@@ -166,8 +166,8 @@ type Station struct {
 	OfficeRentalCost         float64   `db:"office_rental_cost" json:"office_rental_cost"`
 	ReprocessingEfficiency   float64   `db:"reprocessing_efficiency" json:"reprocessing_efficiency"`
 	ReprocessingStationsTake float64   `db:"reprocessing_stations_take" json:"reprocessing_stations_take"`
-	CreatedAt                time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt                time.Time `db:"updated_at" json:"updated_at"`
+	CreatedAt                time.Time `db:"created_at" json:"-"`
+	UpdatedAt                time.Time `db:"updated_at" json:"-"`
 }
 
 func (Station) IsLocationInfo() {}
@@ -178,8 +178,8 @@ type Structure struct {
 	OwnerID       uint      `db:"owner_id" json:"owner_id"`
 	SolarSystemID uint      `db:"solar_system_id" json:"solar_system_id"`
 	TypeID        null.Uint `db:"type_id" json:"type_id"`
-	CreatedAt     time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt     time.Time `db:"updated_at" json:"updated_at"`
+	CreatedAt     time.Time `db:"created_at" json:"-"`
+	UpdatedAt     time.Time `db:"updated_at" json:"-"`
 }
 
 func (Structure) IsLocationInfo() {}
@@ -196,10 +196,11 @@ type Type struct {
 	PortionSize    null.Uint    `db:"portion_size,omitempty" json:"portion_size,omitempty"`
 	Radius         null.Float64 `db:"radius,omitempty" json:"radius,omitempty"`
 	Volume         float64      `db:"volume,omitempty" json:"volume,omitempty"`
-	CreatedAt      time.Time    `db:"created_at" json:"created_at"`
-	UpdatedAt      time.Time    `db:"updated_at" json:"updated_at"`
+	CreatedAt      time.Time    `db:"created_at" json:"-"`
+	UpdatedAt      time.Time    `db:"updated_at" json:"-"`
 
 	Attributes []*TypeDogmaAttribute `json:"dogma_attributes"`
+	Group      *Group                `json:"group"`
 }
 
 type TypeDogmaAttribute struct {

@@ -21,7 +21,7 @@ import (
 
 type API interface {
 	skillz.Processor
-	Contacts(ctx context.Context, user *skillz.User) ([]*skillz.CharacterContact, error)
+	Contacts(ctx context.Context, characterID uint64) ([]*skillz.CharacterContact, error)
 }
 
 type Service struct {
@@ -76,9 +76,9 @@ func (s *Service) Scopes() []skillz.Scope {
 	return s.scopes
 }
 
-func (s *Service) Contacts(ctx context.Context, user *skillz.User) ([]*skillz.CharacterContact, error) {
+func (s *Service) Contacts(ctx context.Context, characterID uint64) ([]*skillz.CharacterContact, error) {
 
-	contacts, err := s.cache.CharacterContacts(ctx, user.CharacterID)
+	contacts, err := s.cache.CharacterContacts(ctx, characterID)
 	if err != nil && !errors.Is(err, redis.Nil) {
 		return nil, err
 	}
@@ -87,16 +87,27 @@ func (s *Service) Contacts(ctx context.Context, user *skillz.User) ([]*skillz.Ch
 		return contacts, nil
 	}
 
-	contacts, err = s.contacts.CharacterContacts(ctx, user.CharacterID)
+	contacts, err = s.contacts.CharacterContacts(ctx, characterID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.Wrap(err, "failed to fetch character contacts from data store")
 	}
 
-	if err != nil && errors.Is(err, sql.ErrNoRows) {
-		return nil, nil
+	for _, contact := range contacts {
+
+		switch contact.ContactType {
+		case skillz.AllianceContactType:
+			contact.Alliance, err = s.alliance.Alliance(ctx, contact.ContactID)
+		case skillz.CorporationContactType:
+			contact.Corporation, err = s.corporation.Corporation(ctx, contact.ContactID)
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
 	}
 
-	return contacts, s.cache.SetCharacterContacts(ctx, user.CharacterID, contacts, time.Hour)
+	return contacts, s.cache.SetCharacterContacts(ctx, characterID, contacts, time.Hour)
 
 }
 

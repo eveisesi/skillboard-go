@@ -17,6 +17,6 @@ type Etag struct {
 	Path        string    `db:"path" json:"path"`
 	Etag        string    `db:"etag" json:"etag"`
 	CachedUntil time.Time `db:"cached_until" json:"cached_until"`
-	CreatedAt   time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt   time.Time `db:"updated_at" json:"updated_at"`
+	CreatedAt   time.Time `db:"created_at" json:"-"`
+	UpdatedAt   time.Time `db:"updated_at" json:"-"`
 }

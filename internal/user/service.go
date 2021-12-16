@@ -16,6 +16,7 @@ import (
 	"github.com/eveisesi/skillz/internal/cache"
 	"github.com/eveisesi/skillz/internal/character"
 	"github.com/eveisesi/skillz/internal/corporation"
+	"github.com/eveisesi/skillz/internal/skill"
 	"github.com/go-redis/redis/v8"
 	"github.com/gofrs/uuid"
 	"github.com/lestrrat-go/jwx/jwt"
@@ -28,6 +29,7 @@ type API interface {
 	ValidateCurrentToken(ctx context.Context, user *skillz.User) error
 
 	User(ctx context.Context, id uuid.UUID) (*skillz.User, error)
+	RefreshUser(ctx context.Context, user *skillz.User) error
 	UserByCharacterID(ctx context.Context, characterID uint64) (*skillz.User, error)
 	UserByCookie(ctx context.Context, cookie *http.Cookie) (*skillz.User, error)
 	SearchUsers(ctx context.Context, q string) ([]*skillz.User, error)
@@ -44,6 +46,8 @@ type Service struct {
 	character   character.API
 	corporation corporation.API
 	alliance    alliance.API
+
+	skills skill.API
 
 	skillz.UserRepository
 }
@@ -169,7 +173,9 @@ func (s *Service) Login(ctx context.Context, code, state string) (*skillz.User, 
 	}
 
 	sessionID := internal.SessionIDFromContext(ctx)
+	fmt.Println(sessionID.String())
 	if sessionID != uuid.Nil {
+
 		internal.CacheSet(sessionID, user.ID)
 	}
 
@@ -184,6 +190,17 @@ func (s *Service) Login(ctx context.Context, code, state string) (*skillz.User, 
 	}
 
 	return user, err
+
+}
+
+func (s *Service) RefreshUser(ctx context.Context, user *skillz.User) error {
+
+	err := s.redis.ZAdd(ctx, internal.UpdateQueue, &redis.Z{Score: float64(time.Now().Unix()), Member: user.ID.String()}).Err()
+	if err != nil {
+		return errors.Wrap(err, "failed to push user id to processing queue")
+	}
+
+	return nil
 
 }
 
@@ -212,14 +229,8 @@ func (s *Service) UserFromToken(ctx context.Context, token jwt.Token) (*skillz.U
 			err = nil
 		}
 
-	case "http://192.168.1.242:54405":
-		userID, ierr := uuid.FromString(token.Subject())
-		if ierr != nil {
-			return nil, errors.Wrap(err, "failed to parse userID as valid uuid")
-		}
-
-		user, err = s.User(ctx, userID)
-
+	default:
+		return nil, errors.Errorf("unsupported token issuer")
 	}
 
 	if err != nil {
@@ -253,8 +264,6 @@ func (s *Service) UserByCookie(ctx context.Context, cookie *http.Cookie) (*skill
 	if err != nil {
 		return nil, err
 	}
-
-	fmt.Println("s.UserByCookie", userID.String())
 
 	return s.User(ctx, userID)
 

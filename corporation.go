@@ -30,8 +30,8 @@ type Corporation struct {
 	Ticker        string      `db:"ticker" json:"ticker"`
 	URL           null.String `db:"url,omitempty" json:"url,omitempty"`
 	WarEligible   bool        `db:"war_eligible" json:"war_eligible"`
-	CreatedAt     time.Time   `db:"created_at" json:"created_at" deep:"-"`
-	UpdatedAt     time.Time   `db:"updated_at" json:"updated_at" deep:"-"`
+	CreatedAt     time.Time   `db:"created_at" json:"-"`
+	UpdatedAt     time.Time   `db:"updated_at" json:"-"`
 }
 
 type CorporationAllianceHistory struct {
@@ -40,6 +40,6 @@ type CorporationAllianceHistory struct {
 	AllianceID    null.Uint `db:"alliance_id" json:"alliance_id"`
 	IsDeleteed    null.Bool `db:"is_deleted" json:"is_deleted"`
 	StartDate     time.Time `db:"start_date" json:"start_date"`
-	CreatedAt     time.Time `db:"created_at" json:"created_at" deep:"-"`
-	UpdatedAt     time.Time `db:"updated_at" json:"updated_at" deep:"-"`
+	CreatedAt     time.Time `db:"created_at" json:"-"`
+	UpdatedAt     time.Time `db:"updated_at" json:"-"`
 }

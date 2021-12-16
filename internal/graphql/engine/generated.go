@@ -226,10 +226,17 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Character      func(childComplexity int, id uint64) int
+		Attributes     func(childComplexity int, id uint64) int
+		Clones         func(childComplexity int, id uint64) int
+		Contacts       func(childComplexity int, id uint64) int
 		FinalizeAuth   func(childComplexity int, code string, state string) int
+		Flyable        func(childComplexity int, id uint64) int
+		Implants       func(childComplexity int, id uint64) int
 		InitializeAuth func(childComplexity int) int
+		Queue          func(childComplexity int, id uint64) int
 		SearchUser     func(childComplexity int, term string) int
+		SkillMeta      func(childComplexity int, id uint64) int
+		Skills         func(childComplexity int, id uint64) int
 		User           func(childComplexity int, id uint64) int
 	}
 
@@ -348,9 +355,16 @@ type GroupResolver interface {
 type QueryResolver interface {
 	InitializeAuth(ctx context.Context) (string, error)
 	FinalizeAuth(ctx context.Context, code string, state string) (*skillz.User, error)
-	User(ctx context.Context, id uint64) (*skillz.User, error)
 	SearchUser(ctx context.Context, term string) ([]*skillz.User, error)
-	Character(ctx context.Context, id uint64) (*skillz.Character, error)
+	User(ctx context.Context, id uint64) (*skillz.User, error)
+	Clones(ctx context.Context, id uint64) (*skillz.CharacterCloneMeta, error)
+	Implants(ctx context.Context, id uint64) ([]*skillz.CharacterImplant, error)
+	SkillMeta(ctx context.Context, id uint64) (*skillz.CharacterSkillMeta, error)
+	Skills(ctx context.Context, id uint64) ([]*skillz.CharacterSkillGroup, error)
+	Queue(ctx context.Context, id uint64) ([]*skillz.CharacterSkillQueue, error)
+	Attributes(ctx context.Context, id uint64) (*skillz.CharacterAttributes, error)
+	Flyable(ctx context.Context, id uint64) ([]*skillz.CharacterFlyableShip, error)
+	Contacts(ctx context.Context, id uint64) ([]*skillz.CharacterContact, error)
 }
 type SolarSystemResolver interface {
 	Constellation(ctx context.Context, obj *skillz.SolarSystem) (*skillz.Constellation, error)
@@ -1143,17 +1157,41 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Group.Published(childComplexity), true
 
-	case "Query.character":
-		if e.complexity.Query.Character == nil {
+	case "Query.attributes":
+		if e.complexity.Query.Attributes == nil {
 			break
 		}
 
-		args, err := ec.field_Query_character_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_attributes_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Query.Character(childComplexity, args["id"].(uint64)), true
+		return e.complexity.Query.Attributes(childComplexity, args["id"].(uint64)), true
+
+	case "Query.clones":
+		if e.complexity.Query.Clones == nil {
+			break
+		}
+
+		args, err := ec.field_Query_clones_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Clones(childComplexity, args["id"].(uint64)), true
+
+	case "Query.contacts":
+		if e.complexity.Query.Contacts == nil {
+			break
+		}
+
+		args, err := ec.field_Query_contacts_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Contacts(childComplexity, args["id"].(uint64)), true
 
 	case "Query.finalizeAuth":
 		if e.complexity.Query.FinalizeAuth == nil {
@@ -1167,12 +1205,48 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.FinalizeAuth(childComplexity, args["code"].(string), args["state"].(string)), true
 
+	case "Query.flyable":
+		if e.complexity.Query.Flyable == nil {
+			break
+		}
+
+		args, err := ec.field_Query_flyable_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Flyable(childComplexity, args["id"].(uint64)), true
+
+	case "Query.implants":
+		if e.complexity.Query.Implants == nil {
+			break
+		}
+
+		args, err := ec.field_Query_implants_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Implants(childComplexity, args["id"].(uint64)), true
+
 	case "Query.initializeAuth":
 		if e.complexity.Query.InitializeAuth == nil {
 			break
 		}
 
 		return e.complexity.Query.InitializeAuth(childComplexity), true
+
+	case "Query.queue":
+		if e.complexity.Query.Queue == nil {
+			break
+		}
+
+		args, err := ec.field_Query_queue_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Queue(childComplexity, args["id"].(uint64)), true
 
 	case "Query.searchUser":
 		if e.complexity.Query.SearchUser == nil {
@@ -1185,6 +1259,30 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.SearchUser(childComplexity, args["term"].(string)), true
+
+	case "Query.skillMeta":
+		if e.complexity.Query.SkillMeta == nil {
+			break
+		}
+
+		args, err := ec.field_Query_skillMeta_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.SkillMeta(childComplexity, args["id"].(uint64)), true
+
+	case "Query.skills":
+		if e.complexity.Query.Skills == nil {
+			break
+		}
+
+		args, err := ec.field_Query_skills_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Skills(childComplexity, args["id"].(uint64)), true
 
 	case "Query.user":
 		if e.complexity.Query.User == nil {
@@ -1707,11 +1805,19 @@ extend type Character {
 	{Name: "internal/graphql/engine/schema/query.graphqls", Input: `type Query {
     initializeAuth: String!
     finalizeAuth(code: String!, state: String!): User!
-    # user: User! @isAuthed
-    user(id: Uint64!): User!
     searchUser(term: String!): [User]!
-    character(id: Uint64!): Character
-}
+    # character(id: Uint64!): Character
+
+    user(id: Uint64!): User!
+    clones(id: Uint64!): CharacterClone
+    implants(id: Uint64!): [CharacterImplant]!
+    skillMeta(id: Uint64!): CharacterSkillMeta!
+    skills(id: Uint64!): [CharacterSkillGroup]!
+    queue(id: Uint64!): [CharacterSkillQueue]!
+    attributes(id: Uint64!): CharacterAttributes!
+    flyable(id: Uint64!): [CharacterFlyableShip]!
+    contacts(id: Uint64!): [CharacterContact]!
+}   
 
 directive @goModel(model: String) on OBJECT
 directive @goField(forceResolver: Boolean, name: String) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION
@@ -1909,7 +2015,37 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 	return args, nil
 }
 
-func (ec *executionContext) field_Query_character_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Query_attributes_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 uint64
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNUint642uint64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_clones_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 uint64
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNUint642uint64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_contacts_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 uint64
@@ -1948,6 +2084,51 @@ func (ec *executionContext) field_Query_finalizeAuth_args(ctx context.Context, r
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_flyable_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 uint64
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNUint642uint64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_implants_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 uint64
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNUint642uint64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_queue_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 uint64
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNUint642uint64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_searchUser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1960,6 +2141,36 @@ func (ec *executionContext) field_Query_searchUser_args(ctx context.Context, raw
 		}
 	}
 	args["term"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_skillMeta_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 uint64
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNUint642uint64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_skills_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 uint64
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNUint642uint64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -5760,48 +5971,6 @@ func (ec *executionContext) _Query_finalizeAuth(ctx context.Context, field graph
 	return ec.marshalNUser2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐUser(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_user(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Query_user_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().User(rctx, args["id"].(uint64))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*skillz.User)
-	fc.Result = res
-	return ec.marshalNUser2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐUser(ctx, field.Selections, res)
-}
-
 func (ec *executionContext) _Query_searchUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -5844,7 +6013,7 @@ func (ec *executionContext) _Query_searchUser(ctx context.Context, field graphql
 	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋeveisesiᚋskillzᚐUser(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_character(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_user(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -5861,7 +6030,7 @@ func (ec *executionContext) _Query_character(ctx context.Context, field graphql.
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Query_character_args(ctx, rawArgs)
+	args, err := ec.field_Query_user_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -5869,7 +6038,49 @@ func (ec *executionContext) _Query_character(ctx context.Context, field graphql.
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Character(rctx, args["id"].(uint64))
+		return ec.resolvers.Query().User(rctx, args["id"].(uint64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*skillz.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_clones(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_clones_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Clones(rctx, args["id"].(uint64))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5878,9 +6089,303 @@ func (ec *executionContext) _Query_character(ctx context.Context, field graphql.
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*skillz.Character)
+	res := resTmp.(*skillz.CharacterCloneMeta)
 	fc.Result = res
-	return ec.marshalOCharacter2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacter(ctx, field.Selections, res)
+	return ec.marshalOCharacterClone2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacterCloneMeta(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_implants(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_implants_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Implants(rctx, args["id"].(uint64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*skillz.CharacterImplant)
+	fc.Result = res
+	return ec.marshalNCharacterImplant2ᚕᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacterImplant(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_skillMeta(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_skillMeta_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().SkillMeta(rctx, args["id"].(uint64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*skillz.CharacterSkillMeta)
+	fc.Result = res
+	return ec.marshalNCharacterSkillMeta2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacterSkillMeta(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_skills(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_skills_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Skills(rctx, args["id"].(uint64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*skillz.CharacterSkillGroup)
+	fc.Result = res
+	return ec.marshalNCharacterSkillGroup2ᚕᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacterSkillGroup(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_queue(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_queue_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Queue(rctx, args["id"].(uint64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*skillz.CharacterSkillQueue)
+	fc.Result = res
+	return ec.marshalNCharacterSkillQueue2ᚕᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacterSkillQueue(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_attributes(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_attributes_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Attributes(rctx, args["id"].(uint64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*skillz.CharacterAttributes)
+	fc.Result = res
+	return ec.marshalNCharacterAttributes2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacterAttributes(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_flyable(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_flyable_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Flyable(rctx, args["id"].(uint64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*skillz.CharacterFlyableShip)
+	fc.Result = res
+	return ec.marshalNCharacterFlyableShip2ᚕᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacterFlyableShip(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_contacts(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_contacts_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Contacts(rctx, args["id"].(uint64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*skillz.CharacterContact)
+	fc.Result = res
+	return ec.marshalNCharacterContact2ᚕᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacterContact(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -9914,20 +10419,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
-		case "user":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_user(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			})
 		case "searchUser":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -9942,7 +10433,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
-		case "character":
+		case "user":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -9950,7 +10441,119 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_character(ctx, field)
+				res = ec._Query_user(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "clones":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_clones(ctx, field)
+				return res
+			})
+		case "implants":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_implants(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "skillMeta":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_skillMeta(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "skills":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_skills(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "queue":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_queue(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "attributes":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_attributes(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "flyable":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_flyable(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "contacts":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_contacts(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			})
 		case "__type":
@@ -11607,13 +12210,6 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 		return graphql.Null
 	}
 	return graphql.MarshalBoolean(*v)
-}
-
-func (ec *executionContext) marshalOCharacter2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacter(ctx context.Context, sel ast.SelectionSet, v *skillz.Character) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._Character(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOCharacterClone2ᚖgithubᚗcomᚋeveisesiᚋskillzᚐCharacterCloneMeta(ctx context.Context, sel ast.SelectionSet, v *skillz.CharacterCloneMeta) graphql.Marshaler {

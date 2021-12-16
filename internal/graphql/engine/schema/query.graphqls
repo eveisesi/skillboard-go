@@ -1,11 +1,19 @@
 type Query {
     initializeAuth: String!
     finalizeAuth(code: String!, state: String!): User!
-    # user: User! @isAuthed
-    user(id: Uint64!): User!
     searchUser(term: String!): [User]!
-    character(id: Uint64!): Character
-}
+    # character(id: Uint64!): Character
+
+    user(id: Uint64!): User!
+    clones(id: Uint64!): CharacterClone
+    implants(id: Uint64!): [CharacterImplant]!
+    skillMeta(id: Uint64!): CharacterSkillMeta!
+    skills(id: Uint64!): [CharacterSkillGroup]!
+    queue(id: Uint64!): [CharacterSkillQueue]!
+    attributes(id: Uint64!): CharacterAttributes!
+    flyable(id: Uint64!): [CharacterFlyableShip]!
+    contacts(id: Uint64!): [CharacterContact]!
+}   
 
 directive @goModel(model: String) on OBJECT
 directive @goField(forceResolver: Boolean, name: String) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION

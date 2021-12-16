@@ -51,8 +51,9 @@ func processorCommand(c *cli.Context) error {
 
 	user := user.New(redisClient, cache, auth, alliance, character, corporation, userRepo)
 	contact := contact.New(logger, cache, etag, esi, character, corporation, alliance, contactRepo)
-	clone := clone.New(logger, cache, etag, esi, cloneRepo)
+
 	universe := universe.New(cache, esi, universeRepo)
+	clone := clone.New(logger, cache, etag, esi, universe, cloneRepo)
 	skills := skill.New(logger, cache, esi, universe, skillsRepo)
 
 	return processor.New(logger, redisClient, user, skillz.ScopeProcessors{

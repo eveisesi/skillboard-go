@@ -16,7 +16,7 @@ func (s *Service) CloneLoader() *generated.CloneLoader {
 			var results = make([]*skillz.CharacterCloneMeta, len(keys))
 
 			for i, k := range keys {
-				result, err := s.clone.Clones(ctx, k)
+				result, err := s.clone.Clones(ctx, k.CharacterID)
 				if err != nil {
 					errors[i] = err
 					continue
@@ -39,7 +39,7 @@ func (s *Service) ImplantLoader() *generated.ImplantLoader {
 			var results = make([][]*skillz.CharacterImplant, len(keys))
 
 			for i, k := range keys {
-				result, err := s.clone.Implants(ctx, k)
+				result, err := s.clone.Implants(ctx, k.CharacterID)
 				if err != nil {
 					errors[i] = err
 					continue

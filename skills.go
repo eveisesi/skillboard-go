@@ -54,8 +54,8 @@ type CharacterAttributes struct {
 	BonusRemaps              null.Uint `db:"bonus_remaps,omitempty" json:"bonus_remaps,omitempty"`
 	LastRemapDate            null.Time `db:"last_remap_date,omitempty" json:"last_remap_date,omitempty"`
 	AccruedRemapCooldownDate null.Time `db:"accrued_remap_cooldown_date,omitempty" json:"accrued_remap_cooldown_date,omitempty"`
-	CreatedAt                time.Time `db:"created_at" json:"created_at" deep:"-"`
-	UpdatedAt                time.Time `db:"updated_at" json:"updated_at" deep:"-"`
+	CreatedAt                time.Time `db:"created_at" json:"-" deep:"-"`
+	UpdatedAt                time.Time `db:"updated_at" json:"-" deep:"-"`
 }
 
 type CharacterFlyableShip struct {
@@ -63,6 +63,8 @@ type CharacterFlyableShip struct {
 	ShipTypeID  uint      `db:"ship_type_id" json:"ship_type_id"`
 	Flyable     bool      `db:"flyable" json:"flyable"`
 	CreatedAt   time.Time `db:"created_at" json:"-"`
+
+	Ship *Type `json:"info"`
 }
 
 type CharacterSkillQueue struct {
@@ -75,15 +77,17 @@ type CharacterSkillQueue struct {
 	LevelEndSp      null.Uint `db:"level_end_sp,omitempty" json:"level_end_sp,omitempty"`
 	StartDate       null.Time `db:"start_date,omitempty" json:"start_date,omitempty"`
 	FinishDate      null.Time `db:"finish_date,omitempty" json:"finish_date,omitempty"`
-	CreatedAt       time.Time `db:"created_at" json:"created_at" deep:"-"`
+	CreatedAt       time.Time `db:"created_at" json:"-" deep:"-"`
+
+	Type *Type `json:"type"`
 }
 
 type CharacterSkillMeta struct {
 	CharacterID   uint64    `db:"character_id" json:"character_id"`
 	TotalSP       uint      `db:"total_sp" json:"total_sp"`
-	UnallocatedSP null.Uint `db:"unallocated_sp,omitempty" json:"unallocated_sp,omitempty"`
-	CreatedAt     time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt     time.Time `db:"updated_at" json:"updated_at"`
+	UnallocatedSP *uint     `db:"unallocated_sp,omitempty" json:"unallocated_sp,omitempty"`
+	CreatedAt     time.Time `db:"created_at" json:"-"`
+	UpdatedAt     time.Time `db:"updated_at" json:"-"`
 
 	Skills []*CharacterSkill `json:"skills,omitempty"`
 }
@@ -96,10 +100,12 @@ type CharacterSkill struct {
 	TrainedSkillLevel  uint      `db:"trained_skill_level" json:"trained_skill_level"`
 	CreatedAt          time.Time `db:"created_at" json:"-"`
 	UpdatedAt          time.Time `db:"updated_at" json:"-"`
+
+	Info *Type `json:"type,omitempty"`
 }
 
 type CharacterSkillGroup struct {
 	Info         *Group            `json:"info"`
 	Skills       []*CharacterSkill `json:"skills"`
-	TotalGroupSP uint
+	TotalGroupSP uint              `json:"totalGroupSP"`
 }

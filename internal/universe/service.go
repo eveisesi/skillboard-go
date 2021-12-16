@@ -372,6 +372,13 @@ func (s *Service) TypesByGroup(ctx context.Context, groupID uint) ([]*skillz.Typ
 		return nil, err
 	}
 
+	for _, t := range types {
+		t.Attributes, err = s.TypeAttributes(ctx, t.ID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return types, s.cache.SetTypesByGroupID(ctx, groupID, types)
 
 }

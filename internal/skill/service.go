@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/eveisesi/skillz"
 	"github.com/eveisesi/skillz/internal/cache"
 	"github.com/eveisesi/skillz/internal/esi"
@@ -91,6 +92,8 @@ func (s *Service) Meta(ctx context.Context, characterID uint64) (*skillz.Charact
 		return nil, errors.Wrap(err, "failed to fetch character skills from data store")
 	}
 
+	spew.Dump(meta)
+
 	return meta, s.cache.SetCharacterSkillMeta(ctx, meta, time.Hour)
 
 }
@@ -109,6 +112,23 @@ func (s *Service) Flyable(ctx context.Context, characterID uint64) ([]*skillz.Ch
 	flyable, err = s.skills.CharacterFlyableShips(ctx, characterID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.Wrap(err, "failed to fetch character skills from data store")
+	}
+
+	for _, ship := range flyable {
+
+		shipType, err := s.universe.Type(ctx, ship.ShipTypeID)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to fetch ship info")
+		}
+
+		shipGroup, err := s.universe.Group(ctx, shipType.GroupID)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to fetch ship group info")
+		}
+
+		shipType.Group = shipGroup
+		ship.Ship = shipType
+
 	}
 
 	return flyable, s.cache.SetCharacterFlyableShips(ctx, characterID, flyable, time.Hour)
@@ -171,6 +191,8 @@ func (s *Service) SkillsGrouped(ctx context.Context, characterID uint64) ([]*ski
 			if !ok {
 				continue
 			}
+
+			skill.Info = t
 
 			groupedSkill.Skills = append(groupedSkill.Skills, skill)
 			groupedSkill.TotalGroupSP += skill.SkillpointsInSkill
@@ -311,7 +333,24 @@ func (s *Service) SkillQueue(ctx context.Context, characterID uint64) ([]*skillz
 		return nil, errors.Wrap(err, "failed to fetch character skill queue from data store")
 	}
 
-	return queue, nil
+	for _, position := range queue {
+
+		positionType, err := s.universe.Type(ctx, position.SkillID)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to fetch skill info for queue position")
+		}
+
+		positionGroup, err := s.universe.Group(ctx, positionType.GroupID)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to fetch skill group info for queue position")
+		}
+
+		positionType.Group = positionGroup
+		position.Type = positionType
+
+	}
+
+	return queue, s.cache.SetCharacterSkillQueue(ctx, characterID, queue, time.Hour)
 
 }
 

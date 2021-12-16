@@ -9,6 +9,7 @@ import (
 	"github.com/eveisesi/skillz/internal/cache"
 	"github.com/eveisesi/skillz/internal/esi"
 	"github.com/eveisesi/skillz/internal/etag"
+	"github.com/eveisesi/skillz/internal/universe"
 	"github.com/go-redis/redis/v8"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -17,15 +18,16 @@ import (
 
 type API interface {
 	skillz.Processor
-	Clones(ctx context.Context, user *skillz.User) (*skillz.CharacterCloneMeta, error)
-	Implants(ctx context.Context, user *skillz.User) ([]*skillz.CharacterImplant, error)
+	Clones(ctx context.Context, characterID uint64) (*skillz.CharacterCloneMeta, error)
+	Implants(ctx context.Context, characterID uint64) ([]*skillz.CharacterImplant, error)
 }
 
 type Service struct {
-	logger *logrus.Logger
-	cache  cache.CloneAPI
-	etag   etag.API
-	esi    esi.CloneAPI
+	logger   *logrus.Logger
+	cache    cache.CloneAPI
+	etag     etag.API
+	esi      esi.CloneAPI
+	universe universe.API
 
 	clones skillz.CloneRepository
 
@@ -34,13 +36,16 @@ type Service struct {
 
 var _ API = (*Service)(nil)
 
-func New(logger *logrus.Logger, cache cache.CloneAPI, etag etag.API, esi esi.CloneAPI, clones skillz.CloneRepository) *Service {
+func New(logger *logrus.Logger, cache cache.CloneAPI, etag etag.API, esi esi.CloneAPI, universe universe.API, clones skillz.CloneRepository) *Service {
 	return &Service{
-		logger: logger,
-		cache:  cache,
-		etag:   etag,
-		esi:    esi,
+		logger:   logger,
+		cache:    cache,
+		etag:     etag,
+		esi:      esi,
+		universe: universe,
+
 		clones: clones,
+
 		scopes: []skillz.Scope{skillz.ReadImplantsV1, skillz.ReadClonesV1},
 	}
 }
@@ -67,9 +72,9 @@ func (s *Service) Scopes() []skillz.Scope {
 	return s.scopes
 }
 
-func (s *Service) Clones(ctx context.Context, user *skillz.User) (*skillz.CharacterCloneMeta, error) {
+func (s *Service) Clones(ctx context.Context, characterID uint64) (*skillz.CharacterCloneMeta, error) {
 
-	clones, err := s.cache.CharacterClones(ctx, user.CharacterID)
+	clones, err := s.cache.CharacterClones(ctx, characterID)
 	if err != nil && !errors.Is(err, redis.Nil) {
 		return nil, err
 	}
@@ -78,7 +83,7 @@ func (s *Service) Clones(ctx context.Context, user *skillz.User) (*skillz.Charac
 		return clones, nil
 	}
 
-	clones, err = s.clones.CharacterCloneMeta(ctx, user.CharacterID)
+	clones, err = s.clones.CharacterCloneMeta(ctx, characterID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.Wrap(err, "failed to fetch character clones from data store")
 	}
@@ -87,16 +92,60 @@ func (s *Service) Clones(ctx context.Context, user *skillz.User) (*skillz.Charac
 		return nil, nil
 	}
 
-	homeLocation, homeLocationErr := s.clones.CharacterDeathClone(ctx, user.CharacterID)
-	jumpClones, jumpClonesErr := s.clones.CharacterJumpClones(ctx, user.CharacterID)
+	homeLocation, homeLocationErr := s.DeathClone(ctx, characterID)
+	jumpClones, jumpClonesErr := s.JumpClone(ctx, characterID)
 
-	if homeLocationErr == nil && jumpClonesErr == nil {
+	if homeLocationErr == nil {
 		clones.HomeLocation = homeLocation
+
+	}
+	if jumpClonesErr == nil {
 		clones.JumpClones = jumpClones
 	}
 
-	return clones, s.cache.SetCharacterClones(ctx, user.CharacterID, clones, time.Hour)
+	return clones, s.cache.SetCharacterClones(ctx, characterID, clones, time.Hour)
 
+}
+
+func (s *Service) DeathClone(ctx context.Context, characterID uint64) (*skillz.CharacterDeathClone, error) {
+
+	death, err := s.clones.CharacterDeathClone(ctx, characterID)
+	if err != nil {
+		return nil, err
+	}
+
+	switch death.LocationType {
+	case skillz.CloneLocationTypeStation:
+		death.Station, err = s.universe.Station(ctx, uint(death.LocationID))
+	case skillz.CloneLocationTypeStructure:
+		death.Structure, err = s.universe.Structure(ctx, death.LocationID)
+	}
+
+	return death, err
+
+}
+
+func (s *Service) JumpClone(ctx context.Context, characterID uint64) ([]*skillz.CharacterJumpClone, error) {
+
+	clones, err := s.clones.CharacterJumpClones(ctx, characterID)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, clone := range clones {
+		switch clone.LocationType {
+		case skillz.CloneLocationTypeStation:
+			clone.Station, err = s.universe.Station(ctx, uint(clone.LocationID))
+		case skillz.CloneLocationTypeStructure:
+			clone.Structure, err = s.universe.Structure(ctx, clone.LocationID)
+		}
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return clones, err
 }
 
 func (s *Service) updateClones(ctx context.Context, user *skillz.User) error {
@@ -167,14 +216,9 @@ func (s *Service) insertCharacterClones(ctx context.Context, clones *skillz.Char
 
 }
 
-func (s *Service) Implants(ctx context.Context, user *skillz.User) ([]*skillz.CharacterImplant, error) {
+func (s *Service) Implants(ctx context.Context, characterID uint64) ([]*skillz.CharacterImplant, error) {
 
-	s.logger.WithFields(logrus.Fields{
-		"service": "clone",
-		"userID":  user.ID.String(),
-	}).Info("updating implants")
-
-	implants, err := s.cache.CharacterImplants(ctx, user.CharacterID)
+	implants, err := s.cache.CharacterImplants(ctx, characterID)
 	if err != nil && !errors.Is(err, redis.Nil) {
 		return nil, err
 	}
@@ -183,12 +227,23 @@ func (s *Service) Implants(ctx context.Context, user *skillz.User) ([]*skillz.Ch
 		return implants, nil
 	}
 
-	implants, err = s.clones.CharacterImplants(ctx, user.CharacterID)
+	implants, err = s.clones.CharacterImplants(ctx, characterID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.Wrap(err, "failed to fetch character implants from data store")
 	}
 
-	return implants, nil
+	for _, implant := range implants {
+
+		implantType, err := s.universe.Type(ctx, implant.ImplantID)
+		if err != nil {
+			return nil, err
+		}
+
+		implant.Type = implantType
+
+	}
+
+	return implants, s.cache.SetCharacterImplants(ctx, characterID, implants, time.Hour)
 
 }
 

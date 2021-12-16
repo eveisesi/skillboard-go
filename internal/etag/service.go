@@ -44,6 +44,10 @@ func (s *Service) Etag(ctx context.Context, path string) (*skillz.Etag, error) {
 		return nil, errors.Wrap(err, "failed to fetch etag from data store")
 	}
 
+	if etag == nil || errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+
 	return etag, s.cache.SetEtag(ctx, etag, time.Minute*5)
 
 }

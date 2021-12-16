@@ -38,6 +38,7 @@ func (r *contactRepository) CharacterContacts(ctx context.Context, characterID u
 	query, args, err := sq.Select(r.contacts.columns...).
 		From(r.contacts.table).
 		Where(sq.Eq{ColumnCharacterID: characterID}).
+		Where(sq.NotEq{ContactContactType: "character"}).
 		ToSql()
 	if err != nil {
 		return nil, errors.Wrapf(err, errorFFormat, cloneRepositoryIdentifier, "CharacterContacts", "failed to generate sql")

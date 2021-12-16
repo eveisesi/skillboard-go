@@ -30,8 +30,8 @@ type CharacterCloneMeta struct {
 	CharacterID           uint64    `db:"character_id" json:"character_id"`
 	LastCloneJumpDate     null.Time `db:"last_clone_jump_date" json:"last_clone_jump_date"`
 	LastStationChangeDate null.Time `db:"last_station_change_date" json:"last_station_change_date"`
-	CreatedAt             time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt             time.Time `db:"updated_at" json:"updated_at"`
+	CreatedAt             time.Time `db:"created_at" json:"-"`
+	UpdatedAt             time.Time `db:"updated_at" json:"-"`
 
 	HomeLocation *CharacterDeathClone  `json:"home_location"`
 	JumpClones   []*CharacterJumpClone `json:"jump_clones"`
@@ -64,8 +64,11 @@ type CharacterDeathClone struct {
 	CharacterID  uint64            `db:"character_id" json:"character_id"`
 	LocationID   uint64            `db:"location_id" json:"location_id"`
 	LocationType CloneLocationType `db:"location_type" json:"location_type"`
-	CreatedAt    time.Time         `db:"created_at" json:"created_at"`
-	UpdatedAt    time.Time         `db:"updated_at" json:"updated_at"`
+	CreatedAt    time.Time         `db:"created_at" json:"-"`
+	UpdatedAt    time.Time         `db:"updated_at" json:"-"`
+
+	Station   *Station   `json:"station,omitempty"`
+	Structure *Structure `json:"structure,omitempty"`
 }
 
 type CharacterJumpClone struct {
@@ -73,14 +76,21 @@ type CharacterJumpClone struct {
 	JumpCloneID  uint              `db:"jump_clone_id" json:"jump_clone_id"`
 	LocationID   uint64            `db:"location_id" json:"location_id"`
 	LocationType CloneLocationType `db:"location_type" json:"location_type"`
-	Implants     SliceUint         `db:"implants" json:"implants"`
-	CreatedAt    time.Time         `db:"created_at" json:"created_at"`
+	ImplantIDs   SliceUint         `db:"implants" json:"implants,omitempty"`
+	CreatedAt    time.Time         `db:"created_at" json:"-"`
+
+	Implants []*Type `json:"implants,omitempty"`
+
+	Station   *Station   `json:"station,omitempty"`
+	Structure *Structure `json:"structure,omitempty"`
 }
 
 type CharacterImplant struct {
 	CharacterID uint64    `db:"character_id" json:"character_id"`
 	ImplantID   uint      `db:"implant_id" json:"implant_id"`
-	CreatedAt   time.Time `db:"created_at" json:"created_at"`
+	CreatedAt   time.Time `db:"created_at" json:"-"`
+
+	Type *Type `json:"info,omitempty"`
 }
 
 type SliceUint []uint64

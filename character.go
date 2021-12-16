@@ -38,6 +38,9 @@ type Character struct {
 	RaceID         uint         `db:"race_id" json:"race_id"`
 	CreatedAt      time.Time    `db:"created_at" json:"-"`
 	UpdatedAt      time.Time    `db:"updated_at" json:"-"`
+
+	Corporation *Corporation `json:"corporation,omitempty"`
+	Alliance    *Alliance    `json:"alliance,omitempty"`
 }
 
 type CharacterCorporationHistory struct {
@@ -46,6 +49,6 @@ type CharacterCorporationHistory struct {
 	CorporationID uint      `db:"corporation_id" json:"corporation_id"`
 	IsDeleted     bool      `db:"is_deleted" json:"is_deleted"`
 	StartDate     time.Time `db:"start_date" json:"start_date"`
-	CreatedAt     time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt     time.Time `db:"updated_at" json:"updated_at"`
+	CreatedAt     time.Time `db:"created_at" json:"-"`
+	UpdatedAt     time.Time `db:"updated_at" json:"-"`
 }
