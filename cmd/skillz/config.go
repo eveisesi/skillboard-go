@@ -56,7 +56,6 @@ func buildConfig() {
 		panic(fmt.Sprintf("failed to config env: %s", err))
 	}
 
-	// TODO (@ddouglas): Remove ME
 	if len(cfg.Auth.PrivateKey) == 0 {
 		if cfg.Environment == "production" {
 			panic("failed to config env: AUTH_KEY is required but has a length of 0")
