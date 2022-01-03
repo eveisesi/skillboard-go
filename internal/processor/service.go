@@ -2,7 +2,6 @@ package processor
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/eveisesi/skillz"
@@ -88,13 +87,13 @@ func (s *Service) processUser(ctx context.Context, userID uuid.UUID) error {
 		return err
 	}
 
+	ctx = internal.ContextWithUser(ctx, user)
+
 processorLoop:
 	for _, processor := range s.scopes {
 		scopes := processor.Scopes()
 		for _, scope := range user.Scopes {
-			fmt.Println("Scope ::", scope)
 			if scopeInSlcScopes(scope, scopes) {
-				fmt.Println("Scope is Available ::", scope)
 				err = processor.Process(ctx, user)
 				if err != nil {
 					return errors.Wrap(err, "processor failed to process user")

@@ -1,8 +1,5 @@
 SHELL := /bin/bash
 
-gqlgen:
-	gqlgen generate --config .config/gql/gqlgen.yml
-
 deps:
 	aws-vault exec phoenix -- chamber exec phoenix -- docker compose up -d redis mysql
 

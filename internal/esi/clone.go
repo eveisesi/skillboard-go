@@ -7,6 +7,7 @@ import (
 
 	"github.com/eveisesi/skillz"
 	"github.com/pkg/errors"
+	"github.com/volatiletech/null"
 )
 
 type CloneAPI interface {
@@ -16,13 +17,28 @@ type CloneAPI interface {
 }
 
 type clones interface {
-	GetCharacterClones(ctx context.Context, characterID uint64, mods ...ModifierFunc) (*skillz.CharacterCloneMeta, error)
+	GetCharacterClones(ctx context.Context, characterID uint64, mods ...ModifierFunc) (*CharacterClonesOK, error)
 	GetCharacterImplants(ctx context.Context, characterID uint64, mods ...ModifierFunc) (*CharacterImplantsOk, error)
 }
 
-func (s *Service) GetCharacterClones(ctx context.Context, characterID uint64, mods ...ModifierFunc) (*skillz.CharacterCloneMeta, error) {
+type CharacterClonesOK struct {
+	HomeLocation struct {
+		LocationID   uint64 `json:"location_id"`
+		LocationType string `json:"location_type"`
+	} `json:"home_location"`
+	JumpClones []struct {
+		JumpCloneID  uint   `json:"jump_clone_id"`
+		LocationID   uint64 `json:"location_id"`
+		LocationType string `json:"location_type"`
+		Implants     []uint `json:"implants"`
+	} `json:"jump_clones"`
+	LastCloneJumpDate     null.Time `json:"last_clone_jump_date"`
+	LastStationChangeDate null.Time `json:"last_station_change_date"`
+}
 
-	var clones = new(skillz.CharacterCloneMeta)
+func (s *Service) GetCharacterClones(ctx context.Context, characterID uint64, mods ...ModifierFunc) (*CharacterClonesOK, error) {
+
+	var clones = new(CharacterClonesOK)
 	var out = new(out)
 	out.Data = clones
 	endpoint := fmt.Sprintf(endpoints[GetCharacterClones], characterID)
@@ -33,11 +49,11 @@ func (s *Service) GetCharacterClones(ctx context.Context, characterID uint64, mo
 	}
 
 	if err == nil {
-		clones.CharacterID = characterID
-		clones.HomeLocation.CharacterID = characterID
-		for _, clone := range clones.JumpClones {
-			clone.CharacterID = characterID
-		}
+		// clones.CharacterID = characterID
+		// clones.HomeLocation.CharacterID = characterID
+		// for _, clone := range clones.JumpClones {
+		// 	clone.CharacterID = characterID
+		// }
 	}
 
 	return clones, errors.Wrap(err, "failed to execute request to ESI for Character data")

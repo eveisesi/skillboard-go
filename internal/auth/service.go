@@ -1,11 +1,3 @@
-// Package auth performs to primary functions
-//
-// Verifies Authorization State is still validate during an authorization code exchange
-// It facilitates that Authoriztion Code Exchange
-// Ensures that the Bearer Token that we received back from the IDP is a valid, signed JWT Token.
-// Stores that retrived Token in User State
-// Generates User Tokens, with the proper claims necessary to properly validate these tokens later on
-// Validates User Tokens on inbound requests
 package auth
 
 import (

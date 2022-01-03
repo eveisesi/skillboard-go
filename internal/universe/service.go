@@ -272,7 +272,7 @@ func (s *Service) Structure(ctx context.Context, structureID uint64) (*skillz.St
 	if !exists {
 		user := internal.UserFromContext(ctx)
 		if user == nil {
-			return nil, errors.Wrap(err, "failed to resolve structure id, no user available to query esi with")
+			return nil, nil
 		}
 
 		mods := append(make([]esi.ModifierFunc, 0, 2), s.esi.CacheEtag(ctx, etagID, nil), s.esi.AddAuthorizationHeader(ctx, user.AccessToken))

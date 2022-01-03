@@ -357,11 +357,14 @@ func (r *skillRepository) DeleteCharacterSkills(ctx context.Context, characterID
 
 }
 
+const queuePositionAscOrderByStmt = "queue_position ASC"
+
 func (r *skillRepository) CharacterSkillQueue(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkillQueue, error) {
 
 	query, args, err := sq.Select(r.queue.columns...).
 		From(r.queue.table).
 		Where(sq.Eq{ColumnCharacterID: characterID}).
+		OrderBy(queuePositionAscOrderByStmt).
 		ToSql()
 	if err != nil {
 		return nil, errors.Wrapf(err, errorFFormat, skillsRepositoryIdentifier, "CharacterSkillQueue", "failed to generate sql")

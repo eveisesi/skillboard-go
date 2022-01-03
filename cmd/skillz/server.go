@@ -17,7 +17,6 @@ import (
 	"github.com/eveisesi/skillz/internal/corporation"
 	"github.com/eveisesi/skillz/internal/esi"
 	"github.com/eveisesi/skillz/internal/etag"
-	"github.com/eveisesi/skillz/internal/graphql"
 	"github.com/eveisesi/skillz/internal/universe"
 
 	// "github.com/eveisesi/skillz/internal/graphql/engine/dataloaders"
@@ -60,13 +59,12 @@ func serverCommand(_ *cli.Context) error {
 	character := character.New(cache, esi, etag, characterRepo)
 	corporation := corporation.New(cache, esi, etag, corporationRepo)
 	alliance := alliance.New(cache, esi, etag, allianceRepo)
-	user := user.New(redisClient, cache, auth, alliance, character, corporation, userRepo)
 	universe := universe.New(cache, esi, universeRepo)
 	clone := clone.New(logger, cache, etag, esi, universe, clonesRepo)
 	contact := contact.New(logger, cache, etag, esi, character, corporation, alliance, contactRepo)
 	skill := skill.New(logger, cache, esi, universe, skillsRepo)
-	graphql := graphql.New(alliance, auth, character, clone, contact, corporation, skill, universe, user)
-	server := server.New(cfg.Server.Port, env, logger, alliance, auth, character, clone, contact, corporation, graphql, skill, user)
+	user := user.New(redisClient, logger, cache, auth, alliance, character, corporation, skill, userRepo)
+	server := server.New(cfg.Server.Port, env, logger, alliance, auth, character, clone, contact, corporation, skill, user)
 	errChan := make(chan error, 1)
 	go func() {
 		errChan <- server.Run()

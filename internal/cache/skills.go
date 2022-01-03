@@ -18,6 +18,8 @@ type SkillAPI interface {
 	SetCharacterAttributes(ctx context.Context, meta *skillz.CharacterAttributes, expires time.Duration) error
 	CharacterSkills(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkill, error)
 	SetCharacterSkills(ctx context.Context, characterID uint64, skills []*skillz.CharacterSkill, expires time.Duration) error
+	CharacterGroupedSkillz(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkillGroup, error)
+	SetCharacterGroupedSkillz(ctx context.Context, characterID uint64, groups []*skillz.CharacterSkillGroup, expires time.Duration) error
 	CharacterSkillQueue(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkillQueue, error)
 	SetCharacterSkillQueue(ctx context.Context, characterID uint64, positions []*skillz.CharacterSkillQueue, expires time.Duration) error
 	CharacterFlyableShips(ctx context.Context, characterID uint64) ([]*skillz.CharacterFlyableShip, error)
@@ -25,11 +27,12 @@ type SkillAPI interface {
 }
 
 const (
-	characterAttributesKeyPrefix = "character::attributes"
-	characterSkillMetaKeyPrefix  = "character::skill::meta"
-	characterSkillsKeyPrefix     = "character::skills"
-	characterFlyableKeyPrefix    = "character::flyable"
-	characterSkillQueueKeyPrefix = "character::skillqueue"
+	characterAttributesKeyPrefix    = "character::attributes"
+	characterSkillMetaKeyPrefix     = "character::skill::meta"
+	characterSkillsKeyPrefix        = "character::skills"
+	characterSkillsGroupedKeyPrefix = "character::skills-grouped"
+	characterFlyableKeyPrefix       = "character::flyable"
+	characterSkillQueueKeyPrefix    = "character::skillqueue"
 )
 
 func (s *Service) CharacterSkillMeta(ctx context.Context, characterID uint64) (*skillz.CharacterSkillMeta, error) {
@@ -149,6 +152,60 @@ func (s *Service) SetCharacterSkills(ctx context.Context, characterID uint64, sk
 
 }
 
+func (s *Service) CharacterGroupedSkillz(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkillGroup, error) {
+
+	key := generateKey(characterSkillsGroupedKeyPrefix, strconv.FormatUint(characterID, 10))
+	results, err := s.redis.SMembers(ctx, key).Result()
+	if err != nil && !errors.Is(err, redis.Nil) {
+		return nil, errors.Wrapf(err, errorFFormat, skillAPI, "CharacterGroupedSkillz", "failed to fetch results from cache")
+	}
+
+	if errors.Is(err, redis.Nil) || len(results) == 0 {
+		return nil, nil
+	}
+
+	groups := make([]*skillz.CharacterSkillGroup, 0, len(results))
+	for _, result := range results {
+		var group = new(skillz.CharacterSkillGroup)
+		err = json.Unmarshal([]byte(result), group)
+		if err != nil {
+			return groups, errors.Wrapf(err, errorFFormat, skillAPI, "CharacterGroupedSkillz", "failed to decode json to structure")
+		}
+
+		groups = append(groups, group)
+	}
+
+	return groups, nil
+
+}
+
+func (s *Service) SetCharacterGroupedSkillz(ctx context.Context, characterID uint64, groups []*skillz.CharacterSkillGroup, expires time.Duration) error {
+
+	members := make([]interface{}, 0, len(groups))
+	for _, group := range groups {
+		data, err := json.Marshal(group)
+		if err != nil {
+			return errors.Wrapf(err, errorFFormat, skillAPI, "SetCharacterGroupedSkillz", "failed to encode struct as json")
+		}
+		members = append(members, string(data))
+	}
+
+	if len(members) == 0 {
+		return nil
+	}
+
+	key := generateKey(characterSkillsGroupedKeyPrefix, strconv.FormatUint(characterID, 10))
+	err := s.redis.SAdd(ctx, key, members...).Err()
+	if err != nil {
+		return errors.Wrapf(err, errorFFormat, skillAPI, "SetCharacterGroupedSkillz", "failed to write cache")
+	}
+
+	err = s.redis.Expire(ctx, key, expires).Err()
+
+	return errors.Wrapf(err, errorFFormat, skillAPI, "SetCharacterGroupedSkillz", "failed to set expiry on set")
+
+}
+
 func (s *Service) CharacterSkillQueue(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkillQueue, error) {
 
 	key := generateKey(characterSkillQueueKeyPrefix, strconv.FormatUint(characterID, 10))
@@ -178,7 +235,7 @@ func (s *Service) CharacterSkillQueue(ctx context.Context, characterID uint64) (
 
 func (s *Service) SetCharacterSkillQueue(ctx context.Context, characterID uint64, positions []*skillz.CharacterSkillQueue, expires time.Duration) error {
 
-	members := make([]string, 0, len(positions))
+	members := make([]interface{}, 0, len(positions))
 	for _, position := range positions {
 		data, err := json.Marshal(position)
 		if err != nil {
@@ -188,8 +245,12 @@ func (s *Service) SetCharacterSkillQueue(ctx context.Context, characterID uint64
 		members = append(members, string(data))
 	}
 
+	if len(members) == 0 {
+		return nil
+	}
+
 	key := generateKey(characterSkillQueueKeyPrefix, strconv.FormatUint(characterID, 10))
-	err := s.redis.SAdd(ctx, key, members).Err()
+	err := s.redis.SAdd(ctx, key, members...).Err()
 	if err != nil {
 		return errors.Wrapf(err, errorFFormat, skillAPI, "SetCharacterSkillQueue", "failed to write cache")
 	}

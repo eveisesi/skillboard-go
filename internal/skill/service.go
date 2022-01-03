@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/eveisesi/skillz"
 	"github.com/eveisesi/skillz/internal/cache"
 	"github.com/eveisesi/skillz/internal/esi"
@@ -92,8 +91,6 @@ func (s *Service) Meta(ctx context.Context, characterID uint64) (*skillz.Charact
 		return nil, errors.Wrap(err, "failed to fetch character skills from data store")
 	}
 
-	spew.Dump(meta)
-
 	return meta, s.cache.SetCharacterSkillMeta(ctx, meta, time.Hour)
 
 }
@@ -157,6 +154,15 @@ func (s *Service) Skillz(ctx context.Context, characterID uint64) ([]*skillz.Cha
 
 func (s *Service) SkillsGrouped(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkillGroup, error) {
 
+	groupedSkillz, err := s.cache.CharacterGroupedSkillz(ctx, characterID)
+	if err != nil && !errors.Is(err, redis.Nil) {
+		return nil, err
+	}
+
+	if len(groupedSkillz) > 0 && err == nil {
+		return groupedSkillz, err
+	}
+
 	skills, err := s.Skillz(ctx, characterID)
 	if err != nil {
 		return nil, err
@@ -172,7 +178,7 @@ func (s *Service) SkillsGrouped(ctx context.Context, characterID uint64) ([]*ski
 		return nil, err
 	}
 
-	groupedSkillz := make([]*skillz.CharacterSkillGroup, 0, len(groups))
+	groupedSkillz = make([]*skillz.CharacterSkillGroup, 0, len(groups))
 
 	for _, group := range groups {
 		group.Types, err = s.universe.TypesByGroup(ctx, group.ID)
@@ -200,6 +206,13 @@ func (s *Service) SkillsGrouped(ctx context.Context, characterID uint64) ([]*ski
 
 		groupedSkillz = append(groupedSkillz, groupedSkill)
 	}
+
+	defer func() {
+		err = s.cache.SetCharacterGroupedSkillz(ctx, characterID, groupedSkillz, time.Hour)
+		if err != nil {
+			s.logger.WithError(err).Error("failed to cache grouped skillz")
+		}
+	}()
 
 	return groupedSkillz, nil
 }
@@ -444,6 +457,7 @@ func (s *Service) processFlyableShips(ctx context.Context, user *skillz.User) er
 			}
 
 			ship.Attributes = dogma
+			ship.Group = group
 			shipData = append(shipData, ship)
 		}
 
@@ -461,6 +475,7 @@ OUTER:
 		flyable := &skillz.CharacterFlyableShip{
 			CharacterID: user.CharacterID,
 			ShipTypeID:  ship.ID,
+			Ship:        ship,
 		}
 
 		for _, nameAttributeID := range skillNameDogmaSlice {

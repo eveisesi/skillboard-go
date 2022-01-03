@@ -30,6 +30,29 @@ func (s *server) handleGetUserByID(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func (s *server) handleGetUserSearch(w http.ResponseWriter, r *http.Request) {
+
+	var ctx = r.Context()
+
+	query := r.URL.Query().Get("q")
+	if query == "" {
+		err := errors.New("query param q containing search term is required")
+		LogEntrySetField(ctx, "error", err)
+		s.writeError(ctx, w, http.StatusBadRequest, err)
+		return
+	}
+
+	users, err := s.user.SearchUsers(ctx, query)
+	if err != nil {
+		LogEntrySetField(ctx, "error", err)
+		s.writeError(ctx, w, http.StatusBadRequest, err)
+		return
+	}
+
+	s.writeResponse(ctx, w, http.StatusOK, users)
+
+}
+
 func (s *server) handleGetUserCharacterByID(w http.ResponseWriter, r *http.Request) {
 
 	var ctx = r.Context()
@@ -73,5 +96,29 @@ func (s *server) handleGetUserCharacterByID(w http.ResponseWriter, r *http.Reque
 	}
 
 	s.writeResponse(ctx, w, http.StatusOK, character)
+
+}
+
+func (s *server) handleGetNewUsersBySP(w http.ResponseWriter, r *http.Request) {
+
+	var ctx = r.Context()
+
+	var days int = 6
+	// daysStr := r.URL.Query().Get("days")
+	// if daysStr == "" {
+	// 	d, err := strconv.Atoi(daysStr)
+	// 	if err == nil {
+	// 		days = d
+	// 	}
+	// }
+
+	users, err := s.user.NewUsersBySP(ctx, days)
+	if err != nil {
+		LogEntrySetField(ctx, "error", err)
+		s.writeError(ctx, w, http.StatusBadRequest, errors.New("unexpected error encountered fetch characters"))
+		return
+	}
+
+	s.writeResponse(ctx, w, http.StatusOK, users)
 
 }

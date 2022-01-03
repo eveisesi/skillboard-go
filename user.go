@@ -17,6 +17,8 @@ type UserRepository interface {
 	UpdateUser(ctx context.Context, user *User) error
 
 	UsersSortedByProcessedAtLimit(ctx context.Context, limit uint64) ([]*User, error)
+
+	NewUsersBySP(ctx context.Context, days int) ([]*User, error)
 }
 
 type User struct {
@@ -43,4 +45,17 @@ func (i *User) ApplyToken(t *oauth2.Token) {
 	i.AccessToken = t.AccessToken
 	i.RefreshToken = t.RefreshToken
 	i.Expires = t.Expiry
+}
+
+type UserSearchResult struct {
+	*User
+	Info *Character `json:"info"`
+}
+
+type UserWithSkillMeta struct {
+	*User
+	Meta   *CharacterSkillMeta    `json:"meta"`
+	Skills []*CharacterSkill      `json:"skills"`
+	Queue  []*CharacterSkillQueue `json:"skillQueue"`
+	Info   *Character             `json:"info"`
 }

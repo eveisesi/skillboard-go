@@ -25,7 +25,8 @@ func (r *queryResolver) FinalizeAuth(ctx context.Context, code string, state str
 }
 
 func (r *queryResolver) SearchUser(ctx context.Context, term string) ([]*skillz.User, error) {
-	return r.user.SearchUsers(ctx, term)
+	// return r.user.SearchUsers(ctx, term)
+	return nil, nil
 }
 
 func (r *queryResolver) User(ctx context.Context, id uint64) (*skillz.User, error) {

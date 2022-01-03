@@ -76,10 +76,10 @@ type CharacterJumpClone struct {
 	JumpCloneID  uint              `db:"jump_clone_id" json:"jump_clone_id"`
 	LocationID   uint64            `db:"location_id" json:"location_id"`
 	LocationType CloneLocationType `db:"location_type" json:"location_type"`
-	ImplantIDs   SliceUint         `db:"implants" json:"implants,omitempty"`
 	CreatedAt    time.Time         `db:"created_at" json:"-"`
 
-	Implants []*Type `json:"implants,omitempty"`
+	ImplantIDs SliceUint `db:"implant_ids" json:"-"`
+	Implants   []*Type   `json:"implants,omitempty"`
 
 	Station   *Station   `json:"station,omitempty"`
 	Structure *Structure `json:"structure,omitempty"`

@@ -21,6 +21,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/lestrrat-go/jwx/jwt"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 type API interface {
@@ -32,15 +33,18 @@ type API interface {
 	RefreshUser(ctx context.Context, user *skillz.User) error
 	UserByCharacterID(ctx context.Context, characterID uint64) (*skillz.User, error)
 	UserByCookie(ctx context.Context, cookie *http.Cookie) (*skillz.User, error)
-	SearchUsers(ctx context.Context, q string) ([]*skillz.User, error)
+	SearchUsers(ctx context.Context, q string) ([]*skillz.UserSearchResult, error)
 	UpdateUser(ctx context.Context, user *skillz.User) error
+
+	NewUsersBySP(ctx context.Context, days int) ([]*skillz.UserWithSkillMeta, error)
 
 	ProcessUpdatableUsers(ctx context.Context) error
 }
 
 type Service struct {
-	redis *redis.Client
-	cache cache.UserAPI
+	redis  *redis.Client
+	logger *logrus.Logger
+	cache  cache.UserAPI
 
 	auth        auth.API
 	character   character.API
@@ -56,43 +60,66 @@ var _ API = new(Service)
 
 func New(
 	redis *redis.Client,
+	logger *logrus.Logger,
 	cache cache.UserAPI,
 	auth auth.API,
 	alliance alliance.API,
 	character character.API,
 	corporation corporation.API,
+	skills skill.API,
 	user skillz.UserRepository,
 ) *Service {
 	return &Service{
 		redis:          redis,
+		logger:         logger,
 		cache:          cache,
 		alliance:       alliance,
 		auth:           auth,
 		character:      character,
 		corporation:    corporation,
+		skills:         skills,
 		UserRepository: user,
 	}
 }
 
-func (s *Service) SearchUsers(ctx context.Context, q string) ([]*skillz.User, error) {
+func (s *Service) SearchUsers(ctx context.Context, q string) ([]*skillz.UserSearchResult, error) {
 
-	users, err := s.cache.SearchUsers(ctx, q)
+	results, err := s.cache.SearchUsers(ctx, q)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(users) > 0 {
-		return users, nil
+	if len(results) > 0 {
+		return results, nil
 	}
 
-	users, err = s.UserRepository.SearchUsers(ctx, q)
+	users, err := s.UserRepository.SearchUsers(ctx, q)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
 
-	err = s.cache.SetSearchUsersResults(ctx, q, users, time.Minute*10)
+	results = make([]*skillz.UserSearchResult, 0, len(users))
+	for _, user := range users {
+		info, err := s.character.Character(ctx, user.CharacterID)
+		if err != nil {
+			s.logger.WithError(err).Error("failed to look up user character")
+			continue
+		}
 
-	return users, errors.Wrap(err, "failed to cache user search results")
+		results = append(results, &skillz.UserSearchResult{
+			User: user,
+			Info: info,
+		})
+	}
+
+	defer func() {
+		err := s.cache.SetSearchUsersResults(ctx, q, results, time.Minute*10)
+		if err != nil {
+			s.logger.WithError(err).Error("failed to cache search results")
+		}
+	}()
+
+	return results, errors.Wrap(err, "failed to cache user search results")
 
 }
 
@@ -204,6 +231,65 @@ func (s *Service) RefreshUser(ctx context.Context, user *skillz.User) error {
 
 }
 
+func (s *Service) NewUsersBySP(ctx context.Context, days int) ([]*skillz.UserWithSkillMeta, error) {
+
+	users, err := s.cache.NewUsersBySP(ctx, days)
+	if err != nil && !errors.Is(err, redis.Nil) {
+		return nil, err
+	}
+
+	if len(users) > 0 {
+		return users, nil
+	}
+
+	userRecords, err := s.UserRepository.NewUsersBySP(ctx, days)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, errors.Wrap(err, "failed to fetch users by sp in last seven days")
+	}
+
+	for _, record := range userRecords {
+
+		meta, err := s.skills.Meta(ctx, record.CharacterID)
+		if err != nil {
+			continue
+		}
+
+		skills, err := s.skills.Skillz(ctx, record.CharacterID)
+		if err != nil {
+			continue
+		}
+
+		queue, err := s.skills.SkillQueue(ctx, record.CharacterID)
+		if err != nil {
+			continue
+		}
+
+		info, err := s.character.Character(ctx, record.CharacterID)
+		if err != nil {
+			continue
+		}
+
+		users = append(users, &skillz.UserWithSkillMeta{
+			User:   record,
+			Meta:   meta,
+			Skills: skills,
+			Queue:  queue,
+			Info:   info,
+		})
+
+	}
+
+	defer func() {
+		err = s.cache.SetNewUsersBySP(ctx, days, users, time.Hour)
+		if err != nil {
+			s.logger.WithError(err).Error("failed to cache users by sp in last seven days")
+		}
+	}()
+
+	return users, nil
+
+}
+
 func (s *Service) UserFromToken(ctx context.Context, token jwt.Token) (*skillz.User, error) {
 
 	var user *skillz.User
@@ -225,6 +311,7 @@ func (s *Service) UserFromToken(ctx context.Context, token jwt.Token) (*skillz.U
 		if err != nil && errors.Is(err, sql.ErrNoRows) {
 			user = &skillz.User{
 				CharacterID: characterID,
+				IsNew:       true,
 			}
 			err = nil
 		}

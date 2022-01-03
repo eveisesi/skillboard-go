@@ -6,10 +6,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/99designs/gqlgen/graphql/handler"
-	"github.com/99designs/gqlgen/graphql/handler/extension"
-	"github.com/99designs/gqlgen/graphql/handler/transport"
-	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/eveisesi/skillz"
 	"github.com/eveisesi/skillz/internal/alliance"
 	"github.com/eveisesi/skillz/internal/auth"
@@ -17,7 +13,6 @@ import (
 	"github.com/eveisesi/skillz/internal/clone"
 	"github.com/eveisesi/skillz/internal/contact"
 	"github.com/eveisesi/skillz/internal/corporation"
-	"github.com/eveisesi/skillz/internal/graphql"
 	"github.com/eveisesi/skillz/internal/skill"
 	"github.com/eveisesi/skillz/internal/user"
 	"github.com/go-chi/chi/v5"
@@ -37,7 +32,6 @@ type server struct {
 	clones      clone.API
 	contacts    contact.API
 	corporation corporation.API
-	graphql     graphql.API
 	skills      skill.API
 	user        user.API
 
@@ -54,7 +48,6 @@ func New(
 	clones clone.API,
 	contacts contact.API,
 	corporation corporation.API,
-	graphql graphql.API,
 	skills skill.API,
 	user user.API,
 ) *server {
@@ -70,7 +63,6 @@ func New(
 		clones:      clones,
 		contacts:    contacts,
 		corporation: corporation,
-		graphql:     graphql,
 		skills:      skills,
 		user:        user,
 	}
@@ -107,6 +99,9 @@ func (s *server) buildRouter() *chi.Mux {
 		w.WriteHeader(http.StatusOK)
 	})
 
+	r.Get("/recent", s.handleGetNewUsersBySP)
+	r.Get("/search", s.handleGetUserSearch)
+
 	r.Group(func(r chi.Router) {
 		r.Use(
 			s.authorization,
@@ -124,16 +119,6 @@ func (s *server) buildRouter() *chi.Mux {
 		r.Get("/user/{userID}/attributes", s.handleGetUserAttributesByID)
 		r.Get("/user/{userID}/flyable", s.handleGetUserFlyableByID)
 		r.Get("/user/{userID}/contacts", s.handleGetUserContactsByID)
-
-		// ##### GraphQL Handler #####
-		handler := handler.New(s.graphql.ExecutableSchema())
-
-		handler.AddTransport(transport.POST{})
-		if s.env != skillz.Production {
-			handler.Use(extension.Introspection{})
-			r.Get("/playground", playground.Handler("GraphQL playground", "/graphql"))
-		}
-		r.Handle("/graphql", handler)
 
 	})
 

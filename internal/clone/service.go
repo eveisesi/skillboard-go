@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/eveisesi/skillz"
 	"github.com/eveisesi/skillz/internal/cache"
 	"github.com/eveisesi/skillz/internal/esi"
@@ -97,10 +98,14 @@ func (s *Service) Clones(ctx context.Context, characterID uint64) (*skillz.Chara
 
 	if homeLocationErr == nil {
 		clones.HomeLocation = homeLocation
-
+	} else {
+		s.logger.WithError(jumpClonesErr).Error("failed to fetch death clone")
 	}
+
 	if jumpClonesErr == nil {
 		clones.JumpClones = jumpClones
+	} else {
+		s.logger.WithError(jumpClonesErr).Error("failed to fetch jump clones")
 	}
 
 	return clones, s.cache.SetCharacterClones(ctx, characterID, clones, time.Hour)
@@ -143,9 +148,22 @@ func (s *Service) JumpClone(ctx context.Context, characterID uint64) ([]*skillz.
 		if err != nil {
 			return nil, err
 		}
+
+		clone.Implants = make([]*skillz.Type, 0, len(clone.ImplantIDs))
+		for _, implantID := range clone.ImplantIDs {
+			implant, err := s.universe.Type(ctx, uint(implantID))
+			if err != nil {
+				return nil, err
+			}
+
+			clone.Implants = append(clone.Implants, implant)
+		}
+
+		clone.ImplantIDs = nil
+
 	}
 
-	return clones, err
+	return clones, nil
 }
 
 func (s *Service) updateClones(ctx context.Context, user *skillz.User) error {
@@ -172,14 +190,40 @@ func (s *Service) updateClones(ctx context.Context, user *skillz.User) error {
 	}
 
 	if updatedClones != nil {
-		err = s.insertCharacterClones(ctx, updatedClones)
+		clones, err := s.insertCharacterClones(ctx, user.CharacterID, updatedClones)
 		if err != nil {
 			return errors.Wrap(err, "failed to process character clones")
 		}
 
-		err = s.cache.SetCharacterClones(ctx, user.CharacterID, updatedClones, time.Hour)
+		err = s.cache.SetCharacterClones(ctx, user.CharacterID, clones, time.Hour)
 		if err != nil {
 			return errors.Wrap(err, "failed to cache character clones")
+		}
+
+		homeClone := clones.HomeLocation
+		switch homeClone.LocationType {
+		case skillz.CloneLocationTypeStation:
+			_, err = s.universe.Station(ctx, uint(homeClone.LocationID))
+		case skillz.CloneLocationTypeStructure:
+			_, err = s.universe.Structure(ctx, homeClone.LocationID)
+		}
+		if err != nil {
+			return errors.Wrap(err, "failed to resolve home location id")
+		}
+
+		jumpClones := clones.JumpClones
+		for _, clone := range jumpClones {
+			switch clone.LocationType {
+			case skillz.CloneLocationTypeStation:
+				_, err = s.universe.Station(ctx, uint(clone.LocationID))
+			case skillz.CloneLocationTypeStructure:
+				_, err = s.universe.Structure(ctx, clone.LocationID)
+			}
+
+			if err != nil {
+				return errors.Wrap(err, "failed to resolve clone location id")
+			}
+
 		}
 
 	}
@@ -188,31 +232,63 @@ func (s *Service) updateClones(ctx context.Context, user *skillz.User) error {
 
 }
 
-func (s *Service) insertCharacterClones(ctx context.Context, clones *skillz.CharacterCloneMeta) error {
+func (s *Service) insertCharacterClones(ctx context.Context, characterID uint64, esiClones *esi.CharacterClonesOK) (*skillz.CharacterCloneMeta, error) {
+
+	clones := &skillz.CharacterCloneMeta{
+		CharacterID:           characterID,
+		LastCloneJumpDate:     esiClones.LastCloneJumpDate,
+		LastStationChangeDate: esiClones.LastStationChangeDate,
+		HomeLocation: &skillz.CharacterDeathClone{
+			CharacterID:  characterID,
+			LocationID:   esiClones.HomeLocation.LocationID,
+			LocationType: skillz.CloneLocationType(esiClones.HomeLocation.LocationType),
+		},
+		JumpClones: make([]*skillz.CharacterJumpClone, 0, len(esiClones.JumpClones)),
+	}
+	for _, esiJC := range esiClones.JumpClones {
+		jc := &skillz.CharacterJumpClone{
+			CharacterID:  characterID,
+			JumpCloneID:  esiJC.JumpCloneID,
+			LocationID:   esiJC.LocationID,
+			LocationType: skillz.CloneLocationType(esiJC.LocationType),
+			Implants:     make([]*skillz.Type, 0, len(esiJC.Implants)),
+		}
+
+		for _, implantID := range esiJC.Implants {
+			_, err := s.universe.Type(ctx, implantID)
+			if err != nil {
+				s.logger.WithError(err).Error("failed to fetch implant type")
+			}
+			jc.ImplantIDs = append(jc.ImplantIDs, uint64(implantID))
+		}
+		clones.JumpClones = append(clones.JumpClones, jc)
+	}
+
+	spew.Dump(clones)
 
 	err := s.clones.CreateCharacterCloneMeta(ctx, clones)
 	if err != nil {
-		return err
+		return clones, err
 	}
 
 	err = s.clones.CreateCharacterDeathClone(ctx, clones.HomeLocation)
 	if err != nil {
-		return err
+		return clones, err
 	}
 
 	err = s.clones.DeleteCharacterJumpClones(ctx, clones.CharacterID)
 	if err != nil {
-		return err
+		return clones, err
 	}
 
 	if len(clones.JumpClones) > 0 {
 		err = s.clones.CreateCharacterJumpClones(ctx, clones.JumpClones)
 		if err != nil {
-			return err
+			return clones, err
 		}
 	}
 
-	return nil
+	return clones, nil
 
 }
 
@@ -243,7 +319,14 @@ func (s *Service) Implants(ctx context.Context, characterID uint64) ([]*skillz.C
 
 	}
 
-	return implants, s.cache.SetCharacterImplants(ctx, characterID, implants, time.Hour)
+	defer func() {
+		err = s.cache.SetCharacterImplants(ctx, characterID, implants, time.Hour)
+		if err != nil {
+			s.logger.WithError(err).Error("failed to cache character implants")
+		}
+	}()
+
+	return implants, nil
 
 }
 
@@ -277,6 +360,15 @@ func (s *Service) updateImplants(ctx context.Context, user *skillz.User) error {
 			err = s.clones.CreateCharacterImplants(ctx, implants)
 			if err != nil {
 				return errors.Wrap(err, "failed to update character implants")
+			}
+
+			for _, implant := range implants {
+				t, err := s.universe.Type(ctx, implant.ImplantID)
+				if err != nil {
+					s.logger.WithError(err).Error("failed to fetch implantType")
+				}
+
+				implant.Type = t
 			}
 
 			err = s.cache.SetCharacterImplants(ctx, user.CharacterID, implants, time.Hour)

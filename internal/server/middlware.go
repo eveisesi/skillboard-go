@@ -124,11 +124,11 @@ func (s *server) authorization(next http.Handler) http.Handler {
 func newCookie() *http.Cookie {
 
 	return &http.Cookie{
-		Name:     CookieID,
-		HttpOnly: true,
-		Domain:   "skillboard",
-		MaxAge:   50000,
-		Path:     "/",
+		Name: CookieID,
+		// HttpOnly: true,
+		Domain: "skillboard",
+		MaxAge: 50000,
+		Path:   "/",
 	}
 
 }

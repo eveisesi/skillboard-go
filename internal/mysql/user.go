@@ -183,3 +183,29 @@ func (r *userRepository) UsersSortedByProcessedAtLimit(ctx context.Context, limi
 	return users, err
 
 }
+
+var skillMetaInnerJoin = fmt.Sprintf("%s csm on csm.character_id = users.character_id", TableCharacterSkillMeta)
+
+func (r *userRepository) NewUsersBySP(ctx context.Context, days int) ([]*skillz.User, error) {
+
+	columns := make([]string, 0, len(r.users.columns))
+	for _, c := range r.users.columns {
+		columns = append(columns, fmt.Sprintf("users.%s", c))
+	}
+
+	query, args, err := sq.Select(columns...).
+		From(r.users.table).
+		InnerJoin(skillMetaInnerJoin).
+		Where(fmt.Sprintf("users.%s >= DATE(NOW() - INTERVAL %d DAY)", ColumnCreatedAt, days)).
+		OrderBy(fmt.Sprintf("users.%s DESC", ColumnCreatedAt)).
+		Limit(50).
+		ToSql()
+	if err != nil {
+		return nil, errors.Wrapf(err, errorFFormat, userRepositoryIdentifier, "CreatedBySPInLastSevenDays", "failed to generate sql")
+	}
+
+	var users = make([]*skillz.User, 0)
+	err = r.db.SelectContext(ctx, &users, query, args...)
+	return users, err
+
+}

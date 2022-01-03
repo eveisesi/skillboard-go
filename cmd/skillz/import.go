@@ -68,9 +68,11 @@ func importTypes(c *cli.Context) error {
 				entry.WithError(err).Fatal("failed to create type in data store")
 			}
 
-			err = universeRepo.CreateTypeDogmaAttributes(ctx, item.Attributes)
-			if err != nil {
-				entry.WithError(err).Fatal("failed to create type attributes in data store")
+			if len(item.Attributes) > 0 {
+				err = universeRepo.CreateTypeDogmaAttributes(ctx, item.Attributes)
+				if err != nil {
+					entry.WithError(err).Fatal("failed to create type attributes in data store")
+				}
 			}
 
 			logger.Info("successfully processed type")

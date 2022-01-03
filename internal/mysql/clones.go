@@ -25,7 +25,7 @@ const (
 	JumpJumpCloneID  string = "jump_clone_id"
 	JumpLocationID   string = "location_id"
 	JumpLocationType string = "location_type"
-	JumpImplants     string = "implants"
+	JumpImplantIDs   string = "implant_ids"
 
 	ImplantsImplantID string = "implant_id"
 )
@@ -50,7 +50,7 @@ func NewCloneRepository(db QueryExecContext) skillz.CloneRepository {
 		jump: tableConf{
 			table: TableCharacterJumpClones,
 			columns: []string{
-				JumpJumpCloneID, JumpLocationID, JumpLocationType, JumpImplants,
+				JumpJumpCloneID, JumpLocationID, JumpLocationType, JumpImplantIDs,
 				ColumnCharacterID, ColumnCreatedAt,
 			},
 		},

@@ -48,13 +48,12 @@ func processorCommand(c *cli.Context) error {
 		cfg.Eve.JWKSURI,
 		cfg.Auth.TokenExpiry,
 	)
-
-	user := user.New(redisClient, cache, auth, alliance, character, corporation, userRepo)
-	contact := contact.New(logger, cache, etag, esi, character, corporation, alliance, contactRepo)
-
 	universe := universe.New(cache, esi, universeRepo)
 	clone := clone.New(logger, cache, etag, esi, universe, cloneRepo)
 	skills := skill.New(logger, cache, esi, universe, skillsRepo)
+	contact := contact.New(logger, cache, etag, esi, character, corporation, alliance, contactRepo)
+
+	user := user.New(redisClient, logger, cache, auth, alliance, character, corporation, skills, userRepo)
 
 	return processor.New(logger, redisClient, user, skillz.ScopeProcessors{
 		clone,
