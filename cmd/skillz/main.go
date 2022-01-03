@@ -55,10 +55,6 @@ func init() {
 			Description: "Run an map importer",
 			Action:      importMap,
 		},
-		{
-			Name:   "test",
-			Action: testCommand,
-		},
 	}
 
 	buildConfig()

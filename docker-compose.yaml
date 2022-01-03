@@ -1,11 +1,20 @@
 version: "3.7"
 
 services:
-    # app:
-    #     image: ghcr.io/eveisesi/skillboard:latest
-    #     restart: unless-stopped
-    #     container_name: skillboard-app
-    #     env_file: .config/.env
+    app:
+        image: ghcr.io/eveisesi/skillboard:v0.0.1
+        restart: unless-stopped
+        container_name: skillboard-app
+        environment:
+            - "USER_AGENT=Skillz Development || David Davaham Tweetfleet: @DoubleD"
+            - REDIS_HOST=redis:54410
+            - MYSQL_HOST=mysql:54420
+            - MYSQL_USER=skillz
+            - MYSQL_DB=skillz
+            - LOG_LEVEL=info
+            - EVE_CLIENT_ID=034eb07a3ce84a9b8d30bd2a9392edea
+            - EVE_JWKS_URI=https://login.eveonline.com/oauth/jwks
+            
     redis:
         image: redis:6.2.5
         restart: unless-stopped
