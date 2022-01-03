@@ -8,13 +8,19 @@ services:
         environment:
             - "USER_AGENT=Skillz Development || David Davaham Tweetfleet: @DoubleD"
             - REDIS_HOST=redis:54410
+            - REDIS_PASS
             - MYSQL_HOST=mysql:54420
-            - MYSQL_USER=skillz
             - MYSQL_DB=skillz
+            - MYSQL_USER=skillz
+            - MYSQL_PASSWORD
             - LOG_LEVEL=info
-            - EVE_CLIENT_ID=034eb07a3ce84a9b8d30bd2a9392edea
             - EVE_JWKS_URI=https://login.eveonline.com/oauth/jwks
-            
+            - EVE_CLIENT_ID
+            - EVE_CLIENT_SECRET
+            - SERVER_PORT
+            - AUTH_KEY
+            - AUTH_EXPIRY
+            - ENVIRONMENT
     redis:
         image: redis:6.2.5
         restart: unless-stopped
