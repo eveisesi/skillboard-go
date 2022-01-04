@@ -7,6 +7,5 @@ that'll be controlled by a combination of environment variables and redis querie
 
 ### Setup
 
-TBD
 
 <!-- https://www.scottbrady91.com/openssl/creating-rsa-keys-using-openssl -->
