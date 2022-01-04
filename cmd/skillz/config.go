@@ -14,7 +14,7 @@ type config struct {
 		Host string `envconfig:"MYSQL_HOST" required:"true"`
 		User string `envconfig:"MYSQL_USER" required:"true"`
 		Pass string `envconfig:"MYSQL_PASSWORD" required:"true"`
-		DB   string `envconfig:"MYSQL_DB" required:"true"`
+		DB   string `envconfig:"MYSQL_DATABASE" required:"true"`
 	}
 
 	Redis struct {

@@ -6,15 +6,15 @@ services:
         restart: unless-stopped
         container_name: skillboard-app
         environment:
-            - "USER_AGENT=Skillz Development || David Davaham Tweetfleet: @DoubleD"
-            - REDIS_HOST=redis:6379
+            - USER_AGENT
+            - REDIS_HOST
             - REDIS_PASS
-            - MYSQL_HOST=mysql
-            - MYSQL_DB=skillz
-            - MYSQL_USER=skillz
+            - MYSQL_HOST
+            - MYSQL_DB
+            - MYSQL_USER
             - MYSQL_PASSWORD
-            - LOG_LEVEL=info
-            - EVE_JWKS_URI=https://login.eveonline.com/oauth/jwks
+            - LOG_LEVEL
+            - EVE_JWKS_URI
             - EVE_CLIENT_ID
             - EVE_CLIENT_SECRET
             - SERVER_PORT
@@ -27,15 +27,15 @@ services:
         restart: unless-stopped
         container_name: skillboard-processor
         environment:
-            - "USER_AGENT=Skillz Development || David Davaham Tweetfleet: @DoubleD"
-            - REDIS_HOST=redis:6379
+            - USER_AGENT
+            - REDIS_HOST
             - REDIS_PASS
-            - MYSQL_HOST=mysql
-            - MYSQL_DB=skillz
-            - MYSQL_USER=skillz
+            - MYSQL_HOST
+            - MYSQL_DB
+            - MYSQL_USER
             - MYSQL_PASSWORD
-            - LOG_LEVEL=info
-            - EVE_JWKS_URI=https://login.eveonline.com/oauth/jwks
+            - LOG_LEVEL
+            - EVE_JWKS_URI
             - EVE_CLIENT_ID
             - EVE_CLIENT_SECRET
             - SERVER_PORT
@@ -48,15 +48,15 @@ services:
         restart: unless-stopped
         container_name: skillboard-cron
         environment:
-            - "USER_AGENT=Skillz Development || David Davaham Tweetfleet: @DoubleD"
-            - REDIS_HOST=redis:6379
+            - USER_AGENT
+            - REDIS_HOST
             - REDIS_PASS
-            - MYSQL_HOST=mysql
-            - MYSQL_DB=skillz
-            - MYSQL_USER=skillz
+            - MYSQL_HOST
+            - MYSQL_DATABASE
+            - MYSQL_USER
             - MYSQL_PASSWORD
-            - LOG_LEVEL=info
-            - EVE_JWKS_URI=https://login.eveonline.com/oauth/jwks
+            - LOG_LEVEL
+            - EVE_JWKS_URI
             - EVE_CLIENT_ID
             - EVE_CLIENT_SECRET
             - SERVER_PORT
@@ -83,8 +83,8 @@ services:
         restart: unless-stopped
         container_name: skillboard-mysql
         environment:
-            - MYSQL_DATABASE=skillz
-            - MYSQL_USER=skillz
+            - MYSQL_DATABASE
+            - MYSQL_USER
             - MYSQL_PASSWORD
             - MYSQL_ROOT_PASSWORD
         ports:
