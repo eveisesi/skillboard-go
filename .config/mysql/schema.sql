@@ -22,13 +22,6 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */
 ;
 
--- Dumping database structure for skillz
-CREATE DATABASE IF NOT EXISTS `skillz`
-/*!40100 DEFAULT CHARACTER SET latin1 */
-;
-
-USE `skillz`;
-
 -- Dumping structure for table skillz.alliances
 CREATE TABLE IF NOT EXISTS `alliances` (
     `id` int(10) UNSIGNED NOT NULL,
@@ -121,6 +114,18 @@ CREATE TABLE IF NOT EXISTS `character_clone_meta` (
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- Data exporting was unselected.
+-- Dumping structure for table skillz.character_contacts
+CREATE TABLE IF NOT EXISTS `character_contacts` (
+    `character_id` bigint(20) UNSIGNED NOT NULL,
+    `contact_id` int(10) UNSIGNED NOT NULL,
+    `contact_type` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+    `standing` double DEFAULT '0',
+    `created_at` datetime NOT NULL,
+    KEY `character_contacts_character_id` (`character_id`),
+    CONSTRAINT `character_contacts_character_id` FOREIGN KEY (`character_id`) REFERENCES `users` (`character_id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
+-- Data exporting was unselected.
 -- Dumping structure for table skillz.character_corporation_history
 CREATE TABLE IF NOT EXISTS `character_corporation_history` (
     `id` bigint(20) UNSIGNED NOT NULL,
@@ -131,6 +136,19 @@ CREATE TABLE IF NOT EXISTS `character_corporation_history` (
     `created_at` datetime NOT NULL,
     PRIMARY KEY (`id`, `record_id`) USING BTREE,
     CONSTRAINT `character_corporation_history_id_foreign` FOREIGN KEY (`id`) REFERENCES `characters` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
+-- Data exporting was unselected.
+-- Dumping structure for table skillz.character_flyable_ships
+CREATE TABLE IF NOT EXISTS `character_flyable_ships` (
+    `character_id` bigint(20) UNSIGNED NOT NULL,
+    `ship_type_id` int(10) UNSIGNED NOT NULL,
+    `flyable` tinyint(1) UNSIGNED NOT NULL DEFAULT '0',
+    `created_at` datetime NOT NULL,
+    PRIMARY KEY (`character_id`, `ship_type_id`),
+    KEY `character_flyable_ships_ship_type_id` (`ship_type_id`),
+    CONSTRAINT `character_flyable_ships_character_id` FOREIGN KEY (`character_id`) REFERENCES `users` (`character_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `character_flyable_ships_ship_type_id` FOREIGN KEY (`ship_type_id`) REFERENCES `types` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- Data exporting was unselected.
@@ -163,7 +181,7 @@ CREATE TABLE IF NOT EXISTS `character_jump_clones` (
     `jump_clone_id` int(10) UNSIGNED NOT NULL,
     `location_id` bigint(20) UNSIGNED NOT NULL,
     `location_type` enum('station', 'structure') COLLATE utf8mb4_unicode_ci NOT NULL,
-    `implants` json NOT NULL,
+    `implant_ids` json NOT NULL,
     `created_at` datetime NOT NULL,
     PRIMARY KEY (`character_id`, `jump_clone_id`) USING BTREE,
     CONSTRAINT `character_jump_clones_character_id_foreign` FOREIGN KEY (`character_id`) REFERENCES `users` (`character_id`) ON DELETE CASCADE ON UPDATE CASCADE
@@ -388,9 +406,8 @@ CREATE TABLE IF NOT EXISTS `type_attributes` (
     `attribute_id` int(10) UNSIGNED NOT NULL,
     `value` float NOT NULL,
     `created_at` datetime NOT NULL,
-    `updated_at` datetime NOT NULL,
     PRIMARY KEY (`type_id`, `attribute_id`) USING BTREE,
-    CONSTRAINT `types_attributes_type_id_types_id_foreign` FOREIGN KEY (`type_id`) REFERENCES `types` (`id`)
+    CONSTRAINT `types_attributes_type_id_types_id_foreign` FOREIGN KEY (`type_id`) REFERENCES `types` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- Data exporting was unselected.
@@ -427,13 +444,27 @@ CREATE TABLE IF NOT EXISTS `users` (
     `expires` datetime NOT NULL,
     `owner_hash` varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL,
     `scopes` json NOT NULL,
-    `is_new` TINYINT(1) NOT NULL DEFAULT '1',
+    `is_new` tinyint(1) NOT NULL DEFAULT '1',
     `disabled` tinyint(3) UNSIGNED NOT NULL DEFAULT '0',
     `disabled_reason` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
     `disabled_timestamp` datetime DEFAULT NULL,
     `last_login` datetime NOT NULL,
+    `last_processed` datetime DEFAULT NULL,
     `created_at` datetime NOT NULL,
     `updated_at` datetime NOT NULL,
     PRIMARY KEY (`id`) USING BTREE,
     UNIQUE KEY `character_id` (`character_id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
+-- Data exporting was unselected.
+/*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */
+;
+
+/*!40014 SET FOREIGN_KEY_CHECKS=IFNULL(@OLD_FOREIGN_KEY_CHECKS, 1) */
+;
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */
+;
+
+/*!40111 SET SQL_NOTES=IFNULL(@OLD_SQL_NOTES, 1) */
+;
