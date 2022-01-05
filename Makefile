@@ -1,28 +1,28 @@
 SHELL := /bin/bash
 
 deps:
-	aws-vault exec phoenix -- chamber exec phoenix/development -- docker compose up -d redis mysql
+	aws-vault exec phoenix -- chamber exec skillboard/development -- docker compose up -d redis mysql
 
 processor:
 	go mod tidy
-	aws-vault exec phoenix -- chamber exec phoenix/development -- go run ./cmd/skillz/*.go processor
+	aws-vault exec phoenix -- chamber exec skillboard/development -- go run ./cmd/skillz/*.go processor
 
 server:
 	go mod tidy
-	aws-vault exec phoenix -- chamber exec phoenix/development -- go run ./cmd/skillz/*.go server
+	aws-vault exec phoenix -- chamber exec skillboard/development -- go run ./cmd/skillz/*.go server
 
 test:
 	go mod tidy
-	aws-vault exec phoenix -- chamber exec phoenix/development -- go run ./cmd/skillz/*.go test
+	aws-vault exec phoenix -- chamber exec skillboard/development -- go run ./cmd/skillz/*.go test
 
 dup:
-	aws-vault exec skillboard -- chamber exec phoenix/production -- docker compose up -d
+	aws-vault exec skillboard -- chamber exec skillboard/production -- docker compose up -d
 
 ddown:
-	aws-vault exec skillboard -- chamber exec phoenix/production -- docker compose down
+	aws-vault exec skillboard -- chamber exec skillboard/production -- docker compose down
 
 ddownv:
-	aws-vault exec skillboard -- chamber exec phoenix/production -- docker compose down -v
+	aws-vault exec skillboard -- chamber exec skillboard/production -- docker compose down -v
 
 dlogsf:
-	aws-vault exec skillboard -- chamber exec phoenix/production -- docker compose logs -f
+	aws-vault exec skillboard -- chamber exec skillboard/production -- docker compose logs -f
