@@ -1,10 +1,10 @@
 version: "3.7"
 
 services:
-    app:
+    server:
         image: ghcr.io/eveisesi/skillboard/skillboard-api:0.0.2
         restart: unless-stopped
-        container_name: skillboard-app
+        container_name: skillboard-server
         environment:
             - USER_AGENT
             - REDIS_HOST
