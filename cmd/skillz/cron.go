@@ -51,7 +51,7 @@ func cronCommand(_ *cli.Context) error {
 
 	cron := cron.New()
 
-	_, err := cron.AddFunc("@every 3h", func() {
+	entryID, err := cron.AddFunc("@every 3h", func() {
 
 		var ctx = context.Background()
 
@@ -65,9 +65,11 @@ func cronCommand(_ *cli.Context) error {
 		return errors.Wrap(err, "failed to add user update job to cron scheduler")
 	}
 
+	logger.WithField("entryID", entryID).Info("successfully address cron job to scheduler")
+
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
-	cron.Run()
+	cron.Start()
 	logger.Info("cron running....")
 	<-sc
 	logger.Info("stopping cron....")
