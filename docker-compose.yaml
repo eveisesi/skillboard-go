@@ -10,7 +10,7 @@ services:
             - REDIS_HOST
             - REDIS_PASS
             - MYSQL_HOST
-            - MYSQL_DB
+            - MYSQL_DATABASE
             - MYSQL_USER
             - MYSQL_PASSWORD
             - LOG_LEVEL
@@ -31,7 +31,7 @@ services:
             - REDIS_HOST
             - REDIS_PASS
             - MYSQL_HOST
-            - MYSQL_DB
+            - MYSQL_DATABASE
             - MYSQL_USER
             - MYSQL_PASSWORD
             - LOG_LEVEL
