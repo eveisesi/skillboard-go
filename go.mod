@@ -3,7 +3,6 @@ module github.com/eveisesi/skillz
 go 1.17
 
 require (
-	github.com/99designs/gqlgen v0.14.0
 	github.com/Masterminds/squirrel v1.5.1
 	github.com/davecgh/go-spew v1.1.1
 	github.com/go-chi/chi/v5 v5.0.5
@@ -19,7 +18,6 @@ require (
 	github.com/robfig/cron/v3 v3.0.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/urfave/cli/v2 v2.3.0
-	github.com/vektah/gqlparser/v2 v2.2.0
 	github.com/volatiletech/null v8.0.0+incompatible
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
@@ -27,7 +25,6 @@ require (
 )
 
 require (
-	github.com/agnivade/levenshtein v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.0-20210816181553-5444fa50b93d // indirect

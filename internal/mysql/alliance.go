@@ -22,7 +22,6 @@ const (
 	AllianceCreatorID             string = "creator_id"
 	AllianceCreatorCorporationID  string = "creator_corporation_id"
 	AllianceExecutorCorporationID string = "executor_corporation_id"
-	AllianceFactionID             string = "faction_id"
 	AllianceIsClosed              string = "is_closed"
 )
 
@@ -34,7 +33,7 @@ func NewAllianceRepository(db QueryExecContext) skillz.AllianceRepository {
 			columns: []string{
 				AllianceID, AllianceName, AllianceTicker,
 				AllianceDateFounded, AllianceCreatorID, AllianceCreatorCorporationID,
-				AllianceExecutorCorporationID, AllianceFactionID, AllianceIsClosed,
+				AllianceExecutorCorporationID, AllianceIsClosed,
 				ColumnCreatedAt, ColumnUpdatedAt,
 			},
 		},
@@ -72,7 +71,6 @@ func (r *allianceRepository) CreateAlliance(ctx context.Context, alliance *skill
 		AllianceCreatorID:             alliance.CreatorID,
 		AllianceCreatorCorporationID:  alliance.CreatorCorporationID,
 		AllianceExecutorCorporationID: alliance.ExecutorCorporationID,
-		AllianceFactionID:             alliance.FactionID,
 		AllianceIsClosed:              alliance.IsClosed,
 		ColumnCreatedAt:               alliance.CreatedAt,
 		ColumnUpdatedAt:               alliance.UpdatedAt,
@@ -96,7 +94,6 @@ func (r *allianceRepository) UpdateAlliance(ctx context.Context, alliance *skill
 		AllianceCreatorID:             alliance.CreatorID,
 		AllianceCreatorCorporationID:  alliance.CreatorCorporationID,
 		AllianceExecutorCorporationID: alliance.ExecutorCorporationID,
-		AllianceFactionID:             alliance.FactionID,
 		AllianceIsClosed:              alliance.IsClosed,
 		ColumnUpdatedAt:               alliance.UpdatedAt,
 	}).Where(sq.Eq{AllianceID: alliance.ID}).ToSql()

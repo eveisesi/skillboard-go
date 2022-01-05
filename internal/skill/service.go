@@ -403,6 +403,15 @@ func (s *Service) updateSkillQueue(ctx context.Context, user *skillz.User) error
 				return errors.Wrap(err, "failed to create character skill queue")
 			}
 
+			for _, position := range updatedQueue {
+				t, err := s.universe.Type(ctx, position.SkillID)
+				if err != nil {
+					s.logger.WithError(err).Error("failed to fetch type for skill queue position")
+				}
+
+				position.Type = t
+			}
+
 			err = s.cache.SetCharacterSkillQueue(ctx, user.CharacterID, updatedQueue, time.Hour)
 			if err != nil {
 				return errors.Wrap(err, "failed to create character skill queue")
