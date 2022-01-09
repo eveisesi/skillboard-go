@@ -87,7 +87,7 @@ func buildConfig() {
 
 	cfg.Eve.CallbackURI = callbackURI
 
-	jwksURI, err := url.Parse(cfg.Eve.CallbackURIStr)
+	jwksURI, err := url.Parse(cfg.Eve.JWKSURIStr)
 	if err != nil {
 		panic(errors.Wrap(err, "failed to parse EVE_JWKS_URI as a valid URI"))
 	}
