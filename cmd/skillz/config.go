@@ -92,7 +92,7 @@ func buildConfig() {
 		panic(errors.Wrap(err, "failed to parse EVE_JWKS_URI as a valid URI"))
 	}
 
-	cfg.Eve.CallbackURI = jwksURI
+	cfg.Eve.JWKSURI = jwksURI
 
 	cookieURI, err := url.Parse(cfg.Auth.CookieURIStr)
 	if err != nil {
