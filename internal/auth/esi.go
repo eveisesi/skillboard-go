@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -117,9 +118,9 @@ func (s *Service) ParseAndVerifyESIToken(ctx context.Context, t string) (jwt.Tok
 
 }
 
-func (s *Service) initializeESIJWKSet(keyEndpoint string) error {
+func (s *Service) initializeESIJWKSet(keyEndpoint *url.URL) error {
 
-	res, err := s.client.Get(keyEndpoint)
+	res, err := s.client.Get(keyEndpoint.String())
 	if err != nil {
 		return fmt.Errorf("unable to retrieve jwks from sso: %w", err)
 	}

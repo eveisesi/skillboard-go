@@ -107,6 +107,7 @@ func (s *server) buildRouter() *chi.Mux {
 			s.authorization,
 		)
 		r.Get("/auth", s.handleGetAuth)
+		r.Get("/auth/logout", s.handleGetAuthLogout)
 
 		r.Get("/user/{userID}", s.handleGetUserByID)
 		r.Get("/user/{userID}/character", s.handleGetUserCharacterByID)

@@ -38,7 +38,8 @@ func cronCommand(_ *cli.Context) error {
 		oauth2Config(),
 		keyConfig(),
 		cfg.Eve.JWKSURI,
-		cfg.Auth.TokenExpiry,
+		cfg.Auth.CookieURI,
+		cfg.Auth.CookieExpiry,
 	)
 	etag := etag.New(cache, etagRepo)
 	esi := esi.New(httpClient(), redisClient, logger, etag)

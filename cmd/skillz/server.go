@@ -54,7 +54,8 @@ func serverCommand(_ *cli.Context) error {
 		oauth2Config(),
 		keyConfig(),
 		cfg.Eve.JWKSURI,
-		cfg.Auth.TokenExpiry,
+		cfg.Auth.CookieURI,
+		cfg.Auth.CookieExpiry,
 	)
 	character := character.New(cache, esi, etag, characterRepo)
 	corporation := corporation.New(cache, esi, etag, corporationRepo)

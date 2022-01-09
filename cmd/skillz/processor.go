@@ -46,7 +46,8 @@ func processorCommand(c *cli.Context) error {
 		oauth2Config(),
 		keyConfig(),
 		cfg.Eve.JWKSURI,
-		cfg.Auth.TokenExpiry,
+		cfg.Auth.CookieURI,
+		cfg.Auth.CookieExpiry,
 	)
 	universe := universe.New(cache, esi, universeRepo)
 	clone := clone.New(logger, cache, etag, esi, universe, cloneRepo)

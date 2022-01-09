@@ -1,12 +1,13 @@
 package main
 
 import (
-	"fmt"
+	"net/url"
 	"os"
 	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
+	"github.com/pkg/errors"
 )
 
 type config struct {
@@ -27,16 +28,20 @@ type config struct {
 	}
 
 	Eve struct {
-		ClientID     string `envconfig:"EVE_CLIENT_ID" required:"true"`
-		ClientSecret string `envconfig:"EVE_CLIENT_SECRET" required:"true"`
-		CallbackURI  string `envconfig:"EVE_CALLBACK_URI" required:"true"`
-		JWKSURI      string `envconfig:"EVE_JWKS_URI" required:"true"`
+		ClientID       string `envconfig:"EVE_CLIENT_ID" required:"true"`
+		ClientSecret   string `envconfig:"EVE_CLIENT_SECRET" required:"true"`
+		CallbackURIStr string `envconfig:"EVE_CALLBACK_URI" required:"true"`
+		CallbackURI    *url.URL
+		JWKSURIStr     string `envconfig:"EVE_JWKS_URI" required:"true"`
+		JWKSURI        *url.URL
 	}
 
 	Auth struct {
-		PrivateKey     []byte `envconfig:"AUTH_KEY"`
-		TokenExpiryStr string `envconfig:"AUTH_EXPIRY" required:"true"`
-		TokenExpiry    time.Duration
+		PrivateKey      []byte `envconfig:"AUTH_KEY"`
+		CookieExpiryStr string `envconfig:"AUTH_EXPIRY" required:"true"`
+		CookieExpiry    time.Duration
+		CookieURIStr    string `envconfig:"AUTH_COOKIE_URI" required:"true"`
+		CookieURI       *url.URL
 	}
 
 	Server struct {
@@ -54,27 +59,46 @@ func buildConfig() {
 	cfg = new(config)
 	err := envconfig.Process("", cfg)
 	if err != nil {
-		panic(fmt.Sprintf("failed to config env: %s", err))
+		panic(errors.Wrap(err, "failed to config env"))
 	}
 
 	if len(cfg.Auth.PrivateKey) == 0 {
 		if cfg.Environment == "production" {
-			panic("failed to config env: AUTH_KEY is required but has a length of 0")
+			panic(errors.New("failed to config env: AUTH_KEY is required but has a length of 0"))
 		}
 
 		cfg.Auth.PrivateKey, err = os.ReadFile("../../.config/.key")
 		if err != nil {
-			err = fmt.Errorf("failed to config env: AUTH_KEY is required and an error was encountered reading key file: %w", err)
-			fmt.Println(err)
-			panic(err)
+			panic(errors.Wrap(err, "failed to config env: AUTH_KEY is required and an error was encountered reading key file"))
 		}
 	}
 
-	dur, err := time.ParseDuration(cfg.Auth.TokenExpiryStr)
+	dur, err := time.ParseDuration(cfg.Auth.CookieExpiryStr)
 	if err != nil {
-		panic(fmt.Errorf("failed to parse AUTH_EXPIRY: %w", err))
+		panic(errors.Wrap(err, "failed to parse AUTH_EXPIRY"))
 	}
 
-	cfg.Auth.TokenExpiry = dur
+	cfg.Auth.CookieExpiry = dur
+
+	callbackURI, err := url.Parse(cfg.Eve.CallbackURIStr)
+	if err != nil {
+		panic(errors.Wrap(err, "failed to parse EVE_CALLBACK_URI as a valid URI"))
+	}
+
+	cfg.Eve.CallbackURI = callbackURI
+
+	jwksURI, err := url.Parse(cfg.Eve.CallbackURIStr)
+	if err != nil {
+		panic(errors.Wrap(err, "failed to parse EVE_JWKS_URI as a valid URI"))
+	}
+
+	cfg.Eve.CallbackURI = jwksURI
+
+	cookieURI, err := url.Parse(cfg.Auth.CookieURIStr)
+	if err != nil {
+		panic(errors.Wrap(err, "failed to parse COOKIE_URI as a valid URI"))
+	}
+
+	cfg.Auth.CookieURI = cookieURI
 
 }

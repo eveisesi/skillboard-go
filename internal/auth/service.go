@@ -4,6 +4,7 @@ import (
 	"crypto/rsa"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/eveisesi/skillz/internal/cache"
@@ -22,8 +23,9 @@ type esiAuth struct {
 }
 
 type userAuth struct {
-	rsaKey      *rsa.PrivateKey
-	tokenExpiry time.Duration
+	rsaKey       *rsa.PrivateKey
+	cookieExpiry time.Duration
+	cookieDomain *url.URL
 }
 
 type Service struct {
@@ -34,10 +36,13 @@ type Service struct {
 }
 
 func New(
-	client *http.Client, cache cache.AuthAPI,
-	esiOAuth *oauth2.Config, userPrivateKey *rsa.PrivateKey,
-	esiAuthJWKSEndpoint string,
-	userTokenExpiry time.Duration,
+	client *http.Client,
+	cache cache.AuthAPI,
+	esiOAuth *oauth2.Config,
+	userPrivateKey *rsa.PrivateKey,
+	esiAuthJWKSEndpoint *url.URL,
+	cookieDomain *url.URL,
+	cookieExpiry time.Duration,
 ) *Service {
 	s := &Service{
 		client: client,
@@ -46,8 +51,9 @@ func New(
 			oauthConfig: esiOAuth,
 		},
 		userAuth: userAuth{
-			rsaKey:      userPrivateKey,
-			tokenExpiry: userTokenExpiry,
+			rsaKey:       userPrivateKey,
+			cookieExpiry: cookieExpiry,
+			cookieDomain: cookieDomain,
 		},
 	}
 

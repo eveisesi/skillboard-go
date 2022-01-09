@@ -9,67 +9,84 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
+	"github.com/eveisesi/skillz/internal"
 	"github.com/gofrs/uuid"
 	"github.com/pkg/errors"
 )
 
 type user interface {
-	CookieForUserID(ctx context.Context, cookie *http.Cookie, userID uuid.UUID) (*http.Cookie, error)
+	UserCookie(ctx context.Context, userID uuid.UUID) (*http.Cookie, error)
 	UserIDFromCookie(ctx context.Context, cookie *http.Cookie) (uuid.UUID, error)
+	LogoutCookie(ctx context.Context) (*http.Cookie, error)
 }
 
-func (s *Service) CookieForUserID(ctx context.Context, cookie *http.Cookie, userID uuid.UUID) (*http.Cookie, error) {
+func (s *Service) UserCookie(ctx context.Context, userID uuid.UUID) (*http.Cookie, error) {
 
-	userIDString := userID.String()
-
-	hash, err := s.hash([]byte(userIDString))
+	hash, err := s.hash([]byte(userID.String()))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to hash user id")
 	}
 
 	signature, err := s.userAuth.rsaKey.Sign(rand.Reader, hash, &rsa.PSSOptions{Hash: crypto.SHA256})
 	if err != nil {
-		return cookie, err
+		return nil, err
 	}
 
-	cookie.Value = fmt.Sprintf("%s.%s", userIDString, hex.EncodeToString(signature))
-	cookie.Expires = time.Now().Add(s.userAuth.tokenExpiry)
+	return &http.Cookie{
+		Name:   internal.CookieID,
+		Domain: s.userAuth.cookieDomain.String(),
+		MaxAge: int(s.userAuth.cookieExpiry.Seconds()),
+		Path:   "/",
+		Value:  fmt.Sprintf("%s.%s", userID, hex.EncodeToString(signature)),
+	}, nil
 
-	return cookie, nil
+}
 
+func (s *Service) LogoutCookie(ctx context.Context) (*http.Cookie, error) {
+	return &http.Cookie{
+		Name:   internal.CookieID,
+		Domain: s.userAuth.cookieDomain.String(),
+		MaxAge: -1,
+		Path:   "/",
+	}, nil
 }
 
 func (s *Service) UserIDFromCookie(ctx context.Context, cookie *http.Cookie) (uuid.UUID, error) {
 
 	v := cookie.Value
+
+	// split value it parts seperated by a period
 	vp := strings.Split(v, ".")
 	if len(vp) != 2 {
 		return uuid.Nil, errors.Errorf("expected split of cookie value to = 2, got %d parts", len(vp))
 	}
 
-	userIDStr := vp[0]
+	// The first part should be a valid uuid.
+	userID, err := uuid.FromString(vp[0])
+	if err != nil {
+		return uuid.Nil, errors.Wrap(err, "failed to validate user uuid in cookie")
+	}
+
+	// Second part is the integrity hash
 	signatureStr := vp[1]
 
+	// Decode the signature from a string to a slice of bytes representing the hex string
 	signature, err := hex.DecodeString(signatureStr)
 	if err != nil {
 		return uuid.Nil, errors.Wrap(err, "failed to decode signature string to hex")
 	}
 
-	userIDHash, err := s.hash([]byte(userIDStr))
+	// Hash the User ID
+	userIDHash, err := s.hash([]byte(userID.String()))
 	if err != nil {
 		return uuid.Nil, errors.Wrap(err, "failed to hash user id")
 	}
 
+	// Ensure the integrity of the string. This prevents somebody from modifying the value of the cookie and impresonating the user
 	err = rsa.VerifyPSS(&s.userAuth.rsaKey.PublicKey, crypto.SHA256, []byte(userIDHash), []byte(signature), &rsa.PSSOptions{Hash: crypto.SHA256})
 	if err != nil {
 		return uuid.Nil, errors.Wrap(err, "failed to verify signature")
-	}
-
-	userID, err := uuid.FromString(userIDStr)
-	if err != nil {
-		return uuid.Nil, errors.Wrap(err, "failed to parse uuid")
 	}
 
 	return userID, nil

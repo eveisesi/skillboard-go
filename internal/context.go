@@ -12,6 +12,7 @@ type ctxKey int
 const (
 	ctxSessionID ctxKey = iota
 	ctxUser
+	ctxIsAuthed
 )
 
 func ContextWithSessionID(ctx context.Context, sessionID uuid.UUID) context.Context {
@@ -26,7 +27,19 @@ func SessionIDFromContext(ctx context.Context) uuid.UUID {
 }
 
 func ContextWithUser(ctx context.Context, user *skillz.User) context.Context {
-	return context.WithValue(ctx, ctxUser, user)
+
+	ctx = context.WithValue(ctx, ctxUser, user)
+	ctx = context.WithValue(ctx, ctxIsAuthed, true)
+
+	return ctx
+}
+
+func IsAuthedFromContext(ctx context.Context) bool {
+
+	_, ok := ctx.Value(ctxIsAuthed).(bool)
+
+	return ok
+
 }
 
 func UserFromContext(ctx context.Context) *skillz.User {

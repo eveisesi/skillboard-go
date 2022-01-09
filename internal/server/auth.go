@@ -2,17 +2,6 @@ package server
 
 import "net/http"
 
-// func (s *server) GetOpenIDConfiguration(w http.ResponseWriter, r *http.Request) {
-// 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
-// 		"jwks_uri": "https://localhost:54405/auth/jwks",
-// 	})
-// }
-
-// func (s *server) GetJsonWebKeySet(w http.ResponseWriter, r *http.Request) {
-// 	_ = json.NewEncoder(w).Encode(s.auth.GetPublicUserJWKS())
-
-// }
-
 func (s *server) handleGetAuth(w http.ResponseWriter, r *http.Request) {
 
 	var ctx = r.Context()
@@ -27,6 +16,14 @@ func (s *server) handleGetAuth(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		cookie, err := s.auth.UserCookie(ctx, user.ID)
+		if err != nil {
+			s.writeError(ctx, w, http.StatusInternalServerError, err)
+			return
+		}
+
+		r.AddCookie(cookie)
+
 		s.writeResponse(ctx, w, http.StatusOK, user)
 		return
 	}
@@ -40,5 +37,21 @@ func (s *server) handleGetAuth(w http.ResponseWriter, r *http.Request) {
 	s.writeResponse(ctx, w, http.StatusOK, map[string]interface{}{
 		"url": s.auth.AuthorizationURI(ctx, attempt.State),
 	})
+
+}
+
+func (s *server) handleGetAuthLogout(w http.ResponseWriter, r *http.Request) {
+
+	var ctx = r.Context()
+
+	cookie, err := s.auth.LogoutCookie(ctx)
+	if err != nil {
+		s.writeError(ctx, w, http.StatusInternalServerError, err)
+		return
+	}
+
+	r.AddCookie(cookie)
+
+	s.writeResponse(ctx, w, http.StatusNoContent, nil)
 
 }

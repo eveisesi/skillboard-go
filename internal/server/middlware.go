@@ -1,12 +1,11 @@
 package server
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/eveisesi/skillz/internal"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/gofrs/uuid"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -38,44 +37,6 @@ func (s *server) cors(next http.Handler) http.Handler {
 	})
 }
 
-type delayedAuthorizationWriter struct {
-	http.ResponseWriter
-	sessionID uuid.UUID
-	cookieFn  func(ctx context.Context, cookie *http.Cookie, userID uuid.UUID) (*http.Cookie, error)
-	logger    *logrus.Logger
-}
-
-func (d *delayedAuthorizationWriter) Write(data []byte) (int, error) {
-
-	d.logger.Info("checking session")
-
-	userID := internal.CacheGet(d.sessionID)
-	if userID == uuid.Nil {
-		return d.ResponseWriter.Write(data)
-	}
-
-	d.logger.WithField("sessionID", d.sessionID).Info("found session")
-
-	defer internal.CacheDelete(d.sessionID)
-
-	cookie, err := d.cookieFn(context.Background(), newCookie(), userID)
-	if err != nil {
-		d.logger.WithError(err).Error("failed to add value to cookie")
-		return d.ResponseWriter.Write(data)
-	}
-
-	if v := cookie.String(); v != "" {
-		d.logger.WithField("cookieLen", len(v)).Info("setting cookie header")
-		d.ResponseWriter.Header().Set("Set-Cookie", v)
-		return d.ResponseWriter.Write(data)
-	} else {
-		d.logger.WithField("userID", userID).Error("failed to set cookie due to empty value")
-	}
-
-	return d.ResponseWriter.Write(data)
-
-}
-
 func (s *server) authorization(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -87,49 +48,25 @@ func (s *server) authorization(next http.Handler) http.Handler {
 			user, err := s.user.UserByCookie(ctx, cookie)
 			if err != nil {
 				s.logger.WithError(err).Error("failed to fetch user by cookie value")
-				http.SetCookie(w, &http.Cookie{
-					Name:   CookieID,
-					MaxAge: -1,
-				})
+				cookie, err := s.auth.LogoutCookie(ctx)
+				if err != nil {
+					s.logger.WithError(err).Error("failed to build logout cookie")
+					s.writeError(ctx, w, http.StatusInternalServerError, errors.New("failed to process request, please try again later"))
+					return
+				}
 
-				next.ServeHTTP(w, r)
+				r.AddCookie(cookie)
 
-			} else {
-				ctx = internal.ContextWithUser(ctx, user)
-
-				next.ServeHTTP(w, r.WithContext(ctx))
+				s.writeResponse(ctx, w, http.StatusBadRequest, errors.Wrap(err, "failed to verify user cookie"))
+				return
 			}
 
-		} else {
-			sessionID := uuid.Must(uuid.NewV4())
-			internal.CacheSet(sessionID, uuid.Nil)
-			ctx = internal.ContextWithSessionID(ctx, sessionID)
-			s.logger.WithField("sessionID", sessionID.String()).Info("sessionID generated, cached, and stored on context")
+			ctx = internal.ContextWithUser(ctx, user)
 
-			delayedWriter := &delayedAuthorizationWriter{
-				w,
-				sessionID,
-				s.auth.CookieForUserID,
-				s.logger,
-			}
-
-			next.ServeHTTP(delayedWriter, r.WithContext(ctx))
+			next.ServeHTTP(w, r.WithContext(ctx))
 
 		}
-
 	})
-
-}
-
-func newCookie() *http.Cookie {
-
-	return &http.Cookie{
-		Name: CookieID,
-		// HttpOnly: true,
-		Domain: "skillboard",
-		MaxAge: 50000,
-		Path:   "/",
-	}
 
 }
 
