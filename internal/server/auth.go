@@ -1,6 +1,10 @@
 package server
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/davecgh/go-spew/spew"
+)
 
 func (s *server) handleGetAuth(w http.ResponseWriter, r *http.Request) {
 
@@ -33,6 +37,8 @@ func (s *server) handleGetAuth(w http.ResponseWriter, r *http.Request) {
 		s.writeError(ctx, w, http.StatusInternalServerError, err)
 		return
 	}
+
+	spew.Dump(attempt)
 
 	s.writeResponse(ctx, w, http.StatusOK, map[string]interface{}{
 		"url": s.auth.AuthorizationURI(ctx, attempt.State),

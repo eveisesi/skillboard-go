@@ -9,10 +9,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	CookieID = "skillz-authed-user-id"
-)
-
 // Cors middleware to allow frontend consumption
 func (s *server) cors(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -43,7 +39,7 @@ func (s *server) authorization(next http.Handler) http.Handler {
 
 		var ctx = r.Context()
 
-		cookie, err := r.Cookie(CookieID)
+		cookie, err := r.Cookie(internal.CookieID)
 		if err == nil {
 			user, err := s.user.UserByCookie(ctx, cookie)
 			if err != nil {
@@ -63,9 +59,9 @@ func (s *server) authorization(next http.Handler) http.Handler {
 
 			ctx = internal.ContextWithUser(ctx, user)
 
-			next.ServeHTTP(w, r.WithContext(ctx))
-
 		}
+
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 
 }
