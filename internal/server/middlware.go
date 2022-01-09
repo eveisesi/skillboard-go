@@ -51,7 +51,7 @@ func (s *server) authorization(next http.Handler) http.Handler {
 					return
 				}
 
-				r.AddCookie(cookie)
+				http.SetCookie(w, cookie)
 
 				s.writeResponse(ctx, w, http.StatusBadRequest, errors.Wrap(err, "failed to verify user cookie"))
 				return
