@@ -3,7 +3,6 @@ package cache
 import (
 	"context"
 	"encoding/json"
-	"strconv"
 	"time"
 
 	"github.com/eveisesi/skillz"
@@ -14,8 +13,8 @@ import (
 type UserAPI interface {
 	SearchUsers(ctx context.Context, q string) ([]*skillz.UserSearchResult, error)
 	SetSearchUsersResults(ctx context.Context, q string, users []*skillz.UserSearchResult, expires time.Duration) error
-	NewUsersBySP(ctx context.Context, days int) ([]*skillz.UserWithSkillMeta, error)
-	SetNewUsersBySP(ctx context.Context, days int, users []*skillz.UserWithSkillMeta, expires time.Duration) error
+	NewUsersBySP(ctx context.Context) ([]*skillz.UserWithSkillMeta, error)
+	SetNewUsersBySP(ctx context.Context, users []*skillz.UserWithSkillMeta, expires time.Duration) error
 }
 
 const (
@@ -80,11 +79,11 @@ func (s *Service) SetSearchUsersResults(ctx context.Context, q string, users []*
 
 }
 
-func (s *Service) NewUsersBySP(ctx context.Context, days int) ([]*skillz.UserWithSkillMeta, error) {
+func (s *Service) NewUsersBySP(ctx context.Context) ([]*skillz.UserWithSkillMeta, error) {
 
 	var users = make([]*skillz.UserWithSkillMeta, 0)
 
-	key := generateKey(usersNewBySPPrefix, strconv.Itoa(days))
+	key := generateKey(usersNewBySPPrefix)
 	results, err := s.redis.SMembers(ctx, key).Result()
 	if err != nil && !errors.Is(err, redis.Nil) {
 		return users, errors.Wrapf(err, errorFFormat, userAPI, "NewUsersBySP", "failed to fetch results from cache")
@@ -109,7 +108,7 @@ func (s *Service) NewUsersBySP(ctx context.Context, days int) ([]*skillz.UserWit
 
 }
 
-func (s *Service) SetNewUsersBySP(ctx context.Context, days int, users []*skillz.UserWithSkillMeta, expires time.Duration) error {
+func (s *Service) SetNewUsersBySP(ctx context.Context, users []*skillz.UserWithSkillMeta, expires time.Duration) error {
 
 	members := make([]interface{}, 0, len(users))
 	for _, user := range users {
@@ -125,7 +124,7 @@ func (s *Service) SetNewUsersBySP(ctx context.Context, days int, users []*skillz
 		return nil
 	}
 
-	key := generateKey(usersNewBySPPrefix, strconv.Itoa(days))
+	key := generateKey(usersNewBySPPrefix)
 	err := s.redis.SAdd(ctx, key, members...).Err()
 	if err != nil {
 		return errors.Wrapf(err, errorFFormat, userAPI, "SetNewUsersBySP", "failed to write cache")
@@ -135,4 +134,9 @@ func (s *Service) SetNewUsersBySP(ctx context.Context, days int, users []*skillz
 
 	return errors.Wrapf(err, errorFFormat, userAPI, "SetNewUsersBySP", "failed to set expiry on set")
 
+}
+
+func (s *Service) BustNewUsersBySP(ctx context.Context) error {
+	key := generateKey(usersNewBySPPrefix)
+	return s.redis.Del(ctx, key).Err()
 }

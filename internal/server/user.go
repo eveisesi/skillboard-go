@@ -103,16 +103,7 @@ func (s *server) handleGetNewUsersBySP(w http.ResponseWriter, r *http.Request) {
 
 	var ctx = r.Context()
 
-	var days int = 6
-	// daysStr := r.URL.Query().Get("days")
-	// if daysStr == "" {
-	// 	d, err := strconv.Atoi(daysStr)
-	// 	if err == nil {
-	// 		days = d
-	// 	}
-	// }
-
-	users, err := s.user.NewUsersBySP(ctx, days)
+	users, err := s.user.NewUsersBySP(ctx)
 	if err != nil {
 		LogEntrySetField(ctx, "error", err)
 		s.writeError(ctx, w, http.StatusBadRequest, errors.New("unexpected error encountered fetch characters"))

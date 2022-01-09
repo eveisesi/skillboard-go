@@ -36,7 +36,7 @@ type API interface {
 	SearchUsers(ctx context.Context, q string) ([]*skillz.UserSearchResult, error)
 	UpdateUser(ctx context.Context, user *skillz.User) error
 
-	NewUsersBySP(ctx context.Context, days int) ([]*skillz.UserWithSkillMeta, error)
+	NewUsersBySP(ctx context.Context) ([]*skillz.UserWithSkillMeta, error)
 
 	ProcessUpdatableUsers(ctx context.Context) error
 }
@@ -231,9 +231,9 @@ func (s *Service) RefreshUser(ctx context.Context, user *skillz.User) error {
 
 }
 
-func (s *Service) NewUsersBySP(ctx context.Context, days int) ([]*skillz.UserWithSkillMeta, error) {
+func (s *Service) NewUsersBySP(ctx context.Context) ([]*skillz.UserWithSkillMeta, error) {
 
-	users, err := s.cache.NewUsersBySP(ctx, days)
+	users, err := s.cache.NewUsersBySP(ctx)
 	if err != nil && !errors.Is(err, redis.Nil) {
 		return nil, err
 	}
@@ -242,7 +242,7 @@ func (s *Service) NewUsersBySP(ctx context.Context, days int) ([]*skillz.UserWit
 		return users, nil
 	}
 
-	userRecords, err := s.UserRepository.NewUsersBySP(ctx, days)
+	userRecords, err := s.UserRepository.NewUsersBySP(ctx)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.Wrap(err, "failed to fetch users by sp in last seven days")
 	}
@@ -280,7 +280,7 @@ func (s *Service) NewUsersBySP(ctx context.Context, days int) ([]*skillz.UserWit
 	}
 
 	defer func() {
-		err = s.cache.SetNewUsersBySP(ctx, days, users, time.Hour)
+		err = s.cache.SetNewUsersBySP(ctx, users, time.Minute*5)
 		if err != nil {
 			s.logger.WithError(err).Error("failed to cache users by sp in last seven days")
 		}

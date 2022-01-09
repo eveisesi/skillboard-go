@@ -186,7 +186,7 @@ func (r *userRepository) UsersSortedByProcessedAtLimit(ctx context.Context, limi
 
 var skillMetaInnerJoin = fmt.Sprintf("%s csm on csm.character_id = users.character_id", TableCharacterSkillMeta)
 
-func (r *userRepository) NewUsersBySP(ctx context.Context, days int) ([]*skillz.User, error) {
+func (r *userRepository) NewUsersBySP(ctx context.Context) ([]*skillz.User, error) {
 
 	columns := make([]string, 0, len(r.users.columns))
 	for _, c := range r.users.columns {
@@ -196,7 +196,7 @@ func (r *userRepository) NewUsersBySP(ctx context.Context, days int) ([]*skillz.
 	query, args, err := sq.Select(columns...).
 		From(r.users.table).
 		InnerJoin(skillMetaInnerJoin).
-		Where(fmt.Sprintf("users.%s >= DATE(NOW() - INTERVAL %d DAY)", ColumnCreatedAt, days)).
+		Where(fmt.Sprintf("users.%s >= DATE(NOW() - INTERVAL 7 DAY)", ColumnCreatedAt)).
 		OrderBy(fmt.Sprintf("users.%s DESC", ColumnCreatedAt)).
 		Limit(50).
 		ToSql()

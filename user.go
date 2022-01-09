@@ -18,7 +18,7 @@ type UserRepository interface {
 
 	UsersSortedByProcessedAtLimit(ctx context.Context, limit uint64) ([]*User, error)
 
-	NewUsersBySP(ctx context.Context, days int) ([]*User, error)
+	NewUsersBySP(ctx context.Context) ([]*User, error)
 }
 
 type User struct {
