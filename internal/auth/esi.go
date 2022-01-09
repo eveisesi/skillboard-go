@@ -136,6 +136,7 @@ func (s *Service) initializeESIJWKSet(keyEndpoint *url.URL) error {
 
 	set, err := jwk.Parse(buf)
 	if err != nil {
+		fmt.Println(buf)
 		return fmt.Errorf("failed to parse jwk retrieved from ESI SSO")
 	}
 
