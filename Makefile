@@ -28,4 +28,4 @@ ddownv:
 	aws-vault --backend=file exec skillboard -- chamber exec skillboard/production -- docker compose down -v
 
 dlogsf:
-	aws-vault --backend=file exec skillboard -- chamber exec skillboard/production -- docker compose logs -f
+	aws-vault --backend=file exec skillboard -- chamber exec skillboard/production -- docker compose logs -f server cron processor
