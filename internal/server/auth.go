@@ -26,6 +26,8 @@ func (s *server) handleGetAuth(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		spew.Dump(cookie)
+
 		r.AddCookie(cookie)
 
 		s.writeResponse(ctx, w, http.StatusOK, user)
