@@ -371,17 +371,18 @@ func (s *Service) SetGroup(ctx context.Context, group *skillz.Group) error {
 
 func (s *Service) GroupsByCategoryID(ctx context.Context, id uint) ([]*skillz.Group, error) {
 
+	var groups = make([]*skillz.Group, 0)
+
 	key := generateKey(keyGroupByCategory, strconv.FormatUint(uint64(id), 10))
 	result, err := s.redis.Get(ctx, key).Bytes()
 	if err != nil && !errors.Is(err, redis.Nil) {
-		return nil, errors.Wrapf(err, errorFFormat, universeAPI, "GroupsByCategoryID", "failed to fetch results from cache")
+		return groups, errors.Wrapf(err, errorFFormat, universeAPI, "GroupsByCategoryID", "failed to fetch results from cache")
 	}
 
 	if errors.Is(err, redis.Nil) {
-		return nil, nil
+		return groups, nil
 	}
 
-	var groups = make([]*skillz.Group, 0)
 	err = json.Unmarshal(result, &groups)
 	return groups, errors.Wrapf(err, errorFFormat, universeAPI, "GroupsByCategoryID", "failed to decode json to structure")
 
@@ -433,17 +434,18 @@ func (s *Service) SetType(ctx context.Context, item *skillz.Type) error {
 
 func (s *Service) TypeAttributes(ctx context.Context, id uint) ([]*skillz.TypeDogmaAttribute, error) {
 
+	var attributes = make([]*skillz.TypeDogmaAttribute, 0)
+
 	key := generateKey(keyTypeAttributes, strconv.FormatUint(uint64(id), 10))
 	result, err := s.redis.Get(ctx, key).Bytes()
 	if err != nil && !errors.Is(err, redis.Nil) {
-		return nil, errors.Wrapf(err, errorFFormat, universeAPI, "TypeAttributes", "failed to fetch results from cache")
+		return attributes, errors.Wrapf(err, errorFFormat, universeAPI, "TypeAttributes", "failed to fetch results from cache")
 	}
 
 	if errors.Is(err, redis.Nil) {
-		return nil, nil
+		return attributes, nil
 	}
 
-	var attributes = make([]*skillz.TypeDogmaAttribute, 0)
 	err = json.Unmarshal(result, &attributes)
 	return attributes, errors.Wrapf(err, errorFFormat, universeAPI, "TypeAttributes", "failed to decode json to structure")
 
@@ -464,17 +466,18 @@ func (s *Service) SetTypeAttributes(ctx context.Context, id uint, attributes []*
 
 func (s *Service) TypesByGroupID(ctx context.Context, id uint) ([]*skillz.Type, error) {
 
+	var types = make([]*skillz.Type, 0)
+
 	key := generateKey(keyTypesByGroup, strconv.FormatUint(uint64(id), 10))
 	result, err := s.redis.Get(ctx, key).Bytes()
 	if err != nil && !errors.Is(err, redis.Nil) {
-		return nil, errors.Wrapf(err, errorFFormat, universeAPI, "TypesByGroupID", "failed to fetch results from cache")
+		return types, errors.Wrapf(err, errorFFormat, universeAPI, "TypesByGroupID", "failed to fetch results from cache")
 	}
 
 	if errors.Is(err, redis.Nil) {
-		return nil, nil
+		return types, nil
 	}
 
-	var types = make([]*skillz.Type, 0)
 	err = json.Unmarshal(result, &types)
 	return types, errors.Wrapf(err, errorFFormat, universeAPI, "TypesByGroupID", "failed to decode json to structure")
 

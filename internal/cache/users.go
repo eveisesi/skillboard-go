@@ -25,17 +25,19 @@ const (
 
 func (s *Service) SearchUsers(ctx context.Context, q string) ([]*skillz.UserSearchResult, error) {
 
+	var users = make([]*skillz.UserSearchResult, 0)
+
 	key := generateKey(userSearchKeyPrefix, hash(q))
 	results, err := s.redis.SMembers(ctx, key).Result()
 	if err != nil && !errors.Is(err, redis.Nil) {
-		return nil, errors.Wrapf(err, errorFFormat, userAPI, "SearchUsers", "failed to fetch results from cache")
+		return users, errors.Wrapf(err, errorFFormat, userAPI, "SearchUsers", "failed to fetch results from cache")
 	}
 
 	if errors.Is(err, redis.Nil) || len(results) == 0 {
-		return nil, nil
+		return users, nil
 	}
 
-	users := make([]*skillz.UserSearchResult, 0, len(results))
+	users = make([]*skillz.UserSearchResult, 0, len(results))
 	for _, result := range results {
 		var user = new(skillz.UserSearchResult)
 		err = json.Unmarshal([]byte(result), user)
@@ -80,17 +82,19 @@ func (s *Service) SetSearchUsersResults(ctx context.Context, q string, users []*
 
 func (s *Service) NewUsersBySP(ctx context.Context, days int) ([]*skillz.UserWithSkillMeta, error) {
 
+	var users = make([]*skillz.UserWithSkillMeta, 0)
+
 	key := generateKey(usersNewBySPPrefix, strconv.Itoa(days))
 	results, err := s.redis.SMembers(ctx, key).Result()
 	if err != nil && !errors.Is(err, redis.Nil) {
-		return nil, errors.Wrapf(err, errorFFormat, userAPI, "NewUsersBySP", "failed to fetch results from cache")
+		return users, errors.Wrapf(err, errorFFormat, userAPI, "NewUsersBySP", "failed to fetch results from cache")
 	}
 
 	if errors.Is(err, redis.Nil) || len(results) == 0 {
-		return nil, nil
+		return users, nil
 	}
 
-	users := make([]*skillz.UserWithSkillMeta, 0, len(results))
+	users = make([]*skillz.UserWithSkillMeta, 0, len(results))
 	for _, result := range results {
 		var user = new(skillz.UserWithSkillMeta)
 		err = json.Unmarshal([]byte(result), user)

@@ -22,17 +22,19 @@ const (
 
 func (s *Service) CharacterContacts(ctx context.Context, characterID uint64) ([]*skillz.CharacterContact, error) {
 
+	var contacts = make([]*skillz.CharacterContact, 0)
+
 	key := generateKey(characterContactsKeyPrefix, strconv.FormatUint(characterID, 10))
 	results, err := s.redis.SMembers(ctx, key).Result()
 	if err != nil && !errors.Is(err, redis.Nil) {
-		return nil, errors.Wrapf(err, errorFFormat, contactAPI, "CharacterContact", "failed to fetch results from cache")
+		return contacts, errors.Wrapf(err, errorFFormat, contactAPI, "CharacterContact", "failed to fetch results from cache")
 	}
 
 	if errors.Is(err, redis.Nil) || len(results) == 0 {
-		return nil, nil
+		return contacts, nil
 	}
 
-	contacts := make([]*skillz.CharacterContact, 0, len(results))
+	contacts = make([]*skillz.CharacterContact, 0, len(results))
 	for _, result := range results {
 		var contact = new(skillz.CharacterContact)
 		err = json.Unmarshal([]byte(result), contact)
@@ -62,6 +64,7 @@ func (s *Service) SetCharacterContacts(ctx context.Context, characterID uint64, 
 	if len(members) == 0 {
 		return nil
 	}
+
 	key := generateKey(characterContactsKeyPrefix, strconv.FormatUint(characterID, 10))
 	err := s.redis.SAdd(ctx, key, members...).Err()
 	if err != nil {

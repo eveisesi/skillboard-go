@@ -56,17 +56,18 @@ func (s *Service) SetCharacterClones(ctx context.Context, characterID uint64, cl
 
 func (s *Service) CharacterImplants(ctx context.Context, characterID uint64) ([]*skillz.CharacterImplant, error) {
 
+	var implants = make([]*skillz.CharacterImplant, 0, 10)
+
 	key := generateKey(characterImplantsKeyPrefix, strconv.FormatUint(characterID, 10))
 	result, err := s.redis.Get(ctx, key).Bytes()
 	if err != nil && !errors.Is(err, redis.Nil) {
-		return nil, errors.Wrapf(err, errorFFormat, cloneAPI, "CharacterImplants", "failed to fetch results from cache")
+		return implants, errors.Wrapf(err, errorFFormat, cloneAPI, "CharacterImplants", "failed to fetch results from cache")
 	}
 
 	if errors.Is(err, redis.Nil) {
-		return nil, nil
+		return implants, nil
 	}
 
-	var implants = make([]*skillz.CharacterImplant, 0, 10)
 	err = json.Unmarshal(result, &implants)
 	return implants, errors.Wrapf(err, errorFFormat, cloneAPI, "CharacterImplants", "failed to decode json to structure")
 

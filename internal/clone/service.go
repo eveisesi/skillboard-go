@@ -137,10 +137,14 @@ func (s *Service) JumpClone(ctx context.Context, characterID uint64) ([]*skillz.
 		return nil, err
 	}
 
+	spew.Dump(clones)
+
 	for _, clone := range clones {
 		switch clone.LocationType {
 		case skillz.CloneLocationTypeStation:
+			spew.Dump(clone.LocationID)
 			clone.Station, err = s.universe.Station(ctx, uint(clone.LocationID))
+			spew.Dump(clone.Station, err)
 		case skillz.CloneLocationTypeStructure:
 			clone.Structure, err = s.universe.Structure(ctx, clone.LocationID)
 		}

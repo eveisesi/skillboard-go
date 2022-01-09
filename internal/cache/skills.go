@@ -99,17 +99,20 @@ func (s *Service) SetCharacterAttributes(ctx context.Context, meta *skillz.Chara
 
 func (s *Service) CharacterSkills(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkill, error) {
 
+	var skills = make([]*skillz.CharacterSkill, 0)
+
 	key := generateKey(characterSkillsKeyPrefix, strconv.FormatUint(characterID, 10))
 	results, err := s.redis.SMembers(ctx, key).Result()
 	if err != nil && !errors.Is(err, redis.Nil) {
-		return nil, errors.Wrapf(err, errorFFormat, skillAPI, "CharacterSkills", "failed to fetch results from cache")
+		return skills, errors.Wrapf(err, errorFFormat, skillAPI, "CharacterSkills", "failed to fetch results from cache")
 	}
 
 	if errors.Is(err, redis.Nil) || len(results) == 0 {
-		return nil, nil
+		return skills, nil
 	}
 
-	skills := make([]*skillz.CharacterSkill, 0, len(results))
+	skills = make([]*skillz.CharacterSkill, 0, len(results))
+
 	for _, result := range results {
 		var skill = new(skillz.CharacterSkill)
 		err = json.Unmarshal([]byte(result), skill)
@@ -161,7 +164,7 @@ func (s *Service) CharacterGroupedSkillz(ctx context.Context, characterID uint64
 	}
 
 	if errors.Is(err, redis.Nil) || len(results) == 0 {
-		return nil, nil
+		return make([]*skillz.CharacterSkillGroup, 0), nil
 	}
 
 	groups := make([]*skillz.CharacterSkillGroup, 0, len(results))
@@ -208,17 +211,19 @@ func (s *Service) SetCharacterGroupedSkillz(ctx context.Context, characterID uin
 
 func (s *Service) CharacterSkillQueue(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkillQueue, error) {
 
+	var queue = make([]*skillz.CharacterSkillQueue, 0)
+
 	key := generateKey(characterSkillQueueKeyPrefix, strconv.FormatUint(characterID, 10))
 	results, err := s.redis.SMembers(ctx, key).Result()
 	if err != nil && !errors.Is(err, redis.Nil) {
-		return nil, errors.Wrapf(err, errorFFormat, skillAPI, "CharacterSkillQueue", "failed to fetch results from cache")
+		return queue, errors.Wrapf(err, errorFFormat, skillAPI, "CharacterSkillQueue", "failed to fetch results from cache")
 	}
 
 	if errors.Is(err, redis.Nil) || len(results) == 0 {
-		return nil, nil
+		return queue, nil
 	}
 
-	queue := make([]*skillz.CharacterSkillQueue, 0, len(results))
+	queue = make([]*skillz.CharacterSkillQueue, 0, len(results))
 	for _, result := range results {
 		var position = new(skillz.CharacterSkillQueue)
 		err = json.Unmarshal([]byte(result), position)
@@ -270,7 +275,7 @@ func (s *Service) CharacterFlyableShips(ctx context.Context, characterID uint64)
 	}
 
 	if errors.Is(err, redis.Nil) || len(results) == 0 {
-		return nil, nil
+		return make([]*skillz.CharacterFlyableShip, 0), nil
 	}
 
 	flyables := make([]*skillz.CharacterFlyableShip, 0, len(results))
