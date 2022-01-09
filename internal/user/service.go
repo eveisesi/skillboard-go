@@ -184,14 +184,12 @@ func (s *Service) Login(ctx context.Context, code, state string) (*skillz.User, 
 	user.Expires = bearer.Expiry
 	user.LastLogin = time.Now()
 
-	switch user.ID == uuid.Nil {
+	switch user.IsNew {
 	case true:
-		user.ID = uuid.Must(uuid.NewV4())
 		err = s.UserRepository.CreateUser(ctx, user)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create user in data store")
 		}
-
 	case false:
 		err = s.UserRepository.UpdateUser(ctx, user)
 		if err != nil {
@@ -200,9 +198,7 @@ func (s *Service) Login(ctx context.Context, code, state string) (*skillz.User, 
 	}
 
 	sessionID := internal.SessionIDFromContext(ctx)
-	fmt.Println(sessionID.String())
 	if sessionID != uuid.Nil {
-
 		internal.CacheSet(sessionID, user.ID)
 	}
 
@@ -214,6 +210,15 @@ func (s *Service) Login(ctx context.Context, code, state string) (*skillz.User, 
 	err = s.redis.ZAdd(ctx, internal.UpdateQueue, &redis.Z{Score: float64(time.Now().Unix()), Member: user.ID.String()}).Err()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to push user id to processing queue")
+	}
+
+	if user.IsNew {
+		defer func(ctx context.Context) {
+			err = s.cache.BustNewUsersBySP(ctx)
+			if err != nil {
+				s.logger.WithError(err).Error("failed to bust new users by sp cache")
+			}
+		}(context.Background())
 	}
 
 	return user, err
@@ -310,6 +315,7 @@ func (s *Service) UserFromToken(ctx context.Context, token jwt.Token) (*skillz.U
 		user, err = s.UserRepository.UserByCharacterID(ctx, characterID)
 		if err != nil && errors.Is(err, sql.ErrNoRows) {
 			user = &skillz.User{
+				ID:          uuid.Must(uuid.NewV4()),
 				CharacterID: characterID,
 				IsNew:       true,
 			}

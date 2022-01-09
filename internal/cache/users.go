@@ -15,6 +15,7 @@ type UserAPI interface {
 	SetSearchUsersResults(ctx context.Context, q string, users []*skillz.UserSearchResult, expires time.Duration) error
 	NewUsersBySP(ctx context.Context) ([]*skillz.UserWithSkillMeta, error)
 	SetNewUsersBySP(ctx context.Context, users []*skillz.UserWithSkillMeta, expires time.Duration) error
+	BustNewUsersBySP(ctx context.Context) error
 }
 
 const (
