@@ -350,12 +350,12 @@ func (s *Service) SkillQueue(ctx context.Context, characterID uint64) ([]*skillz
 
 		positionType, err := s.universe.Type(ctx, position.SkillID)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to fetch skill info for queue position")
+			return queue, errors.Wrap(err, "failed to fetch skill info for queue position")
 		}
 
 		positionGroup, err := s.universe.Group(ctx, positionType.GroupID)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to fetch skill group info for queue position")
+			return queue, errors.Wrap(err, "failed to fetch skill group info for queue position")
 		}
 
 		positionType.Group = positionGroup
