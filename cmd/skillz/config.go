@@ -40,8 +40,7 @@ type config struct {
 		PrivateKey      []byte `envconfig:"AUTH_KEY"`
 		CookieExpiryStr string `envconfig:"AUTH_EXPIRY" required:"true"`
 		CookieExpiry    time.Duration
-		CookieURIStr    string `envconfig:"AUTH_COOKIE_URI" required:"true"`
-		CookieURI       *url.URL
+		CookieURI       string `envconfig:"AUTH_COOKIE_URI" required:"true"`
 	}
 
 	Server struct {
@@ -93,12 +92,4 @@ func buildConfig() {
 	}
 
 	cfg.Eve.JWKSURI = jwksURI
-
-	cookieURI, err := url.Parse(cfg.Auth.CookieURIStr)
-	if err != nil {
-		panic(errors.Wrap(err, "failed to parse AUTH_COOKIE_URI as a valid URI"))
-	}
-
-	cfg.Auth.CookieURI = cookieURI
-
 }

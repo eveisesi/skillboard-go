@@ -40,8 +40,6 @@ func (s *server) handleGetAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	spew.Dump(attempt)
-
 	s.writeResponse(ctx, w, http.StatusOK, map[string]interface{}{
 		"url": s.auth.AuthorizationURI(ctx, attempt.State),
 	})

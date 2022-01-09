@@ -25,7 +25,7 @@ type esiAuth struct {
 type userAuth struct {
 	rsaKey       *rsa.PrivateKey
 	cookieExpiry time.Duration
-	cookieDomain *url.URL
+	cookieDomain string
 }
 
 type Service struct {
@@ -41,7 +41,7 @@ func New(
 	esiOAuth *oauth2.Config,
 	userPrivateKey *rsa.PrivateKey,
 	esiAuthJWKSEndpoint *url.URL,
-	cookieDomain *url.URL,
+	cookieDomain string,
 	cookieExpiry time.Duration,
 ) *Service {
 	s := &Service{

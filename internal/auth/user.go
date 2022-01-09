@@ -35,7 +35,7 @@ func (s *Service) UserCookie(ctx context.Context, userID uuid.UUID) (*http.Cooki
 
 	return &http.Cookie{
 		Name:   internal.CookieID,
-		Domain: s.userAuth.cookieDomain.String(),
+		Domain: s.userAuth.cookieDomain,
 		MaxAge: int(s.userAuth.cookieExpiry.Seconds()),
 		Path:   "/",
 		Value:  fmt.Sprintf("%s.%s", userID, hex.EncodeToString(signature)),
