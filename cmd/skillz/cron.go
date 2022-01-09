@@ -55,6 +55,8 @@ func cronCommand(_ *cli.Context) error {
 
 		var ctx = context.Background()
 
+		logger.Info("executing process updateable users cron")
+
 		err := user.ProcessUpdatableUsers(ctx)
 		if err != nil {
 			logger.WithError(err).Fatal("failed to update processable users")

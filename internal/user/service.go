@@ -391,6 +391,8 @@ func (s *Service) ProcessUpdatableUsers(ctx context.Context) error {
 		return errors.Wrap(err, "failed to query users table for processable users")
 	}
 
+	s.logger.WithField("user_count", len(users)).Info("updatable user count")
+
 	for _, user := range users {
 		err = s.redis.ZAdd(ctx, internal.UpdateQueue, &redis.Z{Score: float64(time.Now().Unix()), Member: user.ID.String()}).Err()
 		if err != nil {
