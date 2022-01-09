@@ -18,6 +18,9 @@ test:
 dup:
 	aws-vault exec skillboard -- chamber exec skillboard/production -- docker compose up -d
 
+dpull:
+	aws-vault exec skillboard -- chamber exec skillboard/production -- docker compose pull
+
 ddown:
 	aws-vault exec skillboard -- chamber exec skillboard/production -- docker compose down
 
