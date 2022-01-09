@@ -24,7 +24,7 @@ func oauth2Config() *oauth2.Config {
 			AuthURL:  "https://login.eveonline.com/v2/oauth/authorize",
 			TokenURL: "https://login.eveonline.com/v2/oauth/token",
 		},
-		RedirectURL: "http://skillboard:54400/login",
+		RedirectURL: cfg.Eve.CallbackURI,
 	}
 }
 

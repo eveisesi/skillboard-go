@@ -29,6 +29,7 @@ type config struct {
 	Eve struct {
 		ClientID     string `envconfig:"EVE_CLIENT_ID" required:"true"`
 		ClientSecret string `envconfig:"EVE_CLIENT_SECRET" required:"true"`
+		CallbackURI  string `envconfig:"EVE_CALLBACK_URI" required:"true"`
 		JWKSURI      string `envconfig:"EVE_JWKS_URI" required:"true"`
 	}
 
