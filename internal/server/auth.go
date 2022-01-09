@@ -25,7 +25,7 @@ func (s *server) handleGetAuth(w http.ResponseWriter, r *http.Request) {
 			s.writeError(ctx, w, http.StatusInternalServerError, err)
 			return
 		}
-
+		spew.Config.DisableMethods = true
 		spew.Dump(cookie)
 
 		http.SetCookie(w, cookie)
