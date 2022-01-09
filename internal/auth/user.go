@@ -46,7 +46,7 @@ func (s *Service) UserCookie(ctx context.Context, userID uuid.UUID) (*http.Cooki
 func (s *Service) LogoutCookie(ctx context.Context) (*http.Cookie, error) {
 	return &http.Cookie{
 		Name:   internal.CookieID,
-		Domain: s.userAuth.cookieDomain.String(),
+		Domain: s.userAuth.cookieDomain,
 		MaxAge: -1,
 		Path:   "/",
 	}, nil
