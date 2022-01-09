@@ -96,7 +96,7 @@ func buildConfig() {
 
 	cookieURI, err := url.Parse(cfg.Auth.CookieURIStr)
 	if err != nil {
-		panic(errors.Wrap(err, "failed to parse COOKIE_URI as a valid URI"))
+		panic(errors.Wrap(err, "failed to parse AUTH_COOKIE_URI as a valid URI"))
 	}
 
 	cfg.Auth.CookieURI = cookieURI
