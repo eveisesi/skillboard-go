@@ -17,6 +17,7 @@ services:
             - EVE_JWKS_URI
             - EVE_CLIENT_ID
             - EVE_CLIENT_SECRET
+            - EVE_CALLBACK_URI
             - SERVER_PORT
             - AUTH_KEY
             - AUTH_EXPIRY
@@ -40,6 +41,7 @@ services:
             - EVE_JWKS_URI
             - EVE_CLIENT_ID
             - EVE_CLIENT_SECRET
+            - EVE_CALLBACK_URI
             - SERVER_PORT
             - AUTH_KEY
             - AUTH_EXPIRY
@@ -61,6 +63,7 @@ services:
             - EVE_JWKS_URI
             - EVE_CLIENT_ID
             - EVE_CLIENT_SECRET
+            - EVE_CALLBACK_URI
             - SERVER_PORT
             - AUTH_KEY
             - AUTH_EXPIRY
