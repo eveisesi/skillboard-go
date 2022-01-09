@@ -41,7 +41,7 @@ func cronCommand(_ *cli.Context) error {
 		cfg.Auth.TokenExpiry,
 	)
 	etag := etag.New(cache, etagRepo)
-	esi := esi.New(httpClient(), redisClient, etag)
+	esi := esi.New(httpClient(), redisClient, logger, etag)
 	character := character.New(cache, esi, etag, characterRepo)
 	corporation := corporation.New(cache, esi, etag, corporationRepo)
 	alliance := alliance.New(cache, esi, etag, allianceRepo)

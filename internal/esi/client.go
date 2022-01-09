@@ -14,6 +14,7 @@ import (
 	"github.com/eveisesi/skillz/internal/etag"
 	"github.com/go-redis/redis/v8"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 type API interface {
@@ -25,6 +26,7 @@ type API interface {
 type Service struct {
 	client *http.Client
 	redis  *redis.Client
+	logger *logrus.Logger
 
 	etag etag.API
 }
@@ -37,9 +39,9 @@ const (
 	headerTimestampFormat = "Mon, 02 Jan 2006 15:04:05 MST"
 )
 
-func New(client *http.Client, redis *redis.Client, etag etag.API) *Service {
+func New(client *http.Client, redis *redis.Client, logger *logrus.Logger, etag etag.API) *Service {
 	return &Service{
-		client, redis, etag,
+		client, redis, logger, etag,
 	}
 }
 

@@ -19,7 +19,7 @@ func importTypes(c *cli.Context) error {
 
 	etag := etag.New(cache, etagRepo)
 
-	esi := esi.New(httpClient(), redisClient, etag)
+	esi := esi.New(httpClient(), redisClient, logger, etag)
 
 	var ctx = context.Background()
 	var categoryID = c.Uint("categoryID")
@@ -94,7 +94,7 @@ func importMap(_ *cli.Context) error {
 
 	etag := etag.New(cache, etagRepo)
 
-	esi := esi.New(httpClient(), redisClient, etag)
+	esi := esi.New(httpClient(), redisClient, logger, etag)
 
 	var ctx = context.Background()
 

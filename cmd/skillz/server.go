@@ -47,7 +47,7 @@ func serverCommand(_ *cli.Context) error {
 	userRepo := mysql.NewUserRepository(mysqlClient)
 
 	etag := etag.New(cache, etagRepo)
-	esi := esi.New(httpClient(), redisClient, etag)
+	esi := esi.New(httpClient(), redisClient, logger, etag)
 	auth := auth.New(
 		httpClient(),
 		cache,

@@ -48,14 +48,6 @@ func (s *Service) GetCharacterClones(ctx context.Context, characterID uint64, mo
 		return nil, nil
 	}
 
-	if err == nil {
-		// clones.CharacterID = characterID
-		// clones.HomeLocation.CharacterID = characterID
-		// for _, clone := range clones.JumpClones {
-		// 	clone.CharacterID = characterID
-		// }
-	}
-
 	return clones, errors.Wrap(err, "failed to execute request to ESI for Character data")
 
 }

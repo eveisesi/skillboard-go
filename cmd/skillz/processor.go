@@ -25,7 +25,7 @@ func processorCommand(c *cli.Context) error {
 
 	cache := cache.New(redisClient)
 	etag := etag.New(cache, etagRepo)
-	esi := esi.New(httpClient(), redisClient, etag)
+	esi := esi.New(httpClient(), redisClient, logger, etag)
 
 	allianceRepo := mysql.NewAllianceRepository(mysqlClient)
 	corporationRepo := mysql.NewCorporationRepository(mysqlClient)
