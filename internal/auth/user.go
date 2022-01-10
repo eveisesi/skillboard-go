@@ -29,7 +29,7 @@ func (s *Service) UserCookie(ctx context.Context, userID uuid.UUID) (*http.Cooki
 		return nil, errors.Wrap(err, "failed to hash user id")
 	}
 
-	signature, err := s.userAuth.rsaKey.Sign(rand.Reader, hash, &rsa.PSSOptions{Hash: crypto.SHA256})
+	signature, err := s.userAuth.rsaKey.Sign(rand.Reader, hash, &rsa.PSSOptions{Hash: crypto.MD5})
 	if err != nil {
 		return nil, err
 	}
