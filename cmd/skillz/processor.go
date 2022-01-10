@@ -41,6 +41,7 @@ func processorCommand(c *cli.Context) error {
 	character := character.New(cache, esi, etag, characterRepo)
 
 	auth := auth.New(
+		skillz.EnvironmentFromString(cfg.Environment),
 		httpClient(),
 		cache,
 		oauth2Config(),

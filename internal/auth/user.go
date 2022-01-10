@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/eveisesi/skillz"
 	"github.com/eveisesi/skillz/internal"
 	"github.com/gofrs/uuid"
 	"github.com/pkg/errors"
@@ -39,6 +40,7 @@ func (s *Service) UserCookie(ctx context.Context, userID uuid.UUID) (*http.Cooki
 		MaxAge: int(s.userAuth.cookieExpiry.Seconds()),
 		Path:   "/",
 		Value:  fmt.Sprintf("%s.%s", userID, hex.EncodeToString(signature)),
+		Secure: s.env == skillz.Production,
 	}, nil
 
 }

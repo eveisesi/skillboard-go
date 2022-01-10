@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/eveisesi/skillz"
 	"github.com/eveisesi/skillz/internal/cache"
 	"github.com/lestrrat-go/jwx/jwk"
 	"golang.org/x/oauth2"
@@ -29,6 +30,7 @@ type userAuth struct {
 }
 
 type Service struct {
+	env      skillz.Environment
 	userAuth userAuth
 	esiAuth  esiAuth
 	client   *http.Client
@@ -36,6 +38,7 @@ type Service struct {
 }
 
 func New(
+	env skillz.Environment,
 	client *http.Client,
 	cache cache.AuthAPI,
 	esiOAuth *oauth2.Config,
@@ -45,6 +48,7 @@ func New(
 	cookieExpiry time.Duration,
 ) *Service {
 	s := &Service{
+		env:    env,
 		client: client,
 		cache:  cache,
 		esiAuth: esiAuth{

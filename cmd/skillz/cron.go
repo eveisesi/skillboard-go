@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/eveisesi/skillz"
 	"github.com/eveisesi/skillz/internal/alliance"
 	"github.com/eveisesi/skillz/internal/auth"
 	"github.com/eveisesi/skillz/internal/cache"
@@ -33,6 +34,7 @@ func cronCommand(_ *cli.Context) error {
 	universeRepo := mysql.NewUniverseRepository(mysqlClient)
 
 	auth := auth.New(
+		skillz.EnvironmentFromString(cfg.Environment),
 		httpClient(),
 		cache,
 		oauth2Config(),

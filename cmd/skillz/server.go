@@ -49,6 +49,7 @@ func serverCommand(_ *cli.Context) error {
 	etag := etag.New(cache, etagRepo)
 	esi := esi.New(httpClient(), redisClient, logger, etag)
 	auth := auth.New(
+		skillz.EnvironmentFromString(cfg.Environment),
 		httpClient(),
 		cache,
 		oauth2Config(),
