@@ -102,7 +102,7 @@ func (s *Service) Flyable(ctx context.Context, characterID uint64) ([]*skillz.Ch
 		return nil, err
 	}
 
-	if flyable != nil {
+	if len(flyable) > 0 {
 		return flyable, nil
 	}
 

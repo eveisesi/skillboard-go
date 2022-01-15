@@ -42,9 +42,8 @@ const (
 	AttributesLastRemapDate            string = "last_remap_date"
 	AttributesAccruedRemapCooldownDate string = "accrued_remap_cooldown_date"
 
-	FlyableCharacterID string = "character_id"
-	FlyableShipTypeID  string = "ship_type_id"
-	FlyableFlyable     string = "flyable"
+	FlyableShipTypeID string = "ship_type_id"
+	FlyableFlyable    string = "flyable"
 )
 
 func NewSkillRepository(db QueryExecContext) skillz.CharacterSkillRepository {
@@ -64,7 +63,7 @@ func NewSkillRepository(db QueryExecContext) skillz.CharacterSkillRepository {
 		flyable: tableConf{
 			table: TableCharacterFlyableShips,
 			columns: []string{
-				FlyableCharacterID,
+				ColumnCharacterID,
 				FlyableShipTypeID,
 				FlyableFlyable,
 				ColumnCreatedAt,
@@ -236,7 +235,7 @@ func (r *skillRepository) CreateCharacterFlyableShips(ctx context.Context, ships
 
 func (r *skillRepository) DeleteCharacterFlyableShips(ctx context.Context, characterID uint64) error {
 
-	query, args, err := sq.Delete(r.flyable.table).Where(sq.Eq{FlyableCharacterID: characterID}).ToSql()
+	query, args, err := sq.Delete(r.flyable.table).Where(sq.Eq{ColumnCharacterID: characterID}).ToSql()
 	if err != nil {
 		return errors.Wrapf(err, errorFFormat, skillsRepositoryIdentifier, "CreateCharacterFlyableShips", "failed to generate sql")
 	}

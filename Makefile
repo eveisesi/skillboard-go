@@ -16,16 +16,16 @@ test:
 	aws-vault exec skillboard -- chamber exec skillboard/development -- go run ./cmd/skillz/*.go test
 
 dup:
-	aws-vault --backend=file exec skillboard -- chamber exec skillboard/production -- docker compose up -d
+	aws-vault exec skillboard -- chamber exec skillboard/production -- docker compose up -d
 
 dpull:
-	aws-vault --backend=file exec skillboard -- chamber exec skillboard/production -- docker compose pull
+	aws-vault exec skillboard -- chamber exec skillboard/production -- docker compose pull
 
 ddown:
-	aws-vault --backend=file exec skillboard -- chamber exec skillboard/production -- docker compose down
+	aws-vault exec skillboard -- chamber exec skillboard/production -- docker compose down
 
 ddownv:
-	aws-vault --backend=file exec skillboard -- chamber exec skillboard/production -- docker compose down -v
+	aws-vault exec skillboard -- chamber exec skillboard/production -- docker compose down -v
 
 dlogsf:
-	aws-vault --backend=file exec skillboard -- chamber exec skillboard/production -- docker compose logs -f server cron processor
+	aws-vault exec skillboard -- chamber exec skillboard/production -- docker compose logs -f server cron processor

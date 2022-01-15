@@ -28,7 +28,6 @@ const (
 	CharacterBloodlineID    string = "bloodline_id"
 	CharacterRaceID         string = "race_id"
 
-	HistoryCharacterID   string = "character_id"
 	HistoryRecordID      string = "record_id"
 	HistoryCorporationID string = "corporation_id"
 	HistoryIsDeleted     string = "is_deleted"
@@ -52,7 +51,7 @@ func NewCharacterRepository(db QueryExecContext) skillz.CharacterRepository {
 		history: tableConf{
 			table: TableCharacterCorporationHistory,
 			columns: []string{
-				HistoryCharacterID, HistoryRecordID, HistoryCorporationID,
+				ColumnCharacterID, HistoryRecordID, HistoryCorporationID,
 				HistoryIsDeleted, HistoryStartDate, ColumnCreatedAt,
 				ColumnUpdatedAt,
 			},
@@ -136,7 +135,7 @@ func (r *characterRepository) CharacterCorporationHistory(ctx context.Context, c
 
 	query, args, err := sq.Select(r.history.columns...).
 		From(r.history.table).
-		Where(sq.Eq{HistoryCharacterID: characterID}).
+		Where(sq.Eq{ColumnCharacterID: characterID}).
 		ToSql()
 	if err != nil {
 		return nil, errors.Wrapf(err, errorFFormat, characterRepositoryIdentifier, "CharacterCorporationHistory", "failed to generate sql")
@@ -167,7 +166,7 @@ func (r *characterRepository) CreateCharacterCorporationHistory(ctx context.Cont
 	}
 
 	i = i.Suffix(OnDuplicateKeyStmt(
-		HistoryCharacterID,
+		ColumnCharacterID,
 		HistoryCorporationID,
 		HistoryIsDeleted,
 		HistoryStartDate,

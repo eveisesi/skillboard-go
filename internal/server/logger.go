@@ -1,13 +1,9 @@
 package server
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5/middleware"
@@ -31,9 +27,7 @@ func (l *structuredLogger) NewLogEntry(r *http.Request) middleware.LogEntry {
 	logFields["application"] = "skillz-api"
 	logFields["http_method"] = r.Method
 
-	printQueryAndVariables(r, logFields)
-
-	// logFields["remote_addr"] = r.RemoteAddr
+	logFields["x-forwarded-for"] = r.Header.Get("X-Forwarded-For")
 	// logFields["user_agent"] = r.UserAgent()
 
 	logFields["uri"] = r.RequestURI
@@ -41,39 +35,6 @@ func (l *structuredLogger) NewLogEntry(r *http.Request) middleware.LogEntry {
 	entry.logger = entry.logger.WithFields(logFields)
 
 	return entry
-}
-
-func printQueryAndVariables(r *http.Request, logFields logrus.Fields) {
-
-	payload := struct {
-		Query     string          `json:"query"`
-		Variables json.RawMessage `json:"variables"`
-	}{}
-
-	buf, err := io.ReadAll(r.Body)
-	if err != nil {
-		return
-	}
-
-	r.Body = io.NopCloser(bytes.NewBuffer(buf))
-
-	err = json.Unmarshal(buf, &payload)
-	if err != nil {
-		return
-	}
-
-	if payload.Query != "" {
-		payload.Query = strings.ReplaceAll(payload.Query, " ", "")
-		payload.Query = strings.ReplaceAll(payload.Query, "\n", " ")
-		payload.Query = strings.ReplaceAll(payload.Query, ":", ": ")
-		payload.Query = strings.ReplaceAll(payload.Query, ",", ", ")
-		logFields["query"] = payload.Query
-	}
-
-	if len(payload.Variables) > 0 {
-		logFields["variables"] = string(payload.Variables)
-	}
-
 }
 
 // structuredLoggerEntry holds our FieldLogger entry

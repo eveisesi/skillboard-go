@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -32,13 +31,15 @@ type API interface {
 	User(ctx context.Context, id uuid.UUID) (*skillz.User, error)
 	RefreshUser(ctx context.Context, user *skillz.User) error
 	UserByCharacterID(ctx context.Context, characterID uint64) (*skillz.User, error)
-	UserByCookie(ctx context.Context, cookie *http.Cookie) (*skillz.User, error)
 	SearchUsers(ctx context.Context, q string) ([]*skillz.UserSearchResult, error)
 	UpdateUser(ctx context.Context, user *skillz.User) error
 
 	NewUsersBySP(ctx context.Context) ([]*skillz.UserWithSkillMeta, error)
 
 	ProcessUpdatableUsers(ctx context.Context) error
+
+	UserSettings(ctx context.Context, id uuid.UUID) (*skillz.UserSettings, error)
+	CreateUserSettings(ctx context.Context, userID uuid.UUID, settings *skillz.UserSettings) error
 }
 
 type Service struct {
@@ -213,6 +214,7 @@ func (s *Service) Login(ctx context.Context, code, state string) (*skillz.User, 
 	}
 
 	if user.IsNew {
+
 		defer func(ctx context.Context) {
 			err = s.cache.BustNewUsersBySP(ctx)
 			if err != nil {
@@ -221,6 +223,8 @@ func (s *Service) Login(ctx context.Context, code, state string) (*skillz.User, 
 		}(context.Background())
 	}
 
+	user.Settings, err = s.UserSettings(ctx, user.ID)
+	// if err != n
 	return user, err
 
 }
@@ -351,17 +355,6 @@ func (s *Service) UserFromToken(ctx context.Context, token jwt.Token) (*skillz.U
 
 }
 
-func (s *Service) UserByCookie(ctx context.Context, cookie *http.Cookie) (*skillz.User, error) {
-
-	userID, err := s.auth.UserIDFromCookie(ctx, cookie)
-	if err != nil {
-		return nil, err
-	}
-
-	return s.User(ctx, userID)
-
-}
-
 func (s *Service) ValidateCurrentToken(ctx context.Context, user *skillz.User) error {
 
 	updated, token, err := s.auth.ValidateESITokenForUser(ctx, user)
@@ -406,6 +399,65 @@ func (s *Service) ProcessUpdatableUsers(ctx context.Context) error {
 		}
 
 		time.Sleep(time.Second)
+	}
+
+	return nil
+
+}
+
+type Permission uint
+
+const (
+	PermissionHideQueue Permission = iota
+	PermissionHideClones
+	PermissionHideStandings
+	PermissionHideShips
+)
+
+func (s *Service) UserSettings(ctx context.Context, id uuid.UUID) (*skillz.UserSettings, error) {
+
+	settings, err := s.cache.UserSettings(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	if settings != nil {
+		return settings, nil
+	}
+
+	settings, err = s.UserRepository.UserSettings(ctx, id)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, errors.Wrap(err, "failed to fetch settigns from data store")
+	}
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+
+	defer func(ctx context.Context, id uuid.UUID, settings *skillz.UserSettings) {
+		err = s.cache.SetUserSettings(ctx, id, settings, time.Hour)
+		if err != nil {
+			s.logger.WithError(err).WithField("user_id", id.String()).Error("failed to cache user settings")
+		}
+
+	}(context.Background(), id, settings)
+
+	return settings, nil
+
+}
+
+func (s *Service) CreateUserSettings(ctx context.Context, id uuid.UUID, settings *skillz.UserSettings) error {
+
+	settings.UserID = id
+
+	err := s.UserRepository.CreateUserSettings(ctx, settings)
+	if err != nil {
+		return errors.Wrap(err, "failed to cache user settings")
+	}
+
+	err = s.cache.SetUserSettings(ctx, settings.UserID, settings, time.Hour)
+	if err != nil {
+		s.logger.WithError(err).WithField("user_id", settings.UserID.String()).Error("failed to cache user settings")
 	}
 
 	return nil

@@ -2,107 +2,92 @@ package auth
 
 import (
 	"context"
-	"crypto"
-	"crypto/rand"
-	"crypto/rsa"
-	"encoding/hex"
-	"fmt"
-	"net/http"
-	"strings"
+	"time"
 
-	"github.com/eveisesi/skillz"
-	"github.com/eveisesi/skillz/internal"
 	"github.com/gofrs/uuid"
+	"github.com/lestrrat-go/jwx/jwa"
+	"github.com/lestrrat-go/jwx/jws"
+	"github.com/lestrrat-go/jwx/jwt"
 	"github.com/pkg/errors"
 )
 
 type user interface {
-	UserCookie(ctx context.Context, userID uuid.UUID) (*http.Cookie, error)
-	UserIDFromCookie(ctx context.Context, cookie *http.Cookie) (uuid.UUID, error)
-	LogoutCookie(ctx context.Context) (*http.Cookie, error)
+	UserToken(ctx context.Context, userID uuid.UUID) (string, error)
+	UserIDFromToken(ctx context.Context, raw string) (uuid.UUID, error)
 }
 
-func (s *Service) UserCookie(ctx context.Context, userID uuid.UUID) (*http.Cookie, error) {
+const (
+	keyUserID = "userID"
+)
 
-	hash, err := s.hash([]byte(userID.String()))
+func (s *Service) UserToken(ctx context.Context, userID uuid.UUID) (string, error) {
+
+	var err error
+
+	token := jwt.New()
+	err = token.Set(jwt.AudienceKey, s.userAuth.tokenDomain)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to hash user id")
+		return "", errors.Wrap(err, "failed to set aud key on token")
 	}
 
-	signature, err := s.userAuth.rsaKey.Sign(rand.Reader, hash, &rsa.PSSOptions{Hash: crypto.MD5})
+	err = token.Set(jwt.IssuerKey, s.userAuth.tokenDomain)
 	if err != nil {
-		return nil, err
+		return "", errors.Wrap(err, "failed to set iss key on token")
 	}
 
-	return &http.Cookie{
-		Name:   internal.CookieID,
-		Domain: fmt.Sprintf(".%s", s.userAuth.cookieDomain),
-		MaxAge: int(s.userAuth.cookieExpiry.Seconds()),
-		Path:   "/",
-		Value:  fmt.Sprintf("%s.%s", userID, hex.EncodeToString(signature)),
-		Secure: s.env == skillz.Production,
-	}, nil
+	err = token.Set(jwt.IssuedAtKey, time.Now().Unix())
+	if err != nil {
+		return "", errors.Wrap(err, "failed to set iat key on token")
+	}
+
+	err = token.Set(jwt.ExpirationKey, time.Now().Add(s.userAuth.tokenExpiry).Unix())
+	if err != nil {
+		return "", errors.Wrap(err, "failed to set exp key on token")
+	}
+
+	err = token.Set(keyUserID, userID.String())
+	if err != nil {
+		return "", errors.Wrap(err, "failed to set custom key userID on token")
+	}
+
+	tokenHeaders := jws.NewHeaders()
+	err = tokenHeaders.Set(jws.KeyIDKey, s.userAuth.tokenKid.String())
+	if err != nil {
+		return "", errors.Wrap(err, "failed to set custom key userID on token")
+	}
+
+	tokenBytes, err := jwt.Sign(token, jwa.RS256, s.userAuth.rsaKey, jwt.WithHeaders(tokenHeaders))
+	if err != nil {
+		return "", errors.Wrap(err, "failed to sign token")
+	}
+
+	return string(tokenBytes), nil
 
 }
 
-func (s *Service) LogoutCookie(ctx context.Context) (*http.Cookie, error) {
-	return &http.Cookie{
-		Name:   internal.CookieID,
-		Domain: s.userAuth.cookieDomain,
-		MaxAge: -1,
-		Path:   "/",
-	}, nil
-}
+func (s *Service) UserIDFromToken(ctx context.Context, raw string) (uuid.UUID, error) {
 
-func (s *Service) UserIDFromCookie(ctx context.Context, cookie *http.Cookie) (uuid.UUID, error) {
-
-	v := cookie.Value
-
-	// split value it parts seperated by a period
-	vp := strings.Split(v, ".")
-	if len(vp) != 2 {
-		return uuid.Nil, errors.Errorf("expected split of cookie value to = 2, got %d parts", len(vp))
+	token, err := jwt.Parse(
+		[]byte(raw),
+		jwt.WithAudience(s.userAuth.tokenDomain),
+		jwt.WithIssuer(s.userAuth.tokenDomain),
+		jwt.WithValidate(true),
+		jwt.WithKeySet(s.userAuth.publicJWKSet),
+	)
+	if err != nil {
+		return uuid.Nil, errors.Wrap(err, "failed to validate jwt")
 	}
 
-	// The first part should be a valid uuid.
-	userID, err := uuid.FromString(vp[0])
-	if err != nil {
-		return uuid.Nil, errors.Wrap(err, "failed to validate user uuid in cookie")
+	userIDStr, ok := token.Get(keyUserID)
+	if !ok {
+		return uuid.Nil, errors.Wrap(err, "token missing required field in private claims")
 	}
 
-	// Second part is the integrity hash
-	signatureStr := vp[1]
-
-	// Decode the signature from a string to a slice of bytes representing the hex string
-	signature, err := hex.DecodeString(signatureStr)
+	userID, err := uuid.FromString(userIDStr.(string))
 	if err != nil {
-		return uuid.Nil, errors.Wrap(err, "failed to decode signature string to hex")
-	}
-
-	// Hash the User ID
-	userIDHash, err := s.hash([]byte(userID.String()))
-	if err != nil {
-		return uuid.Nil, errors.Wrap(err, "failed to hash user id")
-	}
-
-	// Ensure the integrity of the string. This prevents somebody from modifying the value of the cookie and impresonating the user
-	err = rsa.VerifyPSS(&s.userAuth.rsaKey.PublicKey, crypto.SHA256, []byte(userIDHash), []byte(signature), &rsa.PSSOptions{Hash: crypto.SHA256})
-	if err != nil {
-		return uuid.Nil, errors.Wrap(err, "failed to verify signature")
+		return uuid.Nil, errors.Wrap(err, "failed to parse user id from token to valid uuid")
 	}
 
 	return userID, nil
-
-}
-
-func (s *Service) hash(in []byte) ([]byte, error) {
-
-	hasher := crypto.SHA256.New()
-	_, err := hasher.Write(in)
-	if err != nil {
-		return nil, err
-	}
-
-	return hasher.Sum(nil), nil
 
 }

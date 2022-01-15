@@ -456,6 +456,17 @@ CREATE TABLE IF NOT EXISTS `users` (
     UNIQUE KEY `character_id` (`character_id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
+CREATE TABLE `user_settings` (
+    `user_id` VARCHAR(128) NOT NULL COLLATE 'utf8mb4_unicode_ci',
+    `hide_clones` TINYINT(1) UNSIGNED NOT NULL DEFAULT '0',
+    `hide_queue` TINYINT(1) UNSIGNED NOT NULL DEFAULT '0',
+    `hide_standings` TINYINT(1) UNSIGNED NOT NULL DEFAULT '0',
+    `created_at` DATETIME NOT NULL,
+    `updated_at` DATETIME NOT NULL,
+    PRIMARY KEY (`user_id`) USING BTREE,
+    CONSTRAINT `user_settings_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `skillz`.`users` (`id`) ON UPDATE CASCADE ON DELETE CASCADE
+) COLLATE = 'utf8mb4_unicode_ci' ENGINE = InnoDB;
+
 -- Data exporting was unselected.
 /*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */
 ;

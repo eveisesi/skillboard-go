@@ -16,6 +16,9 @@ type UserRepository interface {
 	CreateUser(ctx context.Context, user *User) error
 	UpdateUser(ctx context.Context, user *User) error
 
+	UserSettings(ctx context.Context, id uuid.UUID) (*UserSettings, error)
+	CreateUserSettings(ctx context.Context, settings *UserSettings) error
+
 	UsersSortedByProcessedAtLimit(ctx context.Context, limit uint64) ([]*User, error)
 
 	NewUsersBySP(ctx context.Context) ([]*User, error)
@@ -38,13 +41,24 @@ type User struct {
 	CreatedAt         time.Time   `db:"created_at" json:"-"`
 	UpdatedAt         time.Time   `db:"updated_at" json:"-"`
 
-	Character *Character `json:"character,omitempty"`
+	Settings *UserSettings `json:"settings,omitempty"`
 }
 
 func (i *User) ApplyToken(t *oauth2.Token) {
 	i.AccessToken = t.AccessToken
 	i.RefreshToken = t.RefreshToken
 	i.Expires = t.Expiry
+}
+
+type UserSettings struct {
+	UserID        uuid.UUID `db:"user_id" json:"-"`
+	HideClones    bool      `db:"hide_clones" json:"hide_clones"`
+	HideQueue     bool      `db:"hide_queue" json:"hide_queue"`
+	HideStandings bool      `db:"hide_standings" json:"hide_standings"`
+	HideShips     bool      `db:"hide_ships" json:"hide_ships"`
+	ForSale       bool      `db:"for_sale" json:"for_sale"`
+	CreatedAt     time.Time `db:"created_at" json:"-"`
+	UpdatedAt     time.Time `db:"updated_at" json:"-"`
 }
 
 type UserSearchResult struct {

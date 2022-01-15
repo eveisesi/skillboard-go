@@ -2,8 +2,11 @@ package server
 
 import (
 	"database/sql"
+	"encoding/json"
 	"net/http"
 
+	"github.com/eveisesi/skillz"
+	"github.com/eveisesi/skillz/internal"
 	"github.com/go-chi/chi/v5"
 	"github.com/gofrs/uuid"
 	"github.com/pkg/errors"
@@ -111,5 +114,65 @@ func (s *server) handleGetNewUsersBySP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.writeResponse(ctx, w, http.StatusOK, users)
+
+}
+
+func (s *server) handleGetUserSettings(w http.ResponseWriter, r *http.Request) {
+
+	var ctx = r.Context()
+
+	userID, err := uuid.FromString(chi.URLParam(r, "userID"))
+	if err != nil {
+		LogEntrySetField(ctx, "error", err)
+		s.writeError(ctx, w, http.StatusBadRequest, errors.New("failed to parse user id to valid uuid"))
+		return
+	}
+
+	settings, err := s.user.UserSettings(ctx, userID)
+	if err != nil {
+		LogEntrySetField(ctx, "error", err)
+		s.writeError(ctx, w, http.StatusInternalServerError, errors.New("failed to fetch user settings"))
+		return
+	}
+
+	s.writeResponse(ctx, w, http.StatusOK, settings)
+
+}
+
+func (s *server) handlePostUserSettings(w http.ResponseWriter, r *http.Request) {
+
+	var ctx = r.Context()
+
+	userID, err := uuid.FromString(chi.URLParam(r, "userID"))
+	if err != nil {
+		LogEntrySetField(ctx, "error", err)
+		s.writeError(ctx, w, http.StatusBadRequest, errors.New("failed to parse user id to valid uuid"))
+		return
+	}
+
+	tokenUser := internal.UserFromContext(ctx)
+	if tokenUser == nil || tokenUser.ID != userID {
+		LogEntrySetField(ctx, "error", err)
+		s.writeError(ctx, w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
+		return
+	}
+
+	var settings = new(skillz.UserSettings)
+	defer s.closeRequestBody(ctx, r)
+	err = json.NewDecoder(r.Body).Decode(settings)
+	if err != nil {
+		LogEntrySetField(ctx, "error", err)
+		s.writeError(ctx, w, http.StatusBadRequest, errors.New("failed to parse request body"))
+		return
+	}
+
+	err = s.user.CreateUserSettings(ctx, userID, settings)
+	if err != nil {
+		LogEntrySetField(ctx, "error", err)
+		s.writeError(ctx, w, http.StatusInternalServerError, errors.New("failed to update user settings"))
+		return
+	}
+
+	s.writeResponse(ctx, w, http.StatusNoContent, nil)
 
 }

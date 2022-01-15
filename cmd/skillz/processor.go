@@ -19,6 +19,14 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+func init() {
+	commands = append(commands, &cli.Command{
+		Name:        "processor",
+		Description: "Start the Job Processor",
+		Action:      processorCommand,
+	})
+}
+
 func processorCommand(c *cli.Context) error {
 
 	etagRepo := mysql.NewETagRepository(mysqlClient)
@@ -46,9 +54,10 @@ func processorCommand(c *cli.Context) error {
 		cache,
 		oauth2Config(),
 		keyConfig(),
+		cfg.Auth.TokenKID,
+		cfg.Auth.TokenDomain,
+		cfg.Auth.TokenExpiry,
 		cfg.Eve.JWKSURI,
-		cfg.Auth.CookieURI,
-		cfg.Auth.CookieExpiry,
 	)
 	universe := universe.New(cache, esi, universeRepo)
 	clone := clone.New(logger, cache, etag, esi, universe, cloneRepo)

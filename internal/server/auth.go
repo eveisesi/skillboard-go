@@ -3,7 +3,8 @@ package server
 import (
 	"net/http"
 
-	"github.com/davecgh/go-spew/spew"
+	"github.com/eveisesi/skillz"
+	"github.com/pkg/errors"
 )
 
 func (s *server) handleGetAuth(w http.ResponseWriter, r *http.Request) {
@@ -20,18 +21,19 @@ func (s *server) handleGetAuth(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		cookie, err := s.auth.UserCookie(ctx, user.ID)
+		token, err := s.auth.UserToken(ctx, user.ID)
 		if err != nil {
-			s.writeError(ctx, w, http.StatusInternalServerError, err)
+			s.writeError(ctx, w, http.StatusInternalServerError, errors.Wrap(err, "failed to generate token"))
 			return
 		}
 
-		spew.Config.DisableMethods = true
-		spew.Dump(cookie, cookie.String())
+		s.writeResponse(ctx, w, http.StatusOK, struct {
+			User  *skillz.User `json:"user"`
+			Token string       `json:"token"`
+		}{
+			user, token,
+		})
 
-		http.SetCookie(w, cookie)
-
-		s.writeResponse(ctx, w, http.StatusOK, user)
 		return
 	}
 
@@ -44,21 +46,5 @@ func (s *server) handleGetAuth(w http.ResponseWriter, r *http.Request) {
 	s.writeResponse(ctx, w, http.StatusOK, map[string]interface{}{
 		"url": s.auth.AuthorizationURI(ctx, attempt.State),
 	})
-
-}
-
-func (s *server) handleGetAuthLogout(w http.ResponseWriter, r *http.Request) {
-
-	var ctx = r.Context()
-
-	cookie, err := s.auth.LogoutCookie(ctx)
-	if err != nil {
-		s.writeError(ctx, w, http.StatusInternalServerError, err)
-		return
-	}
-
-	r.AddCookie(cookie)
-
-	s.writeResponse(ctx, w, http.StatusNoContent, nil)
 
 }

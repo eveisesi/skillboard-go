@@ -27,6 +27,14 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+func init() {
+	commands = append(commands, &cli.Command{
+		Name:        "server",
+		Description: "Starts the GraphQL API",
+		Action:      serverCommand,
+	})
+}
+
 func serverCommand(_ *cli.Context) error {
 
 	var env skillz.Environment = skillz.Development
@@ -54,9 +62,10 @@ func serverCommand(_ *cli.Context) error {
 		cache,
 		oauth2Config(),
 		keyConfig(),
+		cfg.Auth.TokenKID,
+		cfg.Auth.TokenDomain,
+		cfg.Auth.TokenExpiry,
 		cfg.Eve.JWKSURI,
-		cfg.Auth.CookieURI,
-		cfg.Auth.CookieExpiry,
 	)
 	character := character.New(cache, esi, etag, characterRepo)
 	corporation := corporation.New(cache, esi, etag, corporationRepo)

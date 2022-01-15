@@ -10,6 +10,28 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+func init() {
+	commands = append(
+		commands,
+		&cli.Command{
+			Name:        "importTypes",
+			Description: "Run an types importer",
+			Action:      importTypes,
+			Flags: []cli.Flag{
+				&cli.UintFlag{
+					Name:  "categoryID",
+					Usage: "ID for the Category that we need to import groups and types for",
+				},
+			},
+		},
+		&cli.Command{
+			Name:        "importMap",
+			Description: "Run an map importer",
+			Action:      importMap,
+		},
+	)
+}
+
 func importTypes(c *cli.Context) error {
 
 	universeRepo := mysql.NewUniverseRepository(mysqlClient)

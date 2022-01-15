@@ -21,7 +21,7 @@ services:
             - SERVER_PORT
             - AUTH_KEY
             - AUTH_EXPIRY
-            - AUTH_COOKIE_URI
+            - AUTH_TOKEN_DOMAIN
             - ENVIRONMENT
         command: /app/skillboard-api server
         ports:
@@ -46,7 +46,7 @@ services:
             - SERVER_PORT
             - AUTH_KEY
             - AUTH_EXPIRY
-            - AUTH_COOKIE_URI
+            - AUTH_TOKEN_DOMAIN
             - ENVIRONMENT
         command: /app/skillboard-api processor
     cron:
@@ -68,7 +68,7 @@ services:
             - EVE_CALLBACK_URI
             - SERVER_PORT
             - AUTH_KEY
-            - AUTH_COOKIE_URI
+            - AUTH_TOKEN_DOMAIN
             - AUTH_EXPIRY
             - ENVIRONMENT
         command: /app/skillboard-api cron

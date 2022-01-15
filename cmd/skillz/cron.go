@@ -23,6 +23,14 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+func init() {
+	commands = append(commands, &cli.Command{
+		Name:        "cron",
+		Description: "Start the Cron Scheduler",
+		Action:      cronCommand,
+	})
+}
+
 func cronCommand(_ *cli.Context) error {
 	cache := cache.New(redisClient)
 	allianceRepo := mysql.NewAllianceRepository(mysqlClient)
@@ -39,9 +47,10 @@ func cronCommand(_ *cli.Context) error {
 		cache,
 		oauth2Config(),
 		keyConfig(),
+		cfg.Auth.TokenKID,
+		cfg.Auth.TokenDomain,
+		cfg.Auth.TokenExpiry,
 		cfg.Eve.JWKSURI,
-		cfg.Auth.CookieURI,
-		cfg.Auth.CookieExpiry,
 	)
 	etag := etag.New(cache, etagRepo)
 	esi := esi.New(httpClient(), redisClient, logger, etag)

@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/gofrs/uuid"
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/pkg/errors"
@@ -37,10 +38,12 @@ type config struct {
 	}
 
 	Auth struct {
-		PrivateKey      []byte `envconfig:"AUTH_KEY"`
-		CookieExpiryStr string `envconfig:"AUTH_EXPIRY" required:"true"`
-		CookieExpiry    time.Duration
-		CookieURI       string `envconfig:"AUTH_COOKIE_URI" required:"true"`
+		PrivateKey     []byte `envconfig:"AUTH_KEY"`
+		TokenKIDStr    string `envconfig:"AUTH_TOKEN_KID" required:"true"`
+		TokenKID       uuid.UUID
+		TokenExpiryStr string `envconfig:"AUTH_EXPIRY" required:"true"`
+		TokenExpiry    time.Duration
+		TokenDomain    string `envconfig:"AUTH_TOKEN_DOMAIN" required:"true"`
 	}
 
 	Server struct {
@@ -72,12 +75,14 @@ func buildConfig() {
 		}
 	}
 
-	dur, err := time.ParseDuration(cfg.Auth.CookieExpiryStr)
+	dur, err := time.ParseDuration(cfg.Auth.TokenExpiryStr)
 	if err != nil {
 		panic(errors.Wrap(err, "failed to parse AUTH_EXPIRY"))
 	}
 
-	cfg.Auth.CookieExpiry = dur
+	cfg.Auth.TokenExpiry = dur
+
+	cfg.Auth.TokenKID = uuid.Must(uuid.FromString(cfg.Auth.TokenKIDStr))
 
 	callbackURI, err := url.Parse(cfg.Eve.CallbackURIStr)
 	if err != nil {

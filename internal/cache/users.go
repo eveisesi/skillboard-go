@@ -7,10 +7,14 @@ import (
 
 	"github.com/eveisesi/skillz"
 	"github.com/go-redis/redis/v8"
+	"github.com/gofrs/uuid"
 	"github.com/pkg/errors"
 )
 
 type UserAPI interface {
+	UserSettings(ctx context.Context, id uuid.UUID) (*skillz.UserSettings, error)
+	SetUserSettings(ctx context.Context, id uuid.UUID, settings *skillz.UserSettings, expires time.Duration) error
+
 	SearchUsers(ctx context.Context, q string) ([]*skillz.UserSearchResult, error)
 	SetSearchUsersResults(ctx context.Context, q string, users []*skillz.UserSearchResult, expires time.Duration) error
 	NewUsersBySP(ctx context.Context) ([]*skillz.UserWithSkillMeta, error)
@@ -19,8 +23,9 @@ type UserAPI interface {
 }
 
 const (
-	userSearchKeyPrefix = "user::search"
-	usersNewBySPPrefix  = "users::new-by-sp"
+	userSearchKeyPrefix   = "user::search"
+	userSettingsKeyPrefix = "user::settings"
+	usersNewBySPPrefix    = "users::new-by-sp"
 )
 
 func (s *Service) SearchUsers(ctx context.Context, q string) ([]*skillz.UserSearchResult, error) {
@@ -140,4 +145,35 @@ func (s *Service) SetNewUsersBySP(ctx context.Context, users []*skillz.UserWithS
 func (s *Service) BustNewUsersBySP(ctx context.Context) error {
 	key := generateKey(usersNewBySPPrefix)
 	return s.redis.Del(ctx, key).Err()
+}
+
+func (s *Service) UserSettings(ctx context.Context, id uuid.UUID) (*skillz.UserSettings, error) {
+
+	key := generateKey(userSettingsKeyPrefix, id.String())
+	result, err := s.redis.Get(ctx, key).Bytes()
+	if err != nil && !errors.Is(err, redis.Nil) {
+		return nil, errors.Wrapf(err, errorFFormat, userAPI, "UserSettings", "failed to fetch results from cache")
+	}
+
+	if errors.Is(err, redis.Nil) {
+		return nil, nil
+	}
+
+	var settings = new(skillz.UserSettings)
+	err = json.Unmarshal(result, settings)
+	return settings, errors.Wrapf(err, errorFFormat, userAPI, "UserSettings", "failed to decode json to structure")
+
+}
+
+func (s *Service) SetUserSettings(ctx context.Context, id uuid.UUID, settings *skillz.UserSettings, expires time.Duration) error {
+
+	key := generateKey(userSettingsKeyPrefix, id.String())
+	data, err := json.Marshal(settings)
+	if err != nil {
+		return errors.Wrapf(err, errorFFormat, userAPI, "SetType", "failed to encode structure as json")
+	}
+
+	err = s.redis.Set(ctx, key, data, time.Hour).Err()
+	return errors.Wrapf(err, errorFFormat, userAPI, "SetType", "failed to write cache")
+
 }

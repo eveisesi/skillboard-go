@@ -12,13 +12,13 @@ import (
 )
 
 type userRepository struct {
-	db    QueryExecContext
-	users tableConf
+	db       QueryExecContext
+	users    tableConf
+	settings tableConf
 }
 
 const (
 	UserID                = "id"
-	UserCharacterID       = "character_id"
 	UserAccessToken       = "access_token"
 	UserRefreshToken      = "refresh_token"
 	UserExpires           = "expires"
@@ -30,6 +30,11 @@ const (
 	UserDisabledTimestamp = "disabled_timestamp"
 	UserLastLogin         = "last_login"
 	UserLastProcessed     = "last_processed"
+	SettingsUserID        = "user_id"
+	SettingsHideClones    = "hide_clones"
+	SettingsHideQueue     = "hide_queue"
+	SettingsHideStandings = "hide_standings"
+	SettingsHideShips     = "hide_ships"
 )
 
 func NewUserRepository(db QueryExecContext) skillz.UserRepository {
@@ -38,12 +43,20 @@ func NewUserRepository(db QueryExecContext) skillz.UserRepository {
 		users: tableConf{
 			table: TableUsers,
 			columns: []string{
-				UserID, UserCharacterID,
+				UserID, ColumnCharacterID,
 				UserAccessToken, UserRefreshToken,
 				UserExpires, UserOwnerHash,
 				UserScopes, UserIsNew, UserDisabled,
 				UserDisabledReason, UserDisabledTimestamp,
 				UserLastLogin, ColumnCreatedAt, ColumnUpdatedAt,
+			},
+		},
+		settings: tableConf{
+			table: TableUserSettings,
+			columns: []string{
+				SettingsUserID, SettingsHideClones,
+				SettingsHideQueue, SettingsHideStandings, SettingsHideShips,
+				ColumnCreatedAt, ColumnUpdatedAt,
 			},
 		},
 	}
@@ -70,7 +83,7 @@ func (r *userRepository) UserByCharacterID(ctx context.Context, characterID uint
 
 	query, args, err := sq.Select(r.users.columns...).
 		From(r.users.table).
-		Where(sq.Eq{UserCharacterID: characterID}).
+		Where(sq.Eq{ColumnCharacterID: characterID}).
 		Limit(1).
 		ToSql()
 	if err != nil {
@@ -99,7 +112,7 @@ func (r *userRepository) SearchUsers(ctx context.Context, q string) ([]*skillz.U
 				TableCharacters,
 				CharacterID,
 				TableUsers,
-				UserCharacterID,
+				ColumnCharacterID,
 			),
 		).
 		Where(sq.Like{fmt.Sprintf("%s.%s", TableCharacters, CharacterName): fmt.Sprintf("%%%s%%", q)}).
@@ -122,7 +135,7 @@ func (r *userRepository) CreateUser(ctx context.Context, user *skillz.User) erro
 
 	query, args, err := sq.Insert(r.users.table).SetMap(map[string]interface{}{
 		UserID:                user.ID,
-		UserCharacterID:       user.CharacterID,
+		ColumnCharacterID:     user.CharacterID,
 		UserAccessToken:       user.AccessToken,
 		UserRefreshToken:      user.RefreshToken,
 		UserExpires:           user.Expires,
@@ -149,7 +162,7 @@ func (r *userRepository) UpdateUser(ctx context.Context, user *skillz.User) erro
 	user.UpdatedAt = time.Now()
 
 	query, args, err := sq.Update(r.users.table).SetMap(map[string]interface{}{
-		UserCharacterID:       user.CharacterID,
+		ColumnCharacterID:     user.CharacterID,
 		UserAccessToken:       user.AccessToken,
 		UserRefreshToken:      user.RefreshToken,
 		UserExpires:           user.Expires,
@@ -207,5 +220,46 @@ func (r *userRepository) NewUsersBySP(ctx context.Context) ([]*skillz.User, erro
 	var users = make([]*skillz.User, 0)
 	err = r.db.SelectContext(ctx, &users, query, args...)
 	return users, err
+
+}
+
+func (r *userRepository) UserSettings(ctx context.Context, id uuid.UUID) (*skillz.UserSettings, error) {
+
+	query, args, err := sq.Select(r.settings.columns...).
+		From(r.settings.table).
+		Where(sq.Eq{SettingsUserID: id}).
+		ToSql()
+	if err != nil {
+		return nil, errors.Wrapf(err, errorFFormat, userRepositoryIdentifier, "UserSettings", "failed to generate sql")
+	}
+
+	var settings = new(skillz.UserSettings)
+	err = r.db.GetContext(ctx, settings, query, args...)
+	return settings, errors.Wrapf(err, prefixFormat, userRepositoryIdentifier, "UserSettings")
+
+}
+
+func (r *userRepository) CreateUserSettings(ctx context.Context, settings *skillz.UserSettings) error {
+
+	now := time.Now()
+	settings.CreatedAt = now
+	settings.UpdatedAt = now
+
+	query, args, err := sq.Insert(r.settings.table).SetMap(map[string]interface{}{
+		SettingsUserID:        settings.UserID,
+		SettingsHideClones:    settings.HideClones,
+		SettingsHideQueue:     settings.HideQueue,
+		SettingsHideStandings: settings.HideStandings,
+		ColumnCreatedAt:       settings.CreatedAt,
+		ColumnUpdatedAt:       settings.UpdatedAt,
+	}).
+		Suffix(OnDuplicateKeyStmt(SettingsHideClones, SettingsHideQueue, SettingsHideStandings, ColumnUpdatedAt)).
+		ToSql()
+	if err != nil {
+		return errors.Wrapf(err, errorFFormat, userRepositoryIdentifier, "CreateUserSettings", "failed to generate sql")
+	}
+
+	_, err = r.db.ExecContext(ctx, query, args...)
+	return errors.Wrapf(err, prefixFormat, userRepositoryIdentifier, "CreateUserSettings")
 
 }

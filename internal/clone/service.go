@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/eveisesi/skillz"
 	"github.com/eveisesi/skillz/internal/cache"
 	"github.com/eveisesi/skillz/internal/esi"
@@ -137,14 +136,10 @@ func (s *Service) JumpClone(ctx context.Context, characterID uint64) ([]*skillz.
 		return nil, err
 	}
 
-	spew.Dump(clones)
-
 	for _, clone := range clones {
 		switch clone.LocationType {
 		case skillz.CloneLocationTypeStation:
-			spew.Dump(clone.LocationID)
 			clone.Station, err = s.universe.Station(ctx, uint(clone.LocationID))
-			spew.Dump(clone.Station, err)
 		case skillz.CloneLocationTypeStructure:
 			clone.Structure, err = s.universe.Structure(ctx, clone.LocationID)
 		}
@@ -268,8 +263,6 @@ func (s *Service) insertCharacterClones(ctx context.Context, characterID uint64,
 		clones.JumpClones = append(clones.JumpClones, jc)
 	}
 
-	spew.Dump(clones)
-
 	err := s.clones.CreateCharacterCloneMeta(ctx, clones)
 	if err != nil {
 		return clones, err
@@ -303,7 +296,7 @@ func (s *Service) Implants(ctx context.Context, characterID uint64) ([]*skillz.C
 		return nil, err
 	}
 
-	if implants != nil {
+	if len(implants) > 0 {
 		return implants, nil
 	}
 

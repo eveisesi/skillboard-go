@@ -83,7 +83,7 @@ func (s *Service) Contacts(ctx context.Context, characterID uint64) ([]*skillz.C
 		return nil, err
 	}
 
-	if contacts != nil {
+	if len(contacts) > 0 {
 		return contacts, nil
 	}
 
@@ -107,7 +107,14 @@ func (s *Service) Contacts(ctx context.Context, characterID uint64) ([]*skillz.C
 
 	}
 
-	return contacts, s.cache.SetCharacterContacts(ctx, characterID, contacts, time.Hour)
+	defer func() {
+		err := s.cache.SetCharacterContacts(ctx, characterID, contacts, time.Hour)
+		if err != nil {
+			s.logger.WithError(err).Error("failed to cache character standings")
+		}
+	}()
+
+	return contacts, nil
 
 }
 
