@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/eveisesi/skillz/internal/errors"
 	"github.com/gobuffalo/buffalo"
 )
@@ -18,12 +17,20 @@ func (s *Service) loginHandler(c buffalo.Context) error {
 
 	if code != "" && state != "" {
 
+		fmt.Printf("Code: %s\tState: %s\n", code, state)
+
 		user, err := s.user.Login(ctx, state, code)
 		if err != nil {
+			s.logger.WithError(err).Error("failed to query user from attempt")
 			return errors.NewBuffaloHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to query user from attempt"))
 		}
 
-		spew.Dump(user)
+		if user.IsNew {
+			return c.Render(http.StatusOK, s.renderer.HTML("register/index.plush.html"))
+		}
+
+		// return c.Redirect(http.StatusTemporaryRedirect, "user")
+
 		return nil
 
 	}

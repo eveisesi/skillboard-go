@@ -50,6 +50,8 @@ type config struct {
 		Port uint `envconfig:"SERVER_PORT" required:"true"`
 	}
 
+	SessionName string `envconfig:"SESSION_NAME" default:"__skillboard_session"`
+
 	Environment string `envconfig:"ENVIRONMENT" required:"true"`
 
 	UserAgent string `envconfig:"USER_AGENT" required:"true"`

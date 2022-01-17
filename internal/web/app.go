@@ -51,6 +51,7 @@ func NewService(env skillz.Environment,
 	a.GET("/", s.indexHandler)
 	a.GET("/login", s.loginHandler)
 	a.GET("/robots.txt/", s.robotsHandler)
+	a.GET("/user/{userID}", s.userHandler)
 
 	return s
 

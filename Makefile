@@ -11,6 +11,10 @@ server:
 	go mod tidy
 	aws-vault exec skillboard -- chamber exec skillboard/development -- go run ./cmd/skillz/*.go server
 
+buffalo:
+	go mod tidy
+	aws-vault exec skillboard -- chamber exec skillboard/development -- go run ./cmd/skillz/*.go buffalo
+
 test:
 	go mod tidy
 	aws-vault exec skillboard -- chamber exec skillboard/development -- go run ./cmd/skillz/*.go test

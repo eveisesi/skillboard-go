@@ -5,6 +5,7 @@ import (
 
 	"github.com/eveisesi/skillz/internal/mysql"
 	"github.com/go-redis/redis/v8"
+	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )
@@ -14,6 +15,7 @@ var (
 	logger      *logrus.Logger
 	app         *cli.App
 	redisClient *redis.Client
+	dbConn      *sqlx.DB
 	mysqlClient mysql.QueryExecContext
 	commands    []*cli.Command
 )

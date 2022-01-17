@@ -20,6 +20,7 @@ const (
 	contactAPI     string = "ContactAPI"
 	corporationAPI string = "CorporationAPI"
 	etagAPI        string = "EtagAPI"
+	pageAPI        string = "PageAPI"
 	skillAPI       string = "SkillAPI"
 	universeAPI    string = "UniverseAPI"
 	userAPI        string = "UserAPI"
