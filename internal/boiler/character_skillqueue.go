@@ -35,7 +35,7 @@ type CharacterSkillqueue struct {
 	LevelEndSP      null.Uint `boil:"level_end_sp" json:"level_end_sp,omitempty" toml:"level_end_sp" yaml:"level_end_sp,omitempty"`
 	CreatedAt       time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 
-	R *characterSkillqueueR `boil:"-" json:"-" toml:"-" yaml:"-"`
+	R *characterSkillqueueR `boil:"r" json:"r" toml:"r" yaml:"r"`
 	L characterSkillqueueL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
@@ -530,10 +530,6 @@ func (characterSkillqueueL) LoadCharacter(ctx context.Context, e boil.ContextExe
 	if singular {
 		foreign := resultSlice[0]
 		object.R.Character = foreign
-		if foreign.R == nil {
-			foreign.R = &userR{}
-		}
-		foreign.R.CharacterCharacterSkillqueues = append(foreign.R.CharacterCharacterSkillqueues, object)
 		return nil
 	}
 
@@ -541,10 +537,6 @@ func (characterSkillqueueL) LoadCharacter(ctx context.Context, e boil.ContextExe
 		for _, foreign := range resultSlice {
 			if local.CharacterID == foreign.CharacterID {
 				local.R.Character = foreign
-				if foreign.R == nil {
-					foreign.R = &userR{}
-				}
-				foreign.R.CharacterCharacterSkillqueues = append(foreign.R.CharacterCharacterSkillqueues, local)
 				break
 			}
 		}

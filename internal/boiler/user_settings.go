@@ -32,7 +32,7 @@ type UserSetting struct {
 	CreatedAt     time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 	UpdatedAt     time.Time `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
 
-	R *userSettingR `boil:"-" json:"-" toml:"-" yaml:"-"`
+	R *userSettingR `boil:"r" json:"r" toml:"r" yaml:"r"`
 	L userSettingL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
@@ -534,10 +534,6 @@ func (userSettingL) LoadUser(ctx context.Context, e boil.ContextExecutor, singul
 	if singular {
 		foreign := resultSlice[0]
 		object.R.User = foreign
-		if foreign.R == nil {
-			foreign.R = &userR{}
-		}
-		foreign.R.UserSetting = object
 		return nil
 	}
 
@@ -545,10 +541,6 @@ func (userSettingL) LoadUser(ctx context.Context, e boil.ContextExecutor, singul
 		for _, foreign := range resultSlice {
 			if queries.Equal(local.UserID, foreign.ID) {
 				local.R.User = foreign
-				if foreign.R == nil {
-					foreign.R = &userR{}
-				}
-				foreign.R.UserSetting = local
 				break
 			}
 		}

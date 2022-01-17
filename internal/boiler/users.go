@@ -42,7 +42,7 @@ type User struct {
 	CreatedAt         time.Time   `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 	UpdatedAt         time.Time   `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
 
-	R *userR `boil:"-" json:"-" toml:"-" yaml:"-"`
+	R *userR `boil:"r" json:"r" toml:"r" yaml:"r"`
 	L userL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
@@ -786,20 +786,12 @@ func (userL) LoadCharacterCharacterAttribute(ctx context.Context, e boil.Context
 	if singular {
 		foreign := resultSlice[0]
 		object.R.CharacterCharacterAttribute = foreign
-		if foreign.R == nil {
-			foreign.R = &characterAttributeR{}
-		}
-		foreign.R.Character = object
 	}
 
 	for _, local := range slice {
 		for _, foreign := range resultSlice {
 			if local.CharacterID == foreign.CharacterID {
 				local.R.CharacterCharacterAttribute = foreign
-				if foreign.R == nil {
-					foreign.R = &characterAttributeR{}
-				}
-				foreign.R.Character = local
 				break
 			}
 		}
@@ -887,20 +879,12 @@ func (userL) LoadCharacterCharacterCloneMetum(ctx context.Context, e boil.Contex
 	if singular {
 		foreign := resultSlice[0]
 		object.R.CharacterCharacterCloneMetum = foreign
-		if foreign.R == nil {
-			foreign.R = &characterCloneMetumR{}
-		}
-		foreign.R.Character = object
 	}
 
 	for _, local := range slice {
 		for _, foreign := range resultSlice {
 			if local.CharacterID == foreign.CharacterID {
 				local.R.CharacterCharacterCloneMetum = foreign
-				if foreign.R == nil {
-					foreign.R = &characterCloneMetumR{}
-				}
-				foreign.R.Character = local
 				break
 			}
 		}
@@ -988,20 +972,12 @@ func (userL) LoadCharacterCharacterHomeClone(ctx context.Context, e boil.Context
 	if singular {
 		foreign := resultSlice[0]
 		object.R.CharacterCharacterHomeClone = foreign
-		if foreign.R == nil {
-			foreign.R = &characterHomeCloneR{}
-		}
-		foreign.R.Character = object
 	}
 
 	for _, local := range slice {
 		for _, foreign := range resultSlice {
 			if local.CharacterID == foreign.CharacterID {
 				local.R.CharacterCharacterHomeClone = foreign
-				if foreign.R == nil {
-					foreign.R = &characterHomeCloneR{}
-				}
-				foreign.R.Character = local
 				break
 			}
 		}
@@ -1089,20 +1065,12 @@ func (userL) LoadCharacterCharacterSkillMetum(ctx context.Context, e boil.Contex
 	if singular {
 		foreign := resultSlice[0]
 		object.R.CharacterCharacterSkillMetum = foreign
-		if foreign.R == nil {
-			foreign.R = &characterSkillMetumR{}
-		}
-		foreign.R.Character = object
 	}
 
 	for _, local := range slice {
 		for _, foreign := range resultSlice {
 			if local.CharacterID == foreign.CharacterID {
 				local.R.CharacterCharacterSkillMetum = foreign
-				if foreign.R == nil {
-					foreign.R = &characterSkillMetumR{}
-				}
-				foreign.R.Character = local
 				break
 			}
 		}
@@ -1190,20 +1158,12 @@ func (userL) LoadUserSetting(ctx context.Context, e boil.ContextExecutor, singul
 	if singular {
 		foreign := resultSlice[0]
 		object.R.UserSetting = foreign
-		if foreign.R == nil {
-			foreign.R = &userSettingR{}
-		}
-		foreign.R.User = object
 	}
 
 	for _, local := range slice {
 		for _, foreign := range resultSlice {
 			if queries.Equal(local.ID, foreign.UserID) {
 				local.R.UserSetting = foreign
-				if foreign.R == nil {
-					foreign.R = &userSettingR{}
-				}
-				foreign.R.User = local
 				break
 			}
 		}
@@ -1285,12 +1245,6 @@ func (userL) LoadCharacterCharacterContacts(ctx context.Context, e boil.ContextE
 	}
 	if singular {
 		object.R.CharacterCharacterContacts = resultSlice
-		for _, foreign := range resultSlice {
-			if foreign.R == nil {
-				foreign.R = &characterContactR{}
-			}
-			foreign.R.Character = object
-		}
 		return nil
 	}
 
@@ -1298,10 +1252,6 @@ func (userL) LoadCharacterCharacterContacts(ctx context.Context, e boil.ContextE
 		for _, local := range slice {
 			if local.CharacterID == foreign.CharacterID {
 				local.R.CharacterCharacterContacts = append(local.R.CharacterCharacterContacts, foreign)
-				if foreign.R == nil {
-					foreign.R = &characterContactR{}
-				}
-				foreign.R.Character = local
 				break
 			}
 		}
@@ -1383,12 +1333,6 @@ func (userL) LoadCharacterCharacterFlyableShips(ctx context.Context, e boil.Cont
 	}
 	if singular {
 		object.R.CharacterCharacterFlyableShips = resultSlice
-		for _, foreign := range resultSlice {
-			if foreign.R == nil {
-				foreign.R = &characterFlyableShipR{}
-			}
-			foreign.R.Character = object
-		}
 		return nil
 	}
 
@@ -1396,10 +1340,6 @@ func (userL) LoadCharacterCharacterFlyableShips(ctx context.Context, e boil.Cont
 		for _, local := range slice {
 			if local.CharacterID == foreign.CharacterID {
 				local.R.CharacterCharacterFlyableShips = append(local.R.CharacterCharacterFlyableShips, foreign)
-				if foreign.R == nil {
-					foreign.R = &characterFlyableShipR{}
-				}
-				foreign.R.Character = local
 				break
 			}
 		}
@@ -1481,12 +1421,6 @@ func (userL) LoadCharacterCharacterImplants(ctx context.Context, e boil.ContextE
 	}
 	if singular {
 		object.R.CharacterCharacterImplants = resultSlice
-		for _, foreign := range resultSlice {
-			if foreign.R == nil {
-				foreign.R = &characterImplantR{}
-			}
-			foreign.R.Character = object
-		}
 		return nil
 	}
 
@@ -1494,10 +1428,6 @@ func (userL) LoadCharacterCharacterImplants(ctx context.Context, e boil.ContextE
 		for _, local := range slice {
 			if local.CharacterID == foreign.CharacterID {
 				local.R.CharacterCharacterImplants = append(local.R.CharacterCharacterImplants, foreign)
-				if foreign.R == nil {
-					foreign.R = &characterImplantR{}
-				}
-				foreign.R.Character = local
 				break
 			}
 		}
@@ -1579,12 +1509,6 @@ func (userL) LoadCharacterCharacterJumpClones(ctx context.Context, e boil.Contex
 	}
 	if singular {
 		object.R.CharacterCharacterJumpClones = resultSlice
-		for _, foreign := range resultSlice {
-			if foreign.R == nil {
-				foreign.R = &characterJumpCloneR{}
-			}
-			foreign.R.Character = object
-		}
 		return nil
 	}
 
@@ -1592,10 +1516,6 @@ func (userL) LoadCharacterCharacterJumpClones(ctx context.Context, e boil.Contex
 		for _, local := range slice {
 			if local.CharacterID == foreign.CharacterID {
 				local.R.CharacterCharacterJumpClones = append(local.R.CharacterCharacterJumpClones, foreign)
-				if foreign.R == nil {
-					foreign.R = &characterJumpCloneR{}
-				}
-				foreign.R.Character = local
 				break
 			}
 		}
@@ -1677,12 +1597,6 @@ func (userL) LoadCharacterCharacterSkillqueues(ctx context.Context, e boil.Conte
 	}
 	if singular {
 		object.R.CharacterCharacterSkillqueues = resultSlice
-		for _, foreign := range resultSlice {
-			if foreign.R == nil {
-				foreign.R = &characterSkillqueueR{}
-			}
-			foreign.R.Character = object
-		}
 		return nil
 	}
 
@@ -1690,10 +1604,6 @@ func (userL) LoadCharacterCharacterSkillqueues(ctx context.Context, e boil.Conte
 		for _, local := range slice {
 			if local.CharacterID == foreign.CharacterID {
 				local.R.CharacterCharacterSkillqueues = append(local.R.CharacterCharacterSkillqueues, foreign)
-				if foreign.R == nil {
-					foreign.R = &characterSkillqueueR{}
-				}
-				foreign.R.Character = local
 				break
 			}
 		}
@@ -1775,12 +1685,6 @@ func (userL) LoadCharacterCharacterSkills(ctx context.Context, e boil.ContextExe
 	}
 	if singular {
 		object.R.CharacterCharacterSkills = resultSlice
-		for _, foreign := range resultSlice {
-			if foreign.R == nil {
-				foreign.R = &characterSkillR{}
-			}
-			foreign.R.Character = object
-		}
 		return nil
 	}
 
@@ -1788,10 +1692,6 @@ func (userL) LoadCharacterCharacterSkills(ctx context.Context, e boil.ContextExe
 		for _, local := range slice {
 			if local.CharacterID == foreign.CharacterID {
 				local.R.CharacterCharacterSkills = append(local.R.CharacterCharacterSkills, foreign)
-				if foreign.R == nil {
-					foreign.R = &characterSkillR{}
-				}
-				foreign.R.Character = local
 				break
 			}
 		}

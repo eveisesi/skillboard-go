@@ -30,7 +30,7 @@ type CharacterContact struct {
 	Standing    null.Float64 `boil:"standing" json:"standing,omitempty" toml:"standing" yaml:"standing,omitempty"`
 	CreatedAt   time.Time    `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 
-	R *characterContactR `boil:"-" json:"-" toml:"-" yaml:"-"`
+	R *characterContactR `boil:"r" json:"r" toml:"r" yaml:"r"`
 	L characterContactL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
@@ -519,10 +519,6 @@ func (characterContactL) LoadCharacter(ctx context.Context, e boil.ContextExecut
 	if singular {
 		foreign := resultSlice[0]
 		object.R.Character = foreign
-		if foreign.R == nil {
-			foreign.R = &userR{}
-		}
-		foreign.R.CharacterCharacterContacts = append(foreign.R.CharacterCharacterContacts, object)
 		return nil
 	}
 
@@ -530,10 +526,6 @@ func (characterContactL) LoadCharacter(ctx context.Context, e boil.ContextExecut
 		for _, foreign := range resultSlice {
 			if local.CharacterID == foreign.CharacterID {
 				local.R.Character = foreign
-				if foreign.R == nil {
-					foreign.R = &userR{}
-				}
-				foreign.R.CharacterCharacterContacts = append(foreign.R.CharacterCharacterContacts, local)
 				break
 			}
 		}

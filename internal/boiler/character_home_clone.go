@@ -29,7 +29,7 @@ type CharacterHomeClone struct {
 	CreatedAt    time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 	UpdatedAt    time.Time `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
 
-	R *characterHomeCloneR `boil:"-" json:"-" toml:"-" yaml:"-"`
+	R *characterHomeCloneR `boil:"r" json:"r" toml:"r" yaml:"r"`
 	L characterHomeCloneL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
@@ -494,10 +494,6 @@ func (characterHomeCloneL) LoadCharacter(ctx context.Context, e boil.ContextExec
 	if singular {
 		foreign := resultSlice[0]
 		object.R.Character = foreign
-		if foreign.R == nil {
-			foreign.R = &userR{}
-		}
-		foreign.R.CharacterCharacterHomeClone = object
 		return nil
 	}
 
@@ -505,10 +501,6 @@ func (characterHomeCloneL) LoadCharacter(ctx context.Context, e boil.ContextExec
 		for _, foreign := range resultSlice {
 			if local.CharacterID == foreign.CharacterID {
 				local.R.Character = foreign
-				if foreign.R == nil {
-					foreign.R = &userR{}
-				}
-				foreign.R.CharacterCharacterHomeClone = local
 				break
 			}
 		}

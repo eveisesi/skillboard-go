@@ -31,7 +31,7 @@ type MapStructure struct {
 	CreatedAt     time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 	UpdatedAt     time.Time `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
 
-	R *mapStructureR `boil:"-" json:"-" toml:"-" yaml:"-"`
+	R *mapStructureR `boil:"r" json:"r" toml:"r" yaml:"r"`
 	L mapStructureL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 

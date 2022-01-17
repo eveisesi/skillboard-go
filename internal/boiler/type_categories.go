@@ -29,7 +29,7 @@ type TypeCategory struct {
 	CreatedAt time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 	UpdatedAt time.Time `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
 
-	R *typeCategoryR `boil:"-" json:"-" toml:"-" yaml:"-"`
+	R *typeCategoryR `boil:"r" json:"r" toml:"r" yaml:"r"`
 	L typeCategoryL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 

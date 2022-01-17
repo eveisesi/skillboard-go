@@ -28,7 +28,7 @@ type TypeAttribute struct {
 	Value       float32   `boil:"value" json:"value" toml:"value" yaml:"value"`
 	CreatedAt   time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 
-	R *typeAttributeR `boil:"-" json:"-" toml:"-" yaml:"-"`
+	R *typeAttributeR `boil:"r" json:"r" toml:"r" yaml:"r"`
 	L typeAttributeL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
@@ -487,10 +487,6 @@ func (typeAttributeL) LoadType(ctx context.Context, e boil.ContextExecutor, sing
 	if singular {
 		foreign := resultSlice[0]
 		object.R.Type = foreign
-		if foreign.R == nil {
-			foreign.R = &typeR{}
-		}
-		foreign.R.TypeAttributes = append(foreign.R.TypeAttributes, object)
 		return nil
 	}
 
@@ -498,10 +494,6 @@ func (typeAttributeL) LoadType(ctx context.Context, e boil.ContextExecutor, sing
 		for _, foreign := range resultSlice {
 			if local.TypeID == foreign.ID {
 				local.R.Type = foreign
-				if foreign.R == nil {
-					foreign.R = &typeR{}
-				}
-				foreign.R.TypeAttributes = append(foreign.R.TypeAttributes, local)
 				break
 			}
 		}

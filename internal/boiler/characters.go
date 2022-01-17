@@ -38,7 +38,7 @@ type Character struct {
 	CreatedAt      time.Time    `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 	UpdatedAt      time.Time    `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
 
-	R *characterR `boil:"-" json:"-" toml:"-" yaml:"-"`
+	R *characterR `boil:"r" json:"r" toml:"r" yaml:"r"`
 	L characterL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
@@ -598,12 +598,6 @@ func (characterL) LoadIDCharacterCorporationHistories(ctx context.Context, e boi
 	}
 	if singular {
 		object.R.IDCharacterCorporationHistories = resultSlice
-		for _, foreign := range resultSlice {
-			if foreign.R == nil {
-				foreign.R = &characterCorporationHistoryR{}
-			}
-			foreign.R.IDCharacter = object
-		}
 		return nil
 	}
 
@@ -611,10 +605,6 @@ func (characterL) LoadIDCharacterCorporationHistories(ctx context.Context, e boi
 		for _, local := range slice {
 			if local.ID == foreign.ID {
 				local.R.IDCharacterCorporationHistories = append(local.R.IDCharacterCorporationHistories, foreign)
-				if foreign.R == nil {
-					foreign.R = &characterCorporationHistoryR{}
-				}
-				foreign.R.IDCharacter = local
 				break
 			}
 		}

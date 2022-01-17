@@ -31,7 +31,7 @@ type CharacterJumpClone struct {
 	ImplantIds   types.JSON `boil:"implant_ids" json:"implant_ids" toml:"implant_ids" yaml:"implant_ids"`
 	CreatedAt    time.Time  `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 
-	R *characterJumpCloneR `boil:"-" json:"-" toml:"-" yaml:"-"`
+	R *characterJumpCloneR `boil:"r" json:"r" toml:"r" yaml:"r"`
 	L characterJumpCloneL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
@@ -523,10 +523,6 @@ func (characterJumpCloneL) LoadCharacter(ctx context.Context, e boil.ContextExec
 	if singular {
 		foreign := resultSlice[0]
 		object.R.Character = foreign
-		if foreign.R == nil {
-			foreign.R = &userR{}
-		}
-		foreign.R.CharacterCharacterJumpClones = append(foreign.R.CharacterCharacterJumpClones, object)
 		return nil
 	}
 
@@ -534,10 +530,6 @@ func (characterJumpCloneL) LoadCharacter(ctx context.Context, e boil.ContextExec
 		for _, foreign := range resultSlice {
 			if local.CharacterID == foreign.CharacterID {
 				local.R.Character = foreign
-				if foreign.R == nil {
-					foreign.R = &userR{}
-				}
-				foreign.R.CharacterCharacterJumpClones = append(foreign.R.CharacterCharacterJumpClones, local)
 				break
 			}
 		}

@@ -28,7 +28,7 @@ type CharacterFlyableShip struct {
 	Flyable     uint8     `boil:"flyable" json:"flyable" toml:"flyable" yaml:"flyable"`
 	CreatedAt   time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 
-	R *characterFlyableShipR `boil:"-" json:"-" toml:"-" yaml:"-"`
+	R *characterFlyableShipR `boil:"r" json:"r" toml:"r" yaml:"r"`
 	L characterFlyableShipL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
@@ -504,10 +504,6 @@ func (characterFlyableShipL) LoadCharacter(ctx context.Context, e boil.ContextEx
 	if singular {
 		foreign := resultSlice[0]
 		object.R.Character = foreign
-		if foreign.R == nil {
-			foreign.R = &userR{}
-		}
-		foreign.R.CharacterCharacterFlyableShips = append(foreign.R.CharacterCharacterFlyableShips, object)
 		return nil
 	}
 
@@ -515,10 +511,6 @@ func (characterFlyableShipL) LoadCharacter(ctx context.Context, e boil.ContextEx
 		for _, foreign := range resultSlice {
 			if local.CharacterID == foreign.CharacterID {
 				local.R.Character = foreign
-				if foreign.R == nil {
-					foreign.R = &userR{}
-				}
-				foreign.R.CharacterCharacterFlyableShips = append(foreign.R.CharacterCharacterFlyableShips, local)
 				break
 			}
 		}
@@ -608,10 +600,6 @@ func (characterFlyableShipL) LoadShipType(ctx context.Context, e boil.ContextExe
 	if singular {
 		foreign := resultSlice[0]
 		object.R.ShipType = foreign
-		if foreign.R == nil {
-			foreign.R = &typeR{}
-		}
-		foreign.R.ShipTypeCharacterFlyableShips = append(foreign.R.ShipTypeCharacterFlyableShips, object)
 		return nil
 	}
 
@@ -619,10 +607,6 @@ func (characterFlyableShipL) LoadShipType(ctx context.Context, e boil.ContextExe
 		for _, foreign := range resultSlice {
 			if local.ShipTypeID == foreign.ID {
 				local.R.ShipType = foreign
-				if foreign.R == nil {
-					foreign.R = &typeR{}
-				}
-				foreign.R.ShipTypeCharacterFlyableShips = append(foreign.R.ShipTypeCharacterFlyableShips, local)
 				break
 			}
 		}

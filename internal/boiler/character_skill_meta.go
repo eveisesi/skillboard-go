@@ -30,7 +30,7 @@ type CharacterSkillMetum struct {
 	CreatedAt     time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 	UpdatedAt     time.Time `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
 
-	R *characterSkillMetumR `boil:"-" json:"-" toml:"-" yaml:"-"`
+	R *characterSkillMetumR `boil:"r" json:"r" toml:"r" yaml:"r"`
 	L characterSkillMetumL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
@@ -495,10 +495,6 @@ func (characterSkillMetumL) LoadCharacter(ctx context.Context, e boil.ContextExe
 	if singular {
 		foreign := resultSlice[0]
 		object.R.Character = foreign
-		if foreign.R == nil {
-			foreign.R = &userR{}
-		}
-		foreign.R.CharacterCharacterSkillMetum = object
 		return nil
 	}
 
@@ -506,10 +502,6 @@ func (characterSkillMetumL) LoadCharacter(ctx context.Context, e boil.ContextExe
 		for _, foreign := range resultSlice {
 			if local.CharacterID == foreign.CharacterID {
 				local.R.Character = foreign
-				if foreign.R == nil {
-					foreign.R = &userR{}
-				}
-				foreign.R.CharacterCharacterSkillMetum = local
 				break
 			}
 		}

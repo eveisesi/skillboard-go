@@ -38,7 +38,7 @@ type Type struct {
 	CreatedAt      time.Time    `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 	UpdatedAt      time.Time    `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
 
-	R *typeR `boil:"-" json:"-" toml:"-" yaml:"-"`
+	R *typeR `boil:"r" json:"r" toml:"r" yaml:"r"`
 	L typeL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
@@ -598,12 +598,6 @@ func (typeL) LoadShipTypeCharacterFlyableShips(ctx context.Context, e boil.Conte
 	}
 	if singular {
 		object.R.ShipTypeCharacterFlyableShips = resultSlice
-		for _, foreign := range resultSlice {
-			if foreign.R == nil {
-				foreign.R = &characterFlyableShipR{}
-			}
-			foreign.R.ShipType = object
-		}
 		return nil
 	}
 
@@ -611,10 +605,6 @@ func (typeL) LoadShipTypeCharacterFlyableShips(ctx context.Context, e boil.Conte
 		for _, local := range slice {
 			if local.ID == foreign.ShipTypeID {
 				local.R.ShipTypeCharacterFlyableShips = append(local.R.ShipTypeCharacterFlyableShips, foreign)
-				if foreign.R == nil {
-					foreign.R = &characterFlyableShipR{}
-				}
-				foreign.R.ShipType = local
 				break
 			}
 		}
@@ -696,12 +686,6 @@ func (typeL) LoadTypeAttributes(ctx context.Context, e boil.ContextExecutor, sin
 	}
 	if singular {
 		object.R.TypeAttributes = resultSlice
-		for _, foreign := range resultSlice {
-			if foreign.R == nil {
-				foreign.R = &typeAttributeR{}
-			}
-			foreign.R.Type = object
-		}
 		return nil
 	}
 
@@ -709,10 +693,6 @@ func (typeL) LoadTypeAttributes(ctx context.Context, e boil.ContextExecutor, sin
 		for _, local := range slice {
 			if local.ID == foreign.TypeID {
 				local.R.TypeAttributes = append(local.R.TypeAttributes, foreign)
-				if foreign.R == nil {
-					foreign.R = &typeAttributeR{}
-				}
-				foreign.R.Type = local
 				break
 			}
 		}

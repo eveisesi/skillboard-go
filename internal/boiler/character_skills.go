@@ -31,7 +31,7 @@ type CharacterSkill struct {
 	CreatedAt          time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 	UpdatedAt          time.Time `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
 
-	R *characterSkillR `boil:"-" json:"-" toml:"-" yaml:"-"`
+	R *characterSkillR `boil:"r" json:"r" toml:"r" yaml:"r"`
 	L characterSkillL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
@@ -508,10 +508,6 @@ func (characterSkillL) LoadCharacter(ctx context.Context, e boil.ContextExecutor
 	if singular {
 		foreign := resultSlice[0]
 		object.R.Character = foreign
-		if foreign.R == nil {
-			foreign.R = &userR{}
-		}
-		foreign.R.CharacterCharacterSkills = append(foreign.R.CharacterCharacterSkills, object)
 		return nil
 	}
 
@@ -519,10 +515,6 @@ func (characterSkillL) LoadCharacter(ctx context.Context, e boil.ContextExecutor
 		for _, foreign := range resultSlice {
 			if local.CharacterID == foreign.CharacterID {
 				local.R.Character = foreign
-				if foreign.R == nil {
-					foreign.R = &userR{}
-				}
-				foreign.R.CharacterCharacterSkills = append(foreign.R.CharacterCharacterSkills, local)
 				break
 			}
 		}
