@@ -11,7 +11,6 @@ require (
 	github.com/go-redis/redis/v8 v8.11.4
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/gobuffalo/buffalo v0.18.2
-	github.com/gobuffalo/mw-csrf v1.0.0
 	github.com/gofrs/uuid v4.1.0+incompatible
 	github.com/jmoiron/sqlx v1.3.4
 	github.com/joho/godotenv v1.4.0

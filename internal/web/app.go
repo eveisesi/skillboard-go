@@ -1,12 +1,14 @@
 package web
 
 import (
+	"net/http"
+
 	"github.com/eveisesi/skillz"
 	"github.com/eveisesi/skillz/internal/auth"
 	"github.com/eveisesi/skillz/internal/user/v2"
+	"github.com/eveisesi/skillz/public"
 	"github.com/gobuffalo/buffalo"
 	"github.com/gobuffalo/buffalo/render"
-	csrf "github.com/gobuffalo/mw-csrf"
 	"github.com/sirupsen/logrus"
 )
 
@@ -36,10 +38,6 @@ func NewService(env skillz.Environment,
 		Addr:        "127.0.0.1:54400",
 	})
 
-	a.Use(
-		csrf.New,
-	)
-
 	s := &Service{
 		app:      a,
 		auth:     auth,
@@ -52,6 +50,14 @@ func NewService(env skillz.Environment,
 	a.GET("/login", s.loginHandler)
 	a.GET("/robots.txt/", s.robotsHandler)
 	a.GET("/user/{userID}", s.userHandler)
+	a.GET("/user/{userID}/status", s.userStatusHandler)
+	// a.GET("/user/{userID}/settings", s.userHandler)
+
+	a.GET("/ping", func(c buffalo.Context) error {
+		return c.Render(http.StatusOK, s.renderer.String("pong"))
+	})
+
+	a.ServeFiles("/", http.FS(public.FS())) // serve files from the public directory
 
 	return s
 

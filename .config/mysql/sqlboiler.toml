@@ -1,0 +1,36 @@
+output   = "internal/boiler"
+pkgname = "boiler"
+wipe     = true
+no-tests = true
+add-global-variants = true
+[mysql]
+  dbname  = "skillboard"
+  host    = "localhost"
+  port    = 54420
+  user    = "skillz"
+  pass    = "qHZuxud9XeX88tduJirYjCCCPYzsePPo"
+  sslmode = "false"
+
+[[types]]
+  [types.match]
+    tables = ['users']
+    name = "id"
+    nullable = false
+  
+  [types.replace]
+    type = "uuid.UUID"
+
+  [types.imports]
+    third_party = ['"github.com/gofrs/uuid"']
+
+[[types]]
+  [types.match]
+    tables = ['user_settings']
+    name = "user_id"
+    nullable = false
+  
+  [types.replace]
+    type = "uuid.UUID"
+
+  [types.imports]
+    third_party = ['"github.com/gofrs/uuid"']

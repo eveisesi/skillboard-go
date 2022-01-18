@@ -23,11 +23,13 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/boil/qm"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
 type API interface {
 	Login(ctx context.Context, state, code string) (*boiler.User, error)
+	User(ctx context.Context, id uuid.UUID, rels []string) (*boiler.User, error)
+
 	// UserFromToken(ctx context.Context, token jwt.Token) (*skillz.User, error)
 	// ValidateCurrentToken(ctx context.Context, user *skillz.User) error
 
@@ -161,12 +163,24 @@ func (s *service) Login(ctx context.Context, state, code string) (*boiler.User, 
 		return nil, errors.Wrap(err, "failed to push user id to processing queue")
 	}
 
-	// user, err = boiler.Users(
-	// 	qm.Load(boiler.UserRels.UserSetting),
-	// 	boiler.UserWhere.ID.EQ(user.ID),
-	// ).OneG(ctx)
-
 	return user, err
+
+}
+
+func (s *service) User(ctx context.Context, id uuid.UUID, rels []string) (*boiler.User, error) {
+
+	qms := make([]qm.QueryMod, 0, len(rels)+2)
+	qms = append(qms, qm.Load(boiler.UserRels.UserSetting), boiler.UserWhere.ID.EQ(id))
+	for _, rel := range rels {
+		qms = append(qms, qm.Load(rel))
+	}
+
+	user, err := boiler.Users(qms...).OneG(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch user")
+	}
+
+	return user, nil
 
 }
 

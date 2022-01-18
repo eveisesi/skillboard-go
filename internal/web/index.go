@@ -5,7 +5,6 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/gobuffalo/buffalo"
 	"github.com/gobuffalo/buffalo/render"
 	"github.com/tdewolff/minify"
@@ -18,8 +17,6 @@ var defaultTitle = func() (string, string) {
 
 func (s *Service) indexHandler(c buffalo.Context) error {
 	c.Set(defaultTitle())
-
-	spew.Dump(c.Data())
 
 	return c.Render(http.StatusOK, s.renderer.Func("text/html", func(w io.Writer, d render.Data) error {
 		bb := &bytes.Buffer{}

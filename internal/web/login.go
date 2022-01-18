@@ -6,6 +6,7 @@ import (
 
 	"github.com/eveisesi/skillz/internal/errors"
 	"github.com/gobuffalo/buffalo"
+	"github.com/gobuffalo/buffalo/render"
 )
 
 func (s *Service) loginHandler(c buffalo.Context) error {
@@ -29,9 +30,7 @@ func (s *Service) loginHandler(c buffalo.Context) error {
 			return c.Render(http.StatusOK, s.renderer.HTML("register/index.plush.html"))
 		}
 
-		// return c.Redirect(http.StatusTemporaryRedirect, "user")
-
-		return nil
+		return c.Redirect(http.StatusTemporaryRedirect, "userPath()", render.Data{"userID": user.ID.String()})
 
 	}
 
