@@ -50,7 +50,7 @@ func New(logger *logrus.Logger, cache cache.ContactAPI, etag etag.API, esi esi.C
 		corporation: corporation,
 		alliance:    alliance,
 		contacts:    contacts,
-		scopes:      []skillz.Scope{skillz.ReadContactsV1},
+		scopes:      []skillz.Scope{},
 	}
 }
 
