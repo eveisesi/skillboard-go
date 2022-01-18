@@ -50,7 +50,6 @@ func NewService(env skillz.Environment,
 	a.GET("/login", s.loginHandler)
 	a.GET("/robots.txt/", s.robotsHandler)
 	a.GET("/user/{userID}", s.userHandler)
-	a.GET("/user/{userID}/status", s.userStatusHandler)
 	// a.GET("/user/{userID}/settings", s.userHandler)
 
 	a.GET("/ping", func(c buffalo.Context) error {

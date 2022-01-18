@@ -28,7 +28,7 @@ import (
 
 type API interface {
 	Login(ctx context.Context, state, code string) (*boiler.User, error)
-	User(ctx context.Context, id uuid.UUID, rels []string) (*boiler.User, error)
+	User(ctx context.Context, id uuid.UUID) (*boiler.User, error)
 
 	// UserFromToken(ctx context.Context, token jwt.Token) (*skillz.User, error)
 	// ValidateCurrentToken(ctx context.Context, user *skillz.User) error
@@ -167,12 +167,49 @@ func (s *service) Login(ctx context.Context, state, code string) (*boiler.User, 
 
 }
 
-func (s *service) User(ctx context.Context, id uuid.UUID, rels []string) (*boiler.User, error) {
+func (s *service) User(ctx context.Context, id uuid.UUID) (*boiler.User, error) {
 
-	qms := make([]qm.QueryMod, 0, len(rels)+2)
-	qms = append(qms, qm.Load(boiler.UserRels.UserSetting), boiler.UserWhere.ID.EQ(id))
-	for _, rel := range rels {
-		qms = append(qms, qm.Load(rel))
+	// qms := append(make([]qm.QueryMod, 0, 2), )
+	// for _, rel := range rels {
+	// 	qms = append(qms, qm.Load(rel))
+	// }
+
+	initial, err := boiler.Users(
+		qm.Load(boiler.UserRels.UserSetting), boiler.UserWhere.ID.EQ(id),
+	).OneG(ctx)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to fetch user by ID")
+	}
+
+	var strSlcScopes = make([]string, 0)
+	err = json.Unmarshal(initial.Scopes, &strSlcScopes)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to decode user scopes")
+	}
+
+	var modifiers = append(
+		make([]qm.QueryMod, 0, len(strSlcScopes)+2),
+		qm.Load(boiler.UserRels.UserSetting),
+		boiler.UserWhere.ID.EQ(id),
+	)
+	for _, scope := range strSlcScopes {
+		skScope := skillz.Scope(scope)
+		switch skScope {
+		case skillz.ReadSkillsV1:
+			modifiers = append(
+				modifiers,
+				qm.Load(boiler.UserRels.CharacterCharacterSkillMetum),
+				qm.Load(boiler.UserRels.CharacterCharacterSkills),
+				qm.Load(boiler.UserRels.CharacterCharacterAttribute),
+				qm.Load(boiler.UserRels.CharacterCharacterFlyableShips),
+			)
+		case skillz.ReadSkillQueueV1:
+			modifiers = append(
+				modifiers,
+				// qm.Load(boiler.)
+			)
+		}
 	}
 
 	user, err := boiler.Users(qms...).OneG(ctx)
