@@ -5,7 +5,6 @@ go 1.17
 require (
 	github.com/Masterminds/squirrel v1.5.1
 	github.com/davecgh/go-spew v1.1.1
-	github.com/friendsofgo/errors v0.9.2
 	github.com/go-chi/chi/v5 v5.0.5
 	github.com/go-http-utils/headers v0.0.0-20181008091004-fed159eddc2a
 	github.com/go-redis/redis/v8 v8.11.4
@@ -22,9 +21,6 @@ require (
 	github.com/tdewolff/minify v2.3.6+incompatible
 	github.com/urfave/cli/v2 v2.3.0
 	github.com/volatiletech/null v8.0.0+incompatible
-	github.com/volatiletech/null/v8 v8.1.2
-	github.com/volatiletech/sqlboiler/v4 v4.8.3
-	github.com/volatiletech/strmangle v0.0.1
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	xorm.io/builder v0.3.9
@@ -39,10 +35,10 @@ require (
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.0-20210816181553-5444fa50b93d // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
-	github.com/ericlagergren/decimal v0.0.0-20181231230500-73749d4874d5 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/felixge/httpsnoop v1.0.1 // indirect
+	github.com/friendsofgo/errors v0.9.2 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/gobuffalo/envy v1.10.1 // indirect
 	github.com/gobuffalo/events v1.4.2 // indirect
@@ -82,7 +78,6 @@ require (
 	github.com/lestrrat-go/httpcc v1.0.0 // indirect
 	github.com/lestrrat-go/iter v1.0.1 // indirect
 	github.com/lestrrat-go/option v1.0.0 // indirect
-	github.com/lib/pq v1.10.4 // indirect
 	github.com/luna-duclos/instrumentedsql v1.1.3 // indirect
 	github.com/markbates/grift v1.5.0 // indirect
 	github.com/markbates/oncer v1.0.0 // indirect
@@ -101,13 +96,11 @@ require (
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
 	github.com/sourcegraph/annotate v0.0.0-20160123013949-f4cad6c6324d // indirect
 	github.com/sourcegraph/syntaxhighlight v0.0.0-20170531221838-bd320f5d308e // indirect
-	github.com/spf13/cast v1.4.1 // indirect
 	github.com/spf13/cobra v1.2.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/tdewolff/parse v2.3.4+incompatible // indirect
 	github.com/tdewolff/test v1.0.6 // indirect
 	github.com/volatiletech/inflect v0.0.1 // indirect
-	github.com/volatiletech/randomize v0.0.1 // indirect
 	github.com/volatiletech/sqlboiler v3.7.1+incompatible // indirect
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
 	golang.org/x/net v0.0.0-20211015210444-4f30a5c0130f // indirect

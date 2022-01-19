@@ -11,6 +11,7 @@ import (
 	"github.com/eveisesi/skillz/internal/etag"
 	"github.com/go-redis/redis/v8"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/null"
 )
 
@@ -19,17 +20,19 @@ type API interface {
 }
 
 type Service struct {
-	cache cache.CorporationAPI
-	esi   esi.CorporationAPI
-	etag  etag.API
+	logger *logrus.Logger
+	cache  cache.CorporationAPI
+	esi    esi.CorporationAPI
+	etag   etag.API
 
 	corporation skillz.CorporationRepository
 }
 
 var _ API = new(Service)
 
-func New(cache cache.CorporationAPI, esi esi.CorporationAPI, etag etag.API, corporation skillz.CorporationRepository) *Service {
+func New(logger *logrus.Logger, cache cache.CorporationAPI, esi esi.CorporationAPI, etag etag.API, corporation skillz.CorporationRepository) *Service {
 	return &Service{
+		logger:      logger,
 		cache:       cache,
 		esi:         esi,
 		etag:        etag,
@@ -95,6 +98,13 @@ func (s *Service) Corporation(ctx context.Context, corporationID uint) (*skillz.
 
 	}
 
-	return corporation, s.cache.SetCorporation(ctx, corporation, time.Hour)
+	defer func(ctx context.Context, corporation *skillz.Corporation) {
+		err = s.cache.SetCorporation(ctx, corporation, time.Hour)
+		if err != nil {
+			s.logger.WithError(err).Error("failed to cache corporation")
+		}
+	}(context.Background(), corporation)
+
+	return corporation, nil
 
 }

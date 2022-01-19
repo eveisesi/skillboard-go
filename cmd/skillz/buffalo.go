@@ -4,10 +4,10 @@ import (
 	"github.com/eveisesi/skillz"
 	"github.com/eveisesi/skillz/internal/auth"
 	"github.com/eveisesi/skillz/internal/cache"
-	"github.com/eveisesi/skillz/internal/user/v2"
+	"github.com/eveisesi/skillz/internal/mysql"
+	"github.com/eveisesi/skillz/internal/user"
 	"github.com/eveisesi/skillz/internal/web"
 	"github.com/urfave/cli/v2"
-	"github.com/volatiletech/sqlboiler/v4/boil"
 )
 
 func init() {
@@ -25,7 +25,7 @@ func buffaloCmd(_ *cli.Context) error {
 		env = skillz.Production
 	}
 
-	boil.SetDB(dbConn)
+	userRepo := mysql.NewUserRepository(mysqlClient)
 
 	cache := cache.New(redisClient)
 
@@ -41,9 +41,9 @@ func buffaloCmd(_ *cli.Context) error {
 		cfg.Eve.JWKSURI,
 	)
 
-	user := user.NewService(redisClient, logger, cache, auth)
+	user := user.New(redisClient, logger, cache, auth, nil, nil, nil, nil, userRepo)
 
-	web.NewService(
+	return web.NewService(
 		env,
 		cfg.SessionName,
 		logger,
@@ -51,7 +51,5 @@ func buffaloCmd(_ *cli.Context) error {
 		user,
 		renderer(),
 	).Start()
-
-	return nil
 
 }

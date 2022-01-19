@@ -67,10 +67,10 @@ func serverCommand(_ *cli.Context) error {
 		cfg.Auth.TokenExpiry,
 		cfg.Eve.JWKSURI,
 	)
-	character := character.New(cache, esi, etag, characterRepo)
-	corporation := corporation.New(cache, esi, etag, corporationRepo)
-	alliance := alliance.New(cache, esi, etag, allianceRepo)
-	universe := universe.New(cache, esi, universeRepo)
+	character := character.New(logger, cache, esi, etag, characterRepo)
+	corporation := corporation.New(logger, cache, esi, etag, corporationRepo)
+	alliance := alliance.New(logger, cache, esi, etag, allianceRepo)
+	universe := universe.New(logger, cache, esi, universeRepo)
 	clone := clone.New(logger, cache, etag, esi, universe, clonesRepo)
 	contact := contact.New(logger, cache, etag, esi, character, corporation, alliance, contactRepo)
 	skill := skill.New(logger, cache, esi, universe, skillsRepo)

@@ -43,9 +43,9 @@ func processorCommand(c *cli.Context) error {
 	userRepo := mysql.NewUserRepository(mysqlClient)
 	universeRepo := mysql.NewUniverseRepository(mysqlClient)
 
-	alliance := alliance.New(cache, esi, etag, allianceRepo)
-	corporation := corporation.New(cache, esi, etag, corporationRepo)
-	character := character.New(cache, esi, etag, characterRepo)
+	character := character.New(logger, cache, esi, etag, characterRepo)
+	corporation := corporation.New(logger, cache, esi, etag, corporationRepo)
+	alliance := alliance.New(logger, cache, esi, etag, allianceRepo)
 
 	auth := auth.New(
 		skillz.EnvironmentFromString(cfg.Environment),
@@ -58,7 +58,7 @@ func processorCommand(c *cli.Context) error {
 		cfg.Auth.TokenExpiry,
 		cfg.Eve.JWKSURI,
 	)
-	universe := universe.New(cache, esi, universeRepo)
+	universe := universe.New(logger, cache, esi, universeRepo)
 	clone := clone.New(logger, cache, etag, esi, universe, cloneRepo)
 	skills := skill.New(logger, cache, esi, universe, skillsRepo)
 	// contact := contact.New(logger, cache, etag, esi, character, corporation, alliance, contactRepo)

@@ -41,7 +41,14 @@ type User struct {
 	CreatedAt         time.Time   `db:"created_at" json:"-"`
 	UpdatedAt         time.Time   `db:"updated_at" json:"-"`
 
-	Settings *UserSettings `json:"settings,omitempty"`
+	Errors []error `json:"errors,omitempty"`
+
+	Character  *Character              `json:"character,omitempty"`
+	Settings   *UserSettings           `json:"settings,omitempty"`
+	Skills     []*CharacterSkill       `json:"skillz,omitempty"`
+	Queue      []*CharacterSkillQueue  `json:"queue,omitempty"`
+	Attributes *CharacterAttributes    `json:"attributes,omitempty"`
+	Flyable    []*CharacterFlyableShip `json:"flyable,omitempty"`
 }
 
 func (i *User) ApplyToken(t *oauth2.Token) {

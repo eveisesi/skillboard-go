@@ -198,11 +198,6 @@ func (s *Service) Login(ctx context.Context, code, state string) (*skillz.User, 
 		}
 	}
 
-	sessionID := internal.SessionIDFromContext(ctx)
-	if sessionID != uuid.Nil {
-		internal.CacheSet(sessionID, user.ID)
-	}
-
 	err = s.auth.DeleteAuthAttempt(ctx, attempt)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to remove auth attempt from cache")
@@ -214,7 +209,6 @@ func (s *Service) Login(ctx context.Context, code, state string) (*skillz.User, 
 	}
 
 	if user.IsNew {
-
 		defer func(ctx context.Context) {
 			err = s.cache.BustNewUsersBySP(ctx)
 			if err != nil {
@@ -224,7 +218,21 @@ func (s *Service) Login(ctx context.Context, code, state string) (*skillz.User, 
 	}
 
 	user.Settings, err = s.UserSettings(ctx, user.ID)
-	// if err != n
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, errors.Wrap(err, "unexpected error encountered fetch user settings")
+	}
+
+	if err != nil && errors.Is(err, sql.ErrNoRows) {
+		user.Settings = &skillz.UserSettings{
+			UserID: user.ID,
+		}
+
+		err = s.UserRepository.CreateUserSettings(ctx, user.Settings)
+		if err != nil {
+			return nil, errors.Wrap(err, "unexpected error encountered whilst attempting to create user settings")
+		}
+	}
+
 	return user, err
 
 }

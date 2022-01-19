@@ -79,7 +79,7 @@ type CharacterSkillQueue struct {
 	FinishDate      null.Time `db:"finish_date,omitempty" json:"finish_date,omitempty"`
 	CreatedAt       time.Time `db:"created_at" json:"-" deep:"-"`
 
-	Type *Type `json:"type"`
+	Info *Type `json:"info"`
 }
 
 type CharacterSkillMeta struct {

@@ -5,6 +5,7 @@ import (
 
 	"github.com/eveisesi/skillz"
 	"github.com/eveisesi/skillz/internal/auth"
+	"github.com/eveisesi/skillz/internal/cache"
 	"github.com/eveisesi/skillz/internal/user/v2"
 	"github.com/eveisesi/skillz/public"
 	"github.com/gobuffalo/buffalo"
@@ -13,10 +14,10 @@ import (
 )
 
 type Service struct {
-	app  *buffalo.App
-	auth auth.API
-	user user.API
-	// cache    *cache.PageAPI
+	app      *buffalo.App
+	auth     auth.API
+	user     user.API
+	cache    *cache.PageAPI
 	logger   *logrus.Logger
 	renderer *render.Engine
 }

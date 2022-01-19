@@ -10,6 +10,7 @@ import (
 	"github.com/eveisesi/skillz/internal/esi"
 	"github.com/eveisesi/skillz/internal/mysql"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/null"
 )
 
@@ -26,20 +27,22 @@ type API interface {
 	Station(ctx context.Context, stationID uint) (*skillz.Station, error)
 	Structure(ctx context.Context, structureID uint64) (*skillz.Structure, error)
 	Type(ctx context.Context, itemID uint) (*skillz.Type, error)
+	SkillTypesHydrated(ctx context.Context) ([]*skillz.Type, error)
 	TypeAttributes(ctx context.Context, id uint) ([]*skillz.TypeDogmaAttribute, error)
 	TypesByGroup(ctx context.Context, groupID uint) ([]*skillz.Type, error)
 }
 
 type Service struct {
-	cache cache.UniverseAPI
-	esi   esi.UniverseAPI
+	logger *logrus.Logger
+	cache  cache.UniverseAPI
+	esi    esi.UniverseAPI
 
 	universe skillz.UniverseRepository
 }
 
-func New(cache cache.UniverseAPI, esi esi.UniverseAPI, universe skillz.UniverseRepository) *Service {
+func New(logger *logrus.Logger, cache cache.UniverseAPI, esi esi.UniverseAPI, universe skillz.UniverseRepository) *Service {
 	return &Service{
-
+		logger:   logger,
 		cache:    cache,
 		esi:      esi,
 		universe: universe,
@@ -306,6 +309,126 @@ func (s *Service) Structure(ctx context.Context, structureID uint64) (*skillz.St
 	}
 
 	return structure, s.cache.SetStructure(ctx, structure)
+
+}
+
+func (s *Service) SkillTypesHydrated(ctx context.Context) ([]*skillz.Type, error) {
+
+	types, err := s.cache.SkillTypes(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to fetch skill types from cache")
+	}
+
+	if len(types) > 0 {
+		return types, err
+	}
+
+	groups, err := s.GroupsByCategory(ctx, 16)
+	if err != nil {
+		return nil, err
+	}
+
+	mapGroups := make(map[uint]*skillz.Group)
+	groupIDs := make([]interface{}, 0, len(groups))
+	for _, group := range groups {
+		mapGroups[group.ID] = group
+		groupIDs = append(groupIDs, group.ID)
+	}
+
+	skillTypes, err := s.universe.Types(ctx, skillz.NewInOperator("group_id", groupIDs))
+	if err != nil {
+		return nil, err
+	}
+
+	for _, t := range skillTypes {
+		skillGroup, ok := mapGroups[t.GroupID]
+		if !ok {
+			continue
+		}
+
+		t.Group = skillGroup
+
+	}
+
+	defer func(types []*skillz.Type) {
+		err := s.cache.SetSkillTypes(ctx, skillTypes, 0)
+		if err != nil {
+			s.logger.WithError(err).Error("failed to cache skill types")
+		}
+	}(skillTypes)
+
+	return skillTypes, nil
+
+}
+
+func (s *Service) ShipTypesHydrated(ctx context.Context) ([]*skillz.Type, error) {
+
+	types, err := s.cache.ShipTypes(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to fetch ship types from cache")
+	}
+
+	if len(types) > 0 {
+		return types, err
+	}
+
+	groups, err := s.GroupsByCategory(ctx, 6)
+	if err != nil {
+		return nil, err
+	}
+
+	mapGroups := make(map[uint]*skillz.Group)
+	groupIDs := make([]interface{}, 0, len(groups))
+	for _, group := range groups {
+		mapGroups[group.ID] = group
+		groupIDs = append(groupIDs, group.ID)
+	}
+
+	shipTypes, err := s.universe.Types(ctx, skillz.NewInOperator("group_id", groupIDs))
+	if err != nil {
+		return nil, err
+	}
+
+	tIDs := make([]uint, 0, len(shipTypes))
+	for _, t := range shipTypes {
+		tIDs = append(tIDs, t.ID)
+	}
+
+	attributes, err := s.universe.TypeDogmaAttributesBulk(ctx, tIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	mapAttributes := make(map[uint][]*skillz.TypeDogmaAttribute)
+	for _, attribute := range attributes {
+		if _, ok := mapAttributes[attribute.TypeID]; !ok {
+			mapAttributes[attribute.TypeID] = make([]*skillz.TypeDogmaAttribute, 0)
+		}
+
+		mapAttributes[attribute.TypeID] = append(mapAttributes[attribute.TypeID], attribute)
+	}
+
+	for _, t := range shipTypes {
+		group, ok := mapGroups[t.GroupID]
+		if !ok {
+			continue
+		}
+		t.Group = group
+		attriutes, ok := mapAttributes[t.ID]
+		if !ok {
+			continue
+		}
+		t.Attributes = attriutes
+	}
+
+	defer func(shipTypes []*skillz.Type) {
+		err = s.cache.SetShipTypes(ctx, shipTypes, 0)
+		if err != nil {
+			s.logger.WithError(err).Error("failed to cache ship types")
+		}
+	}(shipTypes)
+
+	return shipTypes, nil
 
 }
 
