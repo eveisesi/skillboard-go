@@ -16,9 +16,6 @@ import (
 	"github.com/eveisesi/skillz/internal/skill"
 	"github.com/eveisesi/skillz/internal/user"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-http-utils/headers"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -90,36 +87,36 @@ func (s *server) Shutdown(ctx context.Context) error {
 func (s *server) buildRouter() *chi.Mux {
 	r := chi.NewRouter()
 
-	r.Use(
-		s.cors,
-		s.requestLogger(s.logger),
-		middleware.SetHeader(headers.ContentType, "application/json"),
-	)
+	// r.Use(
+	// 	s.cors,
+	// 	s.requestLogger(s.logger),
+	// 	middleware.SetHeader(headers.ContentType, "application/json"),
+	// )
 
-	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
+	// r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+	// 	w.WriteHeader(http.StatusOK)
+	// })
 
-	r.Get("/recent", s.handleGetNewUsersBySP)
-	r.Get("/search", s.handleGetUserSearch)
-	r.Get("/.well-known/openid-configuration", func(w http.ResponseWriter, r *http.Request) {
+	// r.Get("/recent", s.handleGetNewUsersBySP)
+	// r.Get("/search", s.handleGetUserSearch)
+	// r.Get("/.well-known/openid-configuration", func(w http.ResponseWriter, r *http.Request) {
 
-		err := json.NewEncoder(w).Encode(struct {
-			JWKSUri string `json:"jwks_uri"`
-		}{
-			JWKSUri: s.auth.GetJWKSURI(),
-		})
-		if err != nil {
-			LogEntrySetField(r.Context(), "error", errors.Wrap(err, "failed to write jwk to stream"))
-		}
+	// 	err := json.NewEncoder(w).Encode(struct {
+	// 		JWKSUri string `json:"jwks_uri"`
+	// 	}{
+	// 		JWKSUri: s.auth.GetJWKSURI(),
+	// 	})
+	// 	if err != nil {
+	// 		LogEntrySetField(r.Context(), "error", errors.Wrap(err, "failed to write jwk to stream"))
+	// 	}
 
-	})
-	r.Get("/.well-known/jwks", func(w http.ResponseWriter, r *http.Request) {
-		_, err := w.Write([]byte(s.auth.GetPublicJWKSet()))
-		if err != nil {
-			LogEntrySetField(r.Context(), "error", errors.Wrap(err, "failed to write jwk to stream"))
-		}
-	})
+	// })
+	// r.Get("/.well-known/jwks", func(w http.ResponseWriter, r *http.Request) {
+	// 	_, err := w.Write([]byte(s.auth.GetPublicJWKSet()))
+	// 	if err != nil {
+	// 		LogEntrySetField(r.Context(), "error", errors.Wrap(err, "failed to write jwk to stream"))
+	// 	}
+	// })
 
 	// r.Group(func(r chi.Router) {
 	// 	r.Use(

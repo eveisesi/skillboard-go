@@ -25,7 +25,21 @@ func init() {
 	})
 }
 
-func buffaloCmd(_ *cli.Context) error {
+func buffaloCmd(c *cli.Context) error {
+
+	if cfg.MySQL.RunMigrations == 1 {
+		err := migrateUpCommand(c)
+		if err != nil {
+			return err
+		}
+	}
+
+	if cfg.Eve.InitializeUniverse == 1 {
+		err := importCmd(c)
+		if err != nil {
+			return err
+		}
+	}
 
 	var env skillz.Environment = skillz.Development
 	if cfg.Environment == "production" {
@@ -54,10 +68,6 @@ func buffaloCmd(_ *cli.Context) error {
 		httpClient(),
 		cache,
 		oauth2Config(),
-		keyConfig(),
-		cfg.Auth.TokenKID,
-		cfg.Auth.TokenDomain,
-		cfg.Auth.TokenExpiry,
 		cfg.Eve.JWKSURI,
 	)
 

@@ -2,7 +2,6 @@ package main
 
 import (
 	"net/url"
-	"os"
 	"time"
 
 	"github.com/gofrs/uuid"
@@ -13,10 +12,11 @@ import (
 
 type config struct {
 	MySQL struct {
-		Host string `envconfig:"MYSQL_HOST" required:"true"`
-		User string `envconfig:"MYSQL_USER" required:"true"`
-		Pass string `envconfig:"MYSQL_PASSWORD" required:"true"`
-		DB   string `envconfig:"MYSQL_DATABASE" required:"true"`
+		Host          string `envconfig:"MYSQL_HOST" required:"true"`
+		User          string `envconfig:"MYSQL_USER" required:"true"`
+		Pass          string `envconfig:"MYSQL_PASSWORD" required:"true"`
+		DB            string `envconfig:"MYSQL_DATABASE" required:"true"`
+		RunMigrations uint   `envconfig:"RUN_MIGRATIONS" required:"true"`
 	}
 
 	Redis struct {
@@ -29,16 +29,16 @@ type config struct {
 	}
 
 	Eve struct {
-		ClientID       string `envconfig:"EVE_CLIENT_ID" required:"true"`
-		ClientSecret   string `envconfig:"EVE_CLIENT_SECRET" required:"true"`
-		CallbackURIStr string `envconfig:"EVE_CALLBACK_URI" required:"true"`
-		CallbackURI    *url.URL
-		JWKSURIStr     string `envconfig:"EVE_JWKS_URI" required:"true"`
-		JWKSURI        *url.URL
+		ClientID           string `envconfig:"EVE_CLIENT_ID" required:"true"`
+		ClientSecret       string `envconfig:"EVE_CLIENT_SECRET" required:"true"`
+		CallbackURIStr     string `envconfig:"EVE_CALLBACK_URI" required:"true"`
+		CallbackURI        *url.URL
+		JWKSURIStr         string `envconfig:"EVE_JWKS_URI" required:"true"`
+		JWKSURI            *url.URL
+		InitializeUniverse uint `envconfig:"INITIALIZE_UNIVERSE" required:"true"`
 	}
 
 	Auth struct {
-		PrivateKey     []byte `envconfig:"AUTH_KEY"`
 		TokenKIDStr    string `envconfig:"AUTH_TOKEN_KID" required:"true"`
 		TokenKID       uuid.UUID
 		TokenExpiryStr string `envconfig:"AUTH_EXPIRY" required:"true"`
@@ -64,17 +64,6 @@ func buildConfig() {
 	err := envconfig.Process("", cfg)
 	if err != nil {
 		panic(errors.Wrap(err, "failed to config env"))
-	}
-
-	if len(cfg.Auth.PrivateKey) == 0 {
-		if cfg.Environment == "production" {
-			panic(errors.New("failed to config env: AUTH_KEY is required but has a length of 0"))
-		}
-
-		cfg.Auth.PrivateKey, err = os.ReadFile("../../.config/.key")
-		if err != nil {
-			panic(errors.Wrap(err, "failed to config env: AUTH_KEY is required and an error was encountered reading key file"))
-		}
 	}
 
 	dur, err := time.ParseDuration(cfg.Auth.TokenExpiryStr)

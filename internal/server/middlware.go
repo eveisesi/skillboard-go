@@ -2,11 +2,8 @@ package server
 
 import (
 	"net/http"
-	"strings"
 
-	"github.com/eveisesi/skillz/internal"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -34,56 +31,56 @@ func (s *server) cors(next http.Handler) http.Handler {
 	})
 }
 
-func (s *server) authorization(next http.Handler) http.Handler {
+// func (s *server) authorization(next http.Handler) http.Handler {
 
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		var ctx = r.Context()
+// 		var ctx = r.Context()
 
-		authHeader := r.Header.Get("authorization")
-		if authHeader != "" {
-			if !strings.HasPrefix(strings.ToLower(authHeader), "bearer ") {
-				err := errors.New("invalid token, missing token type designator")
-				LogEntrySetField(ctx, "error", err)
-				s.writeError(ctx, w, http.StatusUnauthorized, err)
-				return
-			}
+// 		authHeader := r.Header.Get("authorization")
+// 		if authHeader != "" {
+// 			if !strings.HasPrefix(strings.ToLower(authHeader), "bearer ") {
+// 				err := errors.New("invalid token, missing token type designator")
+// 				LogEntrySetField(ctx, "error", err)
+// 				s.writeError(ctx, w, http.StatusUnauthorized, err)
+// 				return
+// 			}
 
-			tokenStr := authHeader[len("bearer "):]
-			if tokenStr == "null" {
-				err := errors.New("received null for token, please remove header if token is not available")
-				LogEntrySetField(ctx, "error", err)
-				s.writeError(ctx, w, http.StatusUnauthorized, err)
-				return
-			}
+// 			tokenStr := authHeader[len("bearer "):]
+// 			if tokenStr == "null" {
+// 				err := errors.New("received null for token, please remove header if token is not available")
+// 				LogEntrySetField(ctx, "error", err)
+// 				s.writeError(ctx, w, http.StatusUnauthorized, err)
+// 				return
+// 			}
 
-			userID, err := s.auth.UserIDFromToken(ctx, tokenStr)
-			if err != nil {
-				LogEntrySetField(ctx, "error", errors.Wrap(err, "failed to parse token for valid userID"))
-				s.writeError(ctx, w, http.StatusUnauthorized, errors.New("failed to parse token for valid userID"))
-				return
-			}
+// 			userID, err := s.auth.UserIDFromToken(ctx, tokenStr)
+// 			if err != nil {
+// 				LogEntrySetField(ctx, "error", errors.Wrap(err, "failed to parse token for valid userID"))
+// 				s.writeError(ctx, w, http.StatusUnauthorized, errors.New("failed to parse token for valid userID"))
+// 				return
+// 			}
 
-			user, err := s.user.User(ctx, userID)
-			if err != nil {
-				LogEntrySetField(ctx, "error", errors.Wrap(err, "unknown user for provided token"))
-				s.writeError(ctx, w, http.StatusUnauthorized, errors.New("unknown user for provided token"))
-				return
-			}
+// 			user, err := s.user.User(ctx, userID)
+// 			if err != nil {
+// 				LogEntrySetField(ctx, "error", errors.Wrap(err, "unknown user for provided token"))
+// 				s.writeError(ctx, w, http.StatusUnauthorized, errors.New("unknown user for provided token"))
+// 				return
+// 			}
 
-			user.Settings, err = s.user.UserSettings(ctx, user.ID)
-			if err != nil {
-				LogEntrySetField(ctx, "error", errors.Wrap(err, "unknown user for provided token"))
-			}
+// 			user.Settings, err = s.user.UserSettings(ctx, user.ID)
+// 			if err != nil {
+// 				LogEntrySetField(ctx, "error", errors.Wrap(err, "unknown user for provided token"))
+// 			}
 
-			ctx = internal.ContextWithUser(ctx, user)
-		}
+// 			ctx = internal.ContextWithUser(ctx, user)
+// 		}
 
-		next.ServeHTTP(w, r.WithContext(ctx))
+// 		next.ServeHTTP(w, r.WithContext(ctx))
 
-	})
+// 	})
 
-}
+// }
 
 // func (s *server) hasPermission(permission user.Permission, handler http.HandlerFunc) http.HandlerFunc {
 // 	return func(w http.ResponseWriter, r *http.Request) {

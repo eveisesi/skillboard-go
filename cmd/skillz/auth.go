@@ -1,10 +1,6 @@
 package main
 
 import (
-	"crypto/rsa"
-	"crypto/x509"
-	"encoding/pem"
-
 	"github.com/eveisesi/skillz"
 	"golang.org/x/oauth2"
 )
@@ -26,24 +22,4 @@ func oauth2Config() *oauth2.Config {
 		},
 		RedirectURL: cfg.Eve.CallbackURI.String(),
 	}
-}
-
-func keyConfig() *rsa.PrivateKey {
-
-	pemData, _ := pem.Decode(cfg.Auth.PrivateKey)
-	if pemData == nil {
-		logger.Fatal("pem.Decode of Private Key failed")
-	}
-
-	if pemData.Type != "RSA PRIVATE KEY" {
-		logger.Fatalf("Expected RSA PRIVATE KEY, got %s", pemData.Type)
-	}
-
-	privateKey, err := x509.ParsePKCS1PrivateKey(pemData.Bytes)
-	if err != nil {
-		logger.WithError(err).Fatal("failed to parse decode pem")
-	}
-
-	return privateKey
-
 }

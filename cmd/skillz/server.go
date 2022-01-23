@@ -1,114 +1,89 @@
 package main
 
-import (
-	"context"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
+// "github.com/eveisesi/skillz/internal/graphql/engine/dataloaders"
 
-	"github.com/eveisesi/skillz"
-	"github.com/eveisesi/skillz/internal/alliance"
-	"github.com/eveisesi/skillz/internal/auth"
-	"github.com/eveisesi/skillz/internal/cache"
-	"github.com/eveisesi/skillz/internal/character"
-	"github.com/eveisesi/skillz/internal/clone"
-	"github.com/eveisesi/skillz/internal/contact"
-	"github.com/eveisesi/skillz/internal/corporation"
-	"github.com/eveisesi/skillz/internal/esi"
-	"github.com/eveisesi/skillz/internal/etag"
-	"github.com/eveisesi/skillz/internal/universe"
+// func init() {
+// 	commands = append(commands, &cli.Command{
+// 		Name:        "server",
+// 		Description: "Starts the GraphQL API",
+// 		Action:      serverCommand,
+// 	})
+// }
 
-	// "github.com/eveisesi/skillz/internal/graphql/engine/dataloaders"
-	"github.com/eveisesi/skillz/internal/mysql"
-	"github.com/eveisesi/skillz/internal/server"
-	"github.com/eveisesi/skillz/internal/skill"
-	"github.com/eveisesi/skillz/internal/user"
-	"github.com/urfave/cli/v2"
-)
+// func serverCommand(_ *cli.Context) error {
 
-func init() {
-	commands = append(commands, &cli.Command{
-		Name:        "server",
-		Description: "Starts the GraphQL API",
-		Action:      serverCommand,
-	})
-}
+// 	var env skillz.Environment = skillz.Development
+// 	if cfg.Environment == "production" {
+// 		env = skillz.Production
+// 	}
 
-func serverCommand(_ *cli.Context) error {
+// 	cache := cache.New(redisClient)
 
-	var env skillz.Environment = skillz.Development
-	if cfg.Environment == "production" {
-		env = skillz.Production
-	}
+// 	allianceRepo := mysql.NewAllianceRepository(mysqlClient)
+// 	characterRepo := mysql.NewCharacterRepository(mysqlClient)
+// 	clonesRepo := mysql.NewCloneRepository(mysqlClient)
+// 	contactRepo := mysql.NewContactRepository(mysqlClient)
+// 	corporationRepo := mysql.NewCorporationRepository(mysqlClient)
+// 	etagRepo := mysql.NewETagRepository(mysqlClient)
+// 	skillsRepo := mysql.NewSkillRepository(mysqlClient)
+// 	universeRepo := mysql.NewUniverseRepository(mysqlClient)
+// 	userRepo := mysql.NewUserRepository(mysqlClient)
 
-	cache := cache.New(redisClient)
+// 	etag := etag.New(cache, etagRepo)
+// 	esi := esi.New(httpClient(), redisClient, logger, etag)
+// 	auth := auth.New(
+// 		skillz.EnvironmentFromString(cfg.Environment),
+// 		httpClient(),
+// 		cache,
+// 		oauth2Config(),
+// 		keyConfig(),
+// 		cfg.Auth.TokenKID,
+// 		cfg.Auth.TokenDomain,
+// 		cfg.Auth.TokenExpiry,
+// 		cfg.Eve.JWKSURI,
+// 	)
+// 	character := character.New(logger, cache, esi, etag, characterRepo)
+// 	corporation := corporation.New(logger, cache, esi, etag, corporationRepo)
+// 	alliance := alliance.New(logger, cache, esi, etag, allianceRepo)
+// 	universe := universe.New(logger, cache, esi, universeRepo)
+// 	clone := clone.New(logger, cache, etag, esi, universe, clonesRepo)
+// 	contact := contact.New(logger, cache, etag, esi, character, corporation, alliance, contactRepo)
+// 	skill := skill.New(logger, cache, esi, universe, skillsRepo)
+// 	user := user.New(redisClient, logger, cache, auth, alliance, character, corporation, skill, userRepo)
+// 	server := server.New(cfg.Server.Port, env, logger, alliance, auth, character, clone, contact, corporation, skill, user)
+// 	errChan := make(chan error, 1)
+// 	go func() {
+// 		errChan <- server.Run()
+// 	}()
 
-	allianceRepo := mysql.NewAllianceRepository(mysqlClient)
-	characterRepo := mysql.NewCharacterRepository(mysqlClient)
-	clonesRepo := mysql.NewCloneRepository(mysqlClient)
-	contactRepo := mysql.NewContactRepository(mysqlClient)
-	corporationRepo := mysql.NewCorporationRepository(mysqlClient)
-	etagRepo := mysql.NewETagRepository(mysqlClient)
-	skillsRepo := mysql.NewSkillRepository(mysqlClient)
-	universeRepo := mysql.NewUniverseRepository(mysqlClient)
-	userRepo := mysql.NewUserRepository(mysqlClient)
+// 	sc := make(chan os.Signal, 1)
+// 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 
-	etag := etag.New(cache, etagRepo)
-	esi := esi.New(httpClient(), redisClient, logger, etag)
-	auth := auth.New(
-		skillz.EnvironmentFromString(cfg.Environment),
-		httpClient(),
-		cache,
-		oauth2Config(),
-		keyConfig(),
-		cfg.Auth.TokenKID,
-		cfg.Auth.TokenDomain,
-		cfg.Auth.TokenExpiry,
-		cfg.Eve.JWKSURI,
-	)
-	character := character.New(logger, cache, esi, etag, characterRepo)
-	corporation := corporation.New(logger, cache, esi, etag, corporationRepo)
-	alliance := alliance.New(logger, cache, esi, etag, allianceRepo)
-	universe := universe.New(logger, cache, esi, universeRepo)
-	clone := clone.New(logger, cache, etag, esi, universe, clonesRepo)
-	contact := contact.New(logger, cache, etag, esi, character, corporation, alliance, contactRepo)
-	skill := skill.New(logger, cache, esi, universe, skillsRepo)
-	user := user.New(redisClient, logger, cache, auth, alliance, character, corporation, skill, userRepo)
-	server := server.New(cfg.Server.Port, env, logger, alliance, auth, character, clone, contact, corporation, skill, user)
-	errChan := make(chan error, 1)
-	go func() {
-		errChan <- server.Run()
-	}()
+// 	select {
+// 	case err := <-errChan:
+// 		logger.WithError(err).Error("server error encountered, shutting down")
 
-	sc := make(chan os.Signal, 1)
-	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
+// 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 
-	select {
-	case err := <-errChan:
-		logger.WithError(err).Error("server error encountered, shutting down")
+// 		err = server.Shutdown(ctx)
+// 		if err != nil {
+// 			logger.WithError(err).Fatal("failed to gracefully shutdown server")
+// 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+// 		cancel()
+// 	case <-sc:
+// 		logger.Info("gracefully shutting down server")
 
-		err = server.Shutdown(ctx)
-		if err != nil {
-			logger.WithError(err).Fatal("failed to gracefully shutdown server")
-		}
+// 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 
-		cancel()
-	case <-sc:
-		logger.Info("gracefully shutting down server")
+// 		err := server.Shutdown(ctx)
+// 		if err != nil {
+// 			logger.WithError(err).Fatal("failed to gracefully shutdown server")
+// 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+// 		cancel()
 
-		err := server.Shutdown(ctx)
-		if err != nil {
-			logger.WithError(err).Fatal("failed to gracefully shutdown server")
-		}
+// 	}
 
-		cancel()
-
-	}
-
-	return nil
-}
+// 	return nil
+// }
