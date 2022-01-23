@@ -1,1 +1,0 @@
-DROP TABLE `character_corporation_history`
