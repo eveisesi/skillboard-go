@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -26,16 +27,19 @@ import (
 
 type API interface {
 	Login(ctx context.Context, code, state string) (*skillz.User, error)
+	LoadUserAll(ctx context.Context, id uuid.UUID) (*skillz.User, error)
+
 	UserFromToken(ctx context.Context, token jwt.Token) (*skillz.User, error)
 	ValidateCurrentToken(ctx context.Context, user *skillz.User) error
 
-	User(ctx context.Context, id uuid.UUID) (*skillz.User, error)
+	User(ctx context.Context, id uuid.UUID, rels ...UserRel) (*skillz.User, error)
 	RefreshUser(ctx context.Context, user *skillz.User) error
 	UserByCharacterID(ctx context.Context, characterID uint64) (*skillz.User, error)
 	SearchUsers(ctx context.Context, q string) ([]*skillz.UserSearchResult, error)
 	UpdateUser(ctx context.Context, user *skillz.User) error
 
-	NewUsersBySP(ctx context.Context) ([]*skillz.UserWithSkillMeta, error)
+	Recent(ctx context.Context) ([]*skillz.User, []*skillz.User, error)
+	// NewUsersBySP(ctx context.Context) ([]*skillz.UserWithSkillMeta, error)
 
 	ProcessUpdatableUsers(ctx context.Context) error
 
@@ -84,6 +88,137 @@ func New(
 	}
 }
 
+type UserRel uint
+
+var allRels = []UserRel{
+	UserCharacterRel, UserAttributesRel,
+	UserSkillsRel, UserFlyableRel,
+	UserSkillQueueRel, UserSkillMetaRel,
+}
+
+func (r UserRel) Valid() bool {
+	for _, rel := range allRels {
+		if r == rel {
+			return true
+		}
+	}
+
+	return false
+}
+
+const (
+	UserCharacterRel UserRel = iota
+	UserAttributesRel
+	UserSkillsRel
+	UserFlyableRel
+	UserSkillQueueRel
+	UserSkillMetaRel
+)
+
+func (s *Service) User(ctx context.Context, id uuid.UUID, rels ...UserRel) (*skillz.User, error) {
+
+	var mx = new(sync.Mutex)
+	var wg = new(sync.WaitGroup)
+
+	user, err := s.UserRepository.User(ctx, id)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, errors.Wrap(err, "unexpected error encountered fetching user")
+	}
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, errors.Wrap(err, "not user found for provided id")
+	}
+
+	user.Settings, err = s.UserSettings(ctx, id)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, errors.Wrap(err, "unexpected error encountered fetching user settings")
+	}
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, errors.Wrap(err, "user has no settings configured")
+	}
+
+	entry := s.logger.
+		WithField("userID", user.ID)
+
+	for _, rel := range rels {
+		if !rel.Valid() {
+			continue
+		}
+
+		wg.Add(1)
+		switch rel {
+		case UserCharacterRel:
+			go s.LoadCharacter(ctx, user, entry, mx, wg)
+		case UserAttributesRel:
+			go s.LoadAttributes(ctx, user, entry, mx, wg)
+		case UserSkillsRel:
+			go s.LoadSkillGrouped(ctx, user, entry, mx, wg)
+		case UserFlyableRel:
+			go s.LoadFlyable(ctx, user, entry, mx, wg)
+		case UserSkillQueueRel:
+			go s.LoadSkillQueue(ctx, user, entry, mx, wg)
+		case UserSkillMetaRel:
+			go s.LoadSkillMeta(ctx, user, entry, mx, wg)
+		}
+	}
+
+	wg.Wait()
+
+	return user, nil
+
+}
+
+func (s *Service) Recent(ctx context.Context) ([]*skillz.User, []*skillz.User, error) {
+
+	var users []*skillz.User
+	var err error
+
+	if len(users) == 0 {
+		users, err = s.UserRepository.NewUsersBySP(ctx)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
+	var wg = new(sync.WaitGroup)
+	var mx = new(sync.Mutex)
+	for i, user := range users {
+		wg.Add(1)
+		go func(ctx context.Context, i int, user *skillz.User, wg *sync.WaitGroup) {
+			defer wg.Done()
+			u, err := s.User(ctx, user.ID, UserCharacterRel, UserSkillQueueRel, UserSkillMetaRel)
+			if err != nil {
+				s.logger.WithError(err).Error("failed to load character")
+				return
+			}
+
+			mx.Lock()
+			defer mx.Unlock()
+			users[i] = u
+
+		}(context.Background(), i, user, wg)
+
+	}
+
+	wg.Wait()
+
+	highlighted := append(make([]*skillz.User, 0, len(users)), users...)
+
+	sort.Slice(highlighted, func(i, j int) bool {
+		return highlighted[i].Meta.TotalSP > highlighted[j].Meta.TotalSP
+	})
+
+	if len(highlighted) > 7 {
+		highlighted = highlighted[0:7]
+	}
+
+	return highlighted, users, nil
+
+}
+
+var ErrUserNotFound = errors.New("user does not exist")
+
 func (s *Service) LoadUserAll(ctx context.Context, id uuid.UUID) (*skillz.User, error) {
 
 	var mx = new(sync.Mutex)
@@ -94,113 +229,30 @@ func (s *Service) LoadUserAll(ctx context.Context, id uuid.UUID) (*skillz.User, 
 		return nil, errors.Wrap(err, "unexpected error encountered fetch user")
 	}
 
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrUserNotFound
+	}
+
 	entry := s.logger.
 		WithField("userID", user.ID)
 
 	wg.Add(1)
-	go func(ctx context.Context, user *skillz.User) {
-		defer wg.Done()
-		character, err := s.character.Character(ctx, user.CharacterID)
-		if err != nil {
-			entry.WithError(err).
-				Error("failed to fetch character details")
-			mx.Lock()
-			defer mx.Unlock()
-			user.Errors = append(user.Errors, fmt.Errorf("failed to fetch character details"))
-			return
-		}
-
-		corporation, err := s.corporation.Corporation(ctx, character.CorporationID)
-		if err != nil {
-			entry.WithError(err).
-				Error("failed to fetch character corporation details")
-			mx.Lock()
-			defer mx.Unlock()
-			user.Errors = append(user.Errors, fmt.Errorf("failed to fetch  character corporation details"))
-			return
-		}
-
-		character.Corporation = corporation
-
-		if corporation.AllianceID.Valid {
-			alliance, err := s.alliance.Alliance(ctx, corporation.AllianceID.Uint)
-			if err != nil {
-				entry.WithError(err).
-					Error("failed to fetch corporation alliance details")
-				mx.Lock()
-				defer mx.Unlock()
-				user.Errors = append(user.Errors, fmt.Errorf("failed to fetch corporation alliance details"))
-				return
-			}
-
-			corporation.Alliance = alliance
-		}
-
-		user.Character = character
-
-	}(ctx, user)
+	go s.LoadCharacter(ctx, user, entry, mx, wg)
 
 	wg.Add(1)
-	go func(ctx context.Context, user *skillz.User) {
-		defer wg.Done()
-		attributes, err := s.skills.Attributes(ctx, user.CharacterID)
-		if err != nil {
-			entry.WithError(err).
-				Error("failed to fetch character attributes")
-			mx.Lock()
-			defer mx.Unlock()
-			user.Errors = append(user.Errors, fmt.Errorf("failed to fetch character attributes"))
-			return
-		}
-
-		user.Attributes = attributes
-	}(ctx, user)
+	go s.LoadAttributes(ctx, user, entry, mx, wg)
 
 	wg.Add(1)
-	go func(ctx context.Context, user *skillz.User) {
-		defer wg.Done()
-		skills, err := s.skills.Skillz(ctx, user.CharacterID)
-		if err != nil {
-			entry.WithError(err).Error("failed to fetch character skillz")
-			mx.Lock()
-			defer mx.Unlock()
-			user.Errors = append(user.Errors, fmt.Errorf("failed to fetch character skillz"))
-			return
-		}
-
-		user.Skills = skills
-	}(ctx, user)
+	go s.LoadSkillGrouped(ctx, user, entry, mx, wg)
 
 	wg.Add(1)
-	go func(ctx context.Context, user *skillz.User) {
-		defer wg.Done()
-		flyable, err := s.skills.Flyable(ctx, user.CharacterID)
-		if err != nil {
-			entry.WithError(err).Error("failed to fetch character skillz")
-			mx.Lock()
-			defer mx.Unlock()
-			user.Errors = append(user.Errors, fmt.Errorf("failed to fetch character flyable ships"))
-			return
-		}
-
-		user.Flyable = flyable
-	}(ctx, user)
+	go s.LoadFlyable(ctx, user, entry, mx, wg)
 
 	wg.Add(1)
-	go func(ctx context.Context, user *skillz.User) {
-		defer wg.Done()
-		queue, err := s.skills.SkillQueue(ctx, user.CharacterID)
-		if err != nil {
-			entry.WithError(err).Error("failed to fetch character skillz")
-			mx.Lock()
-			defer mx.Unlock()
-			user.Errors = append(user.Errors, fmt.Errorf("failed to fetch character skill queue"))
-			return
-		}
+	go s.LoadSkillQueue(ctx, user, entry, mx, wg)
 
-		user.Queue = queue
-
-	}(ctx, user)
+	wg.Add(1)
+	go s.LoadSkillMeta(ctx, user, entry, mx, wg)
 
 	wg.Wait()
 
@@ -310,17 +362,9 @@ func (s *Service) Login(ctx context.Context, code, state string) (*skillz.User, 
 	user.Expires = bearer.Expiry
 	user.LastLogin = time.Now()
 
-	switch user.IsNew {
-	case true:
-		err = s.UserRepository.CreateUser(ctx, user)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to create user in data store")
-		}
-	case false:
-		err = s.UserRepository.UpdateUser(ctx, user)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to update user in data store")
-		}
+	err = s.UserRepository.CreateUser(ctx, user)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create user in data store")
 	}
 
 	err = s.auth.DeleteAuthAttempt(ctx, attempt)
@@ -370,65 +414,6 @@ func (s *Service) RefreshUser(ctx context.Context, user *skillz.User) error {
 	}
 
 	return nil
-
-}
-
-func (s *Service) NewUsersBySP(ctx context.Context) ([]*skillz.UserWithSkillMeta, error) {
-
-	users, err := s.cache.NewUsersBySP(ctx)
-	if err != nil && !errors.Is(err, redis.Nil) {
-		return nil, err
-	}
-
-	if len(users) > 0 {
-		return users, nil
-	}
-
-	userRecords, err := s.UserRepository.NewUsersBySP(ctx)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return nil, errors.Wrap(err, "failed to fetch users by sp in last seven days")
-	}
-
-	for _, record := range userRecords {
-
-		meta, err := s.skills.Meta(ctx, record.CharacterID)
-		if err != nil {
-			continue
-		}
-
-		skills, err := s.skills.Skillz(ctx, record.CharacterID)
-		if err != nil {
-			continue
-		}
-
-		queue, err := s.skills.SkillQueue(ctx, record.CharacterID)
-		if err != nil {
-			continue
-		}
-
-		info, err := s.character.Character(ctx, record.CharacterID)
-		if err != nil {
-			continue
-		}
-
-		users = append(users, &skillz.UserWithSkillMeta{
-			User:   record,
-			Meta:   meta,
-			Skills: skills,
-			Queue:  queue,
-			Info:   info,
-		})
-
-	}
-
-	defer func() {
-		err = s.cache.SetNewUsersBySP(ctx, users, time.Minute*5)
-		if err != nil {
-			s.logger.WithError(err).Error("failed to cache users by sp in last seven days")
-		}
-	}()
-
-	return users, nil
 
 }
 

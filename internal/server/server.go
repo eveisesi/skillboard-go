@@ -121,27 +121,27 @@ func (s *server) buildRouter() *chi.Mux {
 		}
 	})
 
-	r.Group(func(r chi.Router) {
-		r.Use(
-			s.authorization,
-		)
-		r.Get("/auth", s.handleGetAuth)
+	// r.Group(func(r chi.Router) {
+	// 	r.Use(
+	// 		s.authorization,
+	// 	)
+	// 	r.Get("/auth", s.handleGetAuth)
 
-		r.Get("/user/{userID}", s.handleGetUserByID)
-		r.Get("/user/{userID}/settings", s.handleGetUserSettings)
-		r.Post("/user/{userID}/settings", s.handlePostUserSettings)
-		r.Get("/user/{userID}/character", s.handleGetUserCharacterByID)
-		r.Get("/user/{userID}/refresh", s.handleGetUserByIDRefresh)
-		r.Get("/user/{userID}/clones", s.hasPermission(user.PermissionHideClones, s.handleGetUserClonesByID))
-		r.Get("/user/{userID}/implants", s.hasPermission(user.PermissionHideClones, s.handleGetUserImplantsByID))
-		r.Get("/user/{userID}/skills/meta", s.handleGetUserSkillMetaByID)
-		r.Get("/user/{userID}/skills", s.handleGetUserSkillsByID)
-		r.Get("/user/{userID}/queue", s.hasPermission(user.PermissionHideQueue, s.handleGetUserQueueByID))
-		r.Get("/user/{userID}/attributes", s.handleGetUserAttributesByID)
-		r.Get("/user/{userID}/flyable", s.hasPermission(user.PermissionHideShips, s.handleGetUserFlyableByID))
-		r.Get("/user/{userID}/contacts", s.hasPermission(user.PermissionHideStandings, s.handleGetUserContactsByID))
+	// 	r.Get("/user/{userID}", s.handleGetUserByID)
+	// 	r.Get("/user/{userID}/settings", s.handleGetUserSettings)
+	// 	r.Post("/user/{userID}/settings", s.handlePostUserSettings)
+	// 	r.Get("/user/{userID}/character", s.handleGetUserCharacterByID)
+	// 	r.Get("/user/{userID}/refresh", s.handleGetUserByIDRefresh)
+	// 	r.Get("/user/{userID}/clones", s.hasPermission(user.PermissionHideClones, s.handleGetUserClonesByID))
+	// 	r.Get("/user/{userID}/implants", s.hasPermission(user.PermissionHideClones, s.handleGetUserImplantsByID))
+	// 	r.Get("/user/{userID}/skills/meta", s.handleGetUserSkillMetaByID)
+	// 	r.Get("/user/{userID}/skills", s.handleGetUserSkillsByID)
+	// 	r.Get("/user/{userID}/queue", s.hasPermission(user.PermissionHideQueue, s.handleGetUserQueueByID))
+	// 	r.Get("/user/{userID}/attributes", s.handleGetUserAttributesByID)
+	// 	r.Get("/user/{userID}/flyable", s.hasPermission(user.PermissionHideShips, s.handleGetUserFlyableByID))
+	// 	r.Get("/user/{userID}/contacts", s.hasPermission(user.PermissionHideStandings, s.handleGetUserContactsByID))
 
-	})
+	// })
 
 	r.NotFound(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotFound)

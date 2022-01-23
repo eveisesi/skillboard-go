@@ -5,10 +5,7 @@ import (
 	"strings"
 
 	"github.com/eveisesi/skillz/internal"
-	"github.com/eveisesi/skillz/internal/user"
-	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/gofrs/uuid"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -88,69 +85,69 @@ func (s *server) authorization(next http.Handler) http.Handler {
 
 }
 
-func (s *server) hasPermission(permission user.Permission, handler http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+// func (s *server) hasPermission(permission user.Permission, handler http.HandlerFunc) http.HandlerFunc {
+// 	return func(w http.ResponseWriter, r *http.Request) {
 
-		var ctx = r.Context()
+// 		var ctx = r.Context()
 
-		targetIDStr := chi.URLParam(r, "userID")
-		if targetIDStr == "" {
-			handler.ServeHTTP(w, r)
-			return
-		}
+// 		targetIDStr := chi.URLParam(r, "userID")
+// 		if targetIDStr == "" {
+// 			handler.ServeHTTP(w, r)
+// 			return
+// 		}
 
-		targetID, err := uuid.FromString(targetIDStr)
-		if err != nil {
-			handler.ServeHTTP(w, r)
-			return
-		}
+// 		targetID, err := uuid.FromString(targetIDStr)
+// 		if err != nil {
+// 			handler.ServeHTTP(w, r)
+// 			return
+// 		}
 
-		tokenUser := internal.UserFromContext(ctx)
-		if tokenUser != nil && tokenUser.ID == targetID {
-			handler.ServeHTTP(w, r)
-			return
-		}
+// 		tokenUser := internal.UserFromContext(ctx)
+// 		if tokenUser != nil && tokenUser.ID == targetID {
+// 			handler.ServeHTTP(w, r)
+// 			return
+// 		}
 
-		target, err := s.user.User(ctx, targetID)
-		if err != nil {
-			handler.ServeHTTP(w, r)
-			return
-		}
+// 		target, err := s.user.User(ctx, targetID)
+// 		if err != nil {
+// 			handler.ServeHTTP(w, r)
+// 			return
+// 		}
 
-		if target.Settings == nil {
-			settings, err := s.user.UserSettings(ctx, targetID)
-			if err != nil {
-				handler.ServeHTTP(w, r)
-				return
-			}
+// 		if target.Settings == nil {
+// 			settings, err := s.user.UserSettings(ctx, targetID)
+// 			if err != nil {
+// 				handler.ServeHTTP(w, r)
+// 				return
+// 			}
 
-			if settings == nil {
-				handler.ServeHTTP(w, r)
-				return
-			}
+// 			if settings == nil {
+// 				handler.ServeHTTP(w, r)
+// 				return
+// 			}
 
-			target.Settings = settings
+// 			target.Settings = settings
 
-		}
+// 		}
 
-		settings := target.Settings
+// 		settings := target.Settings
 
-		switch p := permission; {
-		case p == user.PermissionHideClones && settings.HideClones:
-			fallthrough
-		case p == user.PermissionHideQueue && settings.HideQueue:
-			fallthrough
-		case p == user.PermissionHideShips && settings.HideShips:
-			fallthrough
-		case p == user.PermissionHideStandings && settings.HideStandings:
-			s.writeResponse(ctx, w, http.StatusForbidden, errors.New(http.StatusText(http.StatusForbidden)))
-			return
-		}
+// 		switch p := permission; {
+// 		case p == user.PermissionHideClones && settings.HideClones:
+// 			fallthrough
+// 		case p == user.PermissionHideQueue && settings.HideQueue:
+// 			fallthrough
+// 		case p == user.PermissionHideShips && settings.HideShips:
+// 			fallthrough
+// 		case p == user.PermissionHideStandings && settings.HideStandings:
+// 			s.writeResponse(ctx, w, http.StatusForbidden, errors.New(http.StatusText(http.StatusForbidden)))
+// 			return
+// 		}
 
-		handler.ServeHTTP(w, r)
+// 		handler.ServeHTTP(w, r)
 
-	}
-}
+// 	}
+// }
 
 // NewStructuredLogger is a constructor for creating a request logger middleware
 func (s *server) requestLogger(logger *logrus.Logger) func(next http.Handler) http.Handler {

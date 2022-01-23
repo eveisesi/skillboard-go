@@ -38,6 +38,8 @@ type UniverseAPI interface {
 	SetType(ctx context.Context, item *skillz.Type) error
 	SkillTypes(ctx context.Context) ([]*skillz.Type, error)
 	SetSkillTypes(ctx context.Context, items []*skillz.Type, expires time.Duration) error
+	SkillGroups(ctx context.Context) ([]*skillz.Group, error)
+	SetSkillGroups(ctx context.Context, items []*skillz.Group, expires time.Duration) error
 	ShipTypes(ctx context.Context) ([]*skillz.Type, error)
 	SetShipTypes(ctx context.Context, items []*skillz.Type, expires time.Duration) error
 	TypeAttributes(ctx context.Context, id uint) ([]*skillz.TypeDogmaAttribute, error)
@@ -55,6 +57,7 @@ const (
 	keyGroupByCategory = "group-by-category"
 	keyType            = "type"
 	keySkillTypes      = "types-skills"
+	keySkillGroups     = "groups-skills"
 	keyShipsTypes      = "types-ships"
 	keyTypeAttributes  = "type-attributes"
 	keyTypesByGroup    = "types-by-group"
@@ -551,6 +554,64 @@ func (s *Service) SetShipTypes(ctx context.Context, items []*skillz.Type, expire
 	}
 
 	return errors.Wrapf(err, errorFFormat, universeAPI, "SetShipTypes", "failed to set expiry on set")
+
+}
+
+func (s *Service) SkillGroups(ctx context.Context) ([]*skillz.Group, error) {
+
+	key := generateKey(keySkillGroups)
+	results, err := s.redis.SMembers(ctx, key).Result()
+	if err != nil && !errors.Is(err, redis.Nil) {
+		return nil, errors.Wrapf(err, errorFFormat, universeAPI, "SkillGroups", "failed to fetch results from cache")
+	}
+
+	if errors.Is(err, redis.Nil) || len(results) == 0 {
+		return nil, nil
+	}
+
+	var out = make([]*skillz.Group, 0, len(results))
+
+	for _, result := range results {
+		var item = new(skillz.Group)
+		err := json.Unmarshal([]byte(result), item)
+		if err != nil {
+			return nil, errors.Wrapf(err, errorFFormat, universeAPI, "SkillGroups", "failed to decode json to structure")
+		}
+
+		out = append(out, item)
+	}
+
+	return out, nil
+
+}
+
+func (s *Service) SetSkillGroups(ctx context.Context, groups []*skillz.Group, expires time.Duration) error {
+
+	members := make([]interface{}, 0, len(groups))
+	for _, item := range groups {
+		data, err := json.Marshal(item)
+		if err != nil {
+			return errors.Wrapf(err, errorFFormat, universeAPI, "SetSkillGroups", "failed to encode struct as json")
+		}
+
+		members = append(members, string(data))
+	}
+
+	if len(members) == 0 {
+		return nil
+	}
+
+	key := generateKey(keySkillGroups)
+	err := s.redis.SAdd(ctx, key, members...).Err()
+	if err != nil {
+		return errors.Wrapf(err, errorFFormat, universeAPI, "SetSkillGroups", "failed to write cache")
+	}
+
+	if expires > 0 {
+		err = s.redis.Expire(ctx, key, expires).Err()
+	}
+
+	return errors.Wrapf(err, errorFFormat, universeAPI, "SetSkillGroups", "failed to set expiry on set")
 
 }
 

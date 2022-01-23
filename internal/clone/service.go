@@ -30,8 +30,6 @@ type Service struct {
 	universe universe.API
 
 	clones skillz.CloneRepository
-
-	scopes []skillz.Scope
 }
 
 var _ API = (*Service)(nil)
@@ -45,15 +43,19 @@ func New(logger *logrus.Logger, cache cache.CloneAPI, etag etag.API, esi esi.Clo
 		universe: universe,
 
 		clones: clones,
-
-		scopes: []skillz.Scope{skillz.ReadImplantsV1, skillz.ReadClonesV1},
 	}
 }
 
 func (s *Service) Process(ctx context.Context, user *skillz.User) error {
 
 	var err error
-	var funcs = []func(context.Context, *skillz.User) error{s.updateClones, s.updateImplants}
+	var funcs = []func(context.Context, *skillz.User) error{}
+	for _, scope := range user.Scopes {
+		switch scope {
+		case skillz.ReadImplantsV1:
+			funcs = append(funcs, s.updateImplants)
+		}
+	}
 
 	for _, f := range funcs {
 		err = f(ctx, user)
@@ -66,10 +68,6 @@ func (s *Service) Process(ctx context.Context, user *skillz.User) error {
 
 	return err
 
-}
-
-func (s *Service) Scopes() []skillz.Scope {
-	return s.scopes
 }
 
 func (s *Service) Clones(ctx context.Context, characterID uint64) (*skillz.CharacterCloneMeta, error) {

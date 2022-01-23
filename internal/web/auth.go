@@ -9,6 +9,12 @@ import (
 	"github.com/gobuffalo/buffalo/render"
 )
 
+func (s *Service) logoutHandler(c buffalo.Context) error {
+	c.Session().Clear()
+	c.Flash().Add("success", "You've been logged out successfully")
+	return c.Redirect(http.StatusTemporaryRedirect, "rootPath()")
+}
+
 func (s *Service) loginHandler(c buffalo.Context) error {
 	c.Set(defaultTitle())
 
@@ -18,17 +24,13 @@ func (s *Service) loginHandler(c buffalo.Context) error {
 
 	if code != "" && state != "" {
 
-		fmt.Printf("Code: %s\tState: %s\n", code, state)
-
-		user, err := s.user.Login(ctx, state, code)
+		user, err := s.user.Login(ctx, code, state)
 		if err != nil {
 			s.logger.WithError(err).Error("failed to query user from attempt")
 			return errors.NewBuffaloHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to query user from attempt"))
 		}
 
-		if user.IsNew {
-			return c.Render(http.StatusOK, s.renderer.HTML("register/index.plush.html"))
-		}
+		c.Session().Set(keyAuthenticatedUserID, user.ID)
 
 		return c.Redirect(http.StatusTemporaryRedirect, "userPath()", render.Data{"userID": user.ID.String()})
 

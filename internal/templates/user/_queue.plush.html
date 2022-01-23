@@ -1,0 +1,74 @@
+<div class="container">
+    <div class="row">
+        <div class="col-lg-4">
+            <h5 class="header mt-2">Queue Summary </h5>
+            <ul class="list-group">
+                <%= for (group) in user.QueueSummary.Summary { %>
+                <li class="list-group-item text-white d-flex w-100 justify-content-between">
+                    <span>
+                        <%= group.Group.Name %>
+                    </span>
+                    <span>
+                        (<%= group.Count %> / <%= formatNum(group.Skillpoints) %>)
+                    </span>
+                </li>
+                <% } %>
+            </ul>
+        </div>
+        <div class="col-lg-8">
+            <h5 class="header mt-2">
+                Skill Queue
+            </h5>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>
+                            Position
+                        </th>
+                        <th>
+                            Skill
+                        </th>
+                        <th>
+                            Start Date
+                        </th>
+                        <th>
+                            Finish Date
+                        </th>
+                    </tr>
+                </thead>
+                <%= for (position) in user.QueueSummary.Queue { %>
+                <tr>
+                    <td>
+                        <%= position.QueuePosition %>
+                    </td>
+                    <td>
+                        <%= position.Type.Name %>
+                    </td>
+                    <td>
+                        <%= if (!position.StartDate.Valid) { %>
+                        N/A
+                        <% } else { %>
+                        <%= position.StartDate.Time.Format("2006-01-02") %><sup>1</sup>
+                        <% } %>
+                    </td>
+                    <td>
+                        <%= if (!position.FinishDate.Valid) { %>
+                        N/A
+                        <% } else { %>
+                        <%= position.FinishDate.Time.Format("2006-01-02") %><sup>1</sup>
+                        <% } %>
+                    </td>
+
+                </tr>
+                <% } %>
+                <tr>
+                    <td colspan="4" class="text-center">
+                        <small>
+                            <em>If any of the above date are in the past, please reach out to this character and ask them to log into Eve. Once that is done, we should get an updated Skill Queue</em>
+                        </small>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</div>

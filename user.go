@@ -24,6 +24,11 @@ type UserRepository interface {
 	NewUsersBySP(ctx context.Context) ([]*User, error)
 }
 
+type RecentUsers struct {
+	Highlighted []*User
+	Users       []*User
+}
+
 type User struct {
 	ID                uuid.UUID   `db:"id" json:"id"`
 	CharacterID       uint64      `db:"character_id,omitempty" json:"character_id"`
@@ -43,12 +48,14 @@ type User struct {
 
 	Errors []error `json:"errors,omitempty"`
 
-	Character  *Character              `json:"character,omitempty"`
-	Settings   *UserSettings           `json:"settings,omitempty"`
-	Skills     []*CharacterSkill       `json:"skillz,omitempty"`
-	Queue      []*CharacterSkillQueue  `json:"queue,omitempty"`
-	Attributes *CharacterAttributes    `json:"attributes,omitempty"`
-	Flyable    []*CharacterFlyableShip `json:"flyable,omitempty"`
+	Character     *Character                  `json:"character,omitempty"`
+	Settings      *UserSettings               `json:"settings,omitempty"`
+	Skills        []*CharacterSkill           `json:"skillz,omitempty"`
+	SkillsGrouped []*CharacterSkillGroup      `json:"groupedSkillz,omitempty"`
+	QueueSummary  *CharacterSkillQueueSummary `json:"queue,omitempty"`
+	Attributes    *CharacterAttributes        `json:"attributes,omitempty"`
+	Flyable       []*CharacterFlyableShip     `json:"flyable,omitempty"`
+	Meta          *CharacterSkillMeta         `json:"meta,omitempty"`
 }
 
 func (i *User) ApplyToken(t *oauth2.Token) {
@@ -58,14 +65,13 @@ func (i *User) ApplyToken(t *oauth2.Token) {
 }
 
 type UserSettings struct {
-	UserID        uuid.UUID `db:"user_id" json:"-"`
-	HideClones    bool      `db:"hide_clones" json:"hide_clones"`
-	HideQueue     bool      `db:"hide_queue" json:"hide_queue"`
-	HideStandings bool      `db:"hide_standings" json:"hide_standings"`
-	HideShips     bool      `db:"hide_ships" json:"hide_ships"`
-	ForSale       bool      `db:"for_sale" json:"for_sale"`
-	CreatedAt     time.Time `db:"created_at" json:"-"`
-	UpdatedAt     time.Time `db:"updated_at" json:"-"`
+	UserID         uuid.UUID `db:"user_id" json:"-" form:"-"`
+	HideSkills     bool      `db:"hide_skills" form:"hide_skills"`
+	HideQueue      bool      `db:"hide_queue" form:"hide_queue"`
+	HideAttributes bool      `db:"hide_attributes" form:"hide_attributes"`
+	HideFlyable    bool      `db:"hide_ships" form:"hide_flyable"`
+	CreatedAt      time.Time `db:"created_at" json:"-" form:"-"`
+	UpdatedAt      time.Time `db:"updated_at" json:"-" form:"-"`
 }
 
 type UserSearchResult struct {
@@ -75,8 +81,8 @@ type UserSearchResult struct {
 
 type UserWithSkillMeta struct {
 	*User
-	Meta   *CharacterSkillMeta    `json:"meta"`
-	Skills []*CharacterSkill      `json:"skills"`
-	Queue  []*CharacterSkillQueue `json:"skillQueue"`
-	Info   *Character             `json:"info"`
+	Meta         *CharacterSkillMeta         `json:"meta"`
+	Skills       []*CharacterSkill           `json:"skills"`
+	QueueSummary *CharacterSkillQueueSummary `json:"skillQueue"`
+	Info         *Character                  `json:"info"`
 }

@@ -1,0 +1,242 @@
+<div class="container my-2">
+    <div class="row">
+        <div class="col">
+            <h3 class="header">Viewing Skillboard for <%= user.Character.Name %></h3>
+        </div>
+    </div>
+    <div class="row mt-2">
+        <div class="col-lg-3">
+            <div class="text-center">
+                <img src="https://images.evetech.net/characters/<%= user.CharacterID %>/portrait?size=256" class="rounded img-fluid" />
+            </div>
+        </div>
+        <div class="col-lg-9">
+            <div class="row">
+                <div class="col-lg-6">
+                    <table class="table table-sm">
+                        <thead class="table-dark">
+                            <tr>
+                                <th colspan="2" class="text-center">
+                                    Basic Info
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <%= if (user.Character.Corporation) { %>
+                            <% let corporation = user.Character.Corporation %>
+                            <tr>
+                                <td>Corporation</td>
+                                <td>
+                                    [<%=corporation.Ticker %>] <%= corporation.Name %>
+                                </td>
+                            </tr>
+                            <%= if (corporation.Alliance) { %>
+                            <% let alliance = corporation.Alliance %>
+                            <tr>
+                                <td>Alliance</td>
+                                <td>
+                                    [<%=alliance.Ticker %>] <%= alliance.Name %>
+                                </td>
+                            </tr>
+                            <% } %>
+                            <% } %>
+                            <tr>
+                                <td>Date Or Birth</td>
+                                <td><%= user.Character.Birthday.Format("2006-01-02") %></td>
+                            </tr>
+                            <%= if (user.Character.SecurityStatus.Valid) { %>
+                            <tr>
+                                <td>Security Status</td>
+                                <td><%= user.Character.SecurityStatus.Float64 %></td>
+                            </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col-lg-6">
+                    <table class="table table-sm">
+                        <thead class="table-dark">
+                            <tr>
+                                <th colspan="2" class="text-center">
+                                    Basic Skill Info
+                                </th>
+                            </tr>
+                        </thead>
+                        <% let meta = user.Meta %>
+                        <tbody>
+                            <%= if (meta.UnallocatedSP.Valid) { %>
+                            <tr>
+                                <td>
+                                    Unallocated SP
+                                </td>
+                                <td>
+                                    <%= formatNum(meta.UnallocatedSP.Uint) %> Skillpoints
+                                </td>
+                            </tr>
+                            <% } %>
+
+                            <tr>
+                                <td>
+                                    Allocated SP
+                                </td>
+                                <td>
+                                    <%= formatNum(meta.TotalSP) %> Skillpoints
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    Total SP
+                                </td>
+                                <td>
+                                    <%= formatNum(addUint(meta.TotalSP, meta.UnallocatedSP.Uint)) %> Skillpoints
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-6">
+                    <table class="table table-sm">
+                        <thead class="table-dark">
+                            <tr>
+                                <td colspan="2" class="text-center">Attribute Overview</td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% let attributes = user.Attributes %>
+                            <%= if (attributes.BonusRemaps.Valid) {%>
+                            <tr>
+                                <td>
+                                    Available Remaps
+                                </td>
+                                <td>
+                                    <%= attributes.BonusRemaps.Uint %>
+                                </td>
+                            </tr>
+                            <% } %>
+                            <tr>
+                                <td>
+                                    Charisma
+                                </td>
+                                <td>
+                                    <%= attributes.Charisma %>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    Intelligence
+                                </td>
+                                <td>
+                                    <%= attributes.Intelligence %>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    Memory
+                                </td>
+                                <td>
+                                    <%= attributes.Memory %>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    Perception
+                                </td>
+                                <td>
+                                    <%= attributes.Perception %>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    Willpower
+                                </td>
+                                <td>
+                                    <%= attributes.Willpower %>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col-lg-6">
+                    <table class="table table-sm">
+                        <thead class="table-dark">
+                            <tr>
+                                <td colspan="2" class="text-center">
+                                    Skill Queue Overview
+                                </td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    Number of Skillz Queued
+                                </td>
+                                <td>
+                                    <%= len(user.QueueSummary.Queue) %>
+                                </td>
+                            </tr>
+                            <% let nextPos = nextPos(user.QueueSummary.Queue) %>
+                            <%= if (nextPos) {%>
+                            <tr>
+                                <td>
+                                    Currently Training
+                                </td>
+                                <td>
+                                    <%= nextPos.Type.Name %>
+                                </td>
+                            </tr>
+                            <%= if (nextPos.FinishDate.Valid) {%>
+                            <tr>
+                                <td>
+                                    Anticipated Finish Date
+                                </td>
+                                <td>
+                                    <%= nextPos.FinishDate.Time.Format("2006-01-02") %>
+                                </td>
+                            </tr>
+                            <% } %>
+                            <tr>
+                                <td colspan="2" class="text-center">
+                                    <small class="text-white">
+                                        If the above is in the past,
+                                        then the character has not
+                                        logged in recently
+                                    </small>
+                                </td>
+                            </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row mt-2">
+        <div class="col-lg-12">
+            <div class="header">
+                <ul class="nav nav-pills mb-3 justify-content-center" id="nav-tabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="skillListTab" data-bs-toggle="pill" data-bs-target="#skillListContent" type="button" role="tab" aria-controls="pills-home"
+                            aria-selected="true">Skillz</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="skillQueueTab" data-bs-toggle="pill" data-bs-target="#skillQueueContent" type="button" role="tab">Skill Queue</button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="tab-content" id="pills-tabContent">
+                <div class="tab-pane fade" id="skillListContent" role="tabpanel">
+                    <%= partial("user/skills.plush.html") %>
+                </div>
+                <div class="tab-pane fade show active" id="skillQueueContent" role="tabpanel">
+                    <%= partial("user/queue.plush.html") %>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

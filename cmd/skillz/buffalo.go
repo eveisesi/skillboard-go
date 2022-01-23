@@ -2,10 +2,17 @@ package main
 
 import (
 	"github.com/eveisesi/skillz"
+	"github.com/eveisesi/skillz/internal/alliance"
 	"github.com/eveisesi/skillz/internal/auth"
 	"github.com/eveisesi/skillz/internal/cache"
+	"github.com/eveisesi/skillz/internal/character"
+	"github.com/eveisesi/skillz/internal/corporation"
+	"github.com/eveisesi/skillz/internal/esi"
+	"github.com/eveisesi/skillz/internal/etag"
 	"github.com/eveisesi/skillz/internal/mysql"
-	"github.com/eveisesi/skillz/internal/user"
+	"github.com/eveisesi/skillz/internal/skill"
+	"github.com/eveisesi/skillz/internal/universe"
+	"github.com/eveisesi/skillz/internal/user/v2"
 	"github.com/eveisesi/skillz/internal/web"
 	"github.com/urfave/cli/v2"
 )
@@ -25,9 +32,22 @@ func buffaloCmd(_ *cli.Context) error {
 		env = skillz.Production
 	}
 
+	allianceRepo := mysql.NewAllianceRepository(mysqlClient)
+	characterRepo := mysql.NewCharacterRepository(mysqlClient)
+	corporationRepo := mysql.NewCorporationRepository(mysqlClient)
+	etagRepo := mysql.NewETagRepository(mysqlClient)
+	skillzRepo := mysql.NewSkillRepository(mysqlClient)
 	userRepo := mysql.NewUserRepository(mysqlClient)
+	universeRepo := mysql.NewUniverseRepository(mysqlClient)
 
 	cache := cache.New(redisClient)
+	etag := etag.New(cache, etagRepo)
+	esi := esi.New(httpClient(), redisClient, logger, etag)
+	character := character.New(logger, cache, esi, etag, characterRepo)
+	corporation := corporation.New(logger, cache, esi, etag, corporationRepo)
+	alliance := alliance.New(logger, cache, esi, etag, allianceRepo)
+	universe := universe.New(logger, cache, esi, universeRepo)
+	skills := skill.New(logger, cache, esi, universe, skillzRepo)
 
 	auth := auth.New(
 		skillz.EnvironmentFromString(cfg.Environment),
@@ -41,12 +61,13 @@ func buffaloCmd(_ *cli.Context) error {
 		cfg.Eve.JWKSURI,
 	)
 
-	user := user.New(redisClient, logger, cache, auth, nil, nil, nil, nil, userRepo)
+	user := user.New(redisClient, logger, cache, auth, alliance, character, corporation, skills, userRepo)
 
 	return web.NewService(
 		env,
 		cfg.SessionName,
 		logger,
+		cache,
 		auth,
 		user,
 		renderer(),

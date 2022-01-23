@@ -8,7 +8,7 @@ import (
 )
 
 type PageAPI interface {
-	Page(ctx context.Context, page string) (string, error)
+	Page(ctx context.Context, page string) ([]byte, error)
 	SetPage(ctx context.Context, page string, data []byte, expires time.Duration) error
 }
 
@@ -16,11 +16,11 @@ const (
 	pagePrefix = "page"
 )
 
-func (s *Service) Page(ctx context.Context, page string) (string, error) {
+func (s *Service) Page(ctx context.Context, page string) ([]byte, error) {
 
 	key := generateKey(pagePrefix, hash(page))
 
-	result, err := s.redis.Get(ctx, key).Result()
+	result, err := s.redis.Get(ctx, key).Bytes()
 	return result, errors.Wrapf(err, errorFFormat, pageAPI, "Page", "failed to fetch results from cache")
 
 }

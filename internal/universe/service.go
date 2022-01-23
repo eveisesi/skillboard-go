@@ -28,6 +28,7 @@ type API interface {
 	Structure(ctx context.Context, structureID uint64) (*skillz.Structure, error)
 	Type(ctx context.Context, itemID uint) (*skillz.Type, error)
 	SkillTypesHydrated(ctx context.Context) ([]*skillz.Type, error)
+	SkillGroupsHydrated(ctx context.Context) ([]*skillz.Group, error)
 	TypeAttributes(ctx context.Context, id uint) ([]*skillz.TypeDogmaAttribute, error)
 	TypesByGroup(ctx context.Context, groupID uint) ([]*skillz.Type, error)
 }
@@ -165,7 +166,14 @@ func (s *Service) GroupsByCategory(ctx context.Context, categoryID uint) ([]*ski
 		return nil, errors.Wrap(err, "failed to fetch groups from data store")
 	}
 
-	return groups, s.cache.SetGroupsByCategoryID(ctx, categoryID, groups)
+	defer func(categoryID uint, groups []*skillz.Group) {
+		err = s.cache.SetGroupsByCategoryID(ctx, categoryID, groups)
+		if err != nil {
+			s.logger.WithError(err).Error("failed to cache groups by category id")
+		}
+	}(categoryID, groups)
+
+	return groups, nil
 
 }
 
@@ -358,6 +366,80 @@ func (s *Service) SkillTypesHydrated(ctx context.Context) ([]*skillz.Type, error
 	}(skillTypes)
 
 	return skillTypes, nil
+
+}
+
+func (s *Service) SkillGroupsHydrated(ctx context.Context) ([]*skillz.Group, error) {
+
+	groups, err := s.cache.SkillGroups(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to fetch skill groups from cache")
+	}
+
+	if len(groups) > 0 {
+		return groups, err
+	}
+
+	groups, err = s.GroupsByCategory(ctx, 16)
+	if err != nil {
+		return nil, err
+	}
+
+	mapGroups := make(map[uint]*skillz.Group)
+	groupIDs := make([]interface{}, 0, len(groups))
+	for _, group := range groups {
+		mapGroups[group.ID] = group
+		groupIDs = append(groupIDs, group.ID)
+	}
+
+	skillTypes, err := s.universe.Types(ctx, skillz.NewInOperator(mysql.TypesGroupID, groupIDs))
+	if err != nil {
+		return nil, err
+	}
+
+	skillIDs := make([]uint, 0, len(skillTypes))
+	for _, skill := range skillTypes {
+		skillIDs = append(skillIDs, skill.ID)
+	}
+
+	skillDogmaAttributes, err := s.universe.TypeDogmaAttributesBulk(ctx, skillIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	var mapTypeDogmaAttributes = make(map[uint][]*skillz.TypeDogmaAttribute)
+	for _, attribute := range skillDogmaAttributes {
+		if _, ok := mapTypeDogmaAttributes[attribute.TypeID]; !ok {
+			mapTypeDogmaAttributes[attribute.TypeID] = make([]*skillz.TypeDogmaAttribute, 0, 50)
+		}
+
+		mapTypeDogmaAttributes[attribute.TypeID] = append(mapTypeDogmaAttributes[attribute.TypeID], attribute)
+	}
+
+	for _, t := range skillTypes {
+		group := mapGroups[t.GroupID]
+		if group == nil {
+			continue
+		}
+
+		t.Attributes = mapTypeDogmaAttributes[t.ID]
+
+		if group.Types == nil {
+			group.Types = make([]*skillz.Type, 0, 15)
+		}
+
+		group.Types = append(group.Types, t)
+
+	}
+
+	defer func(groups []*skillz.Group) {
+		err := s.cache.SetSkillGroups(ctx, groups, 0)
+		if err != nil {
+			s.logger.WithError(err).Error("failed to cache skill groups")
+		}
+	}(groups)
+
+	return groups, nil
 
 }
 

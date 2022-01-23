@@ -17,14 +17,12 @@ type CharacterSkillRepository interface {
 type memberAttributesRepository interface {
 	CharacterAttributes(ctx context.Context, characterID uint64) (*CharacterAttributes, error)
 	CreateCharacterAttributes(ctx context.Context, attributes *CharacterAttributes) error
-	// UpdateCharacterAttributes(ctx context.Context, attributes *CharacterAttributes) error
 	DeleteCharacterAttributes(ctx context.Context, characterID uint64) error
 }
 
 type memberSkillsRepository interface {
 	CharacterSkillMeta(ctx context.Context, characterID uint64) (*CharacterSkillMeta, error)
 	CreateCharacterSkillMeta(ctx context.Context, meta *CharacterSkillMeta) error
-	// UpdateCharacterSkillMeta(ctx context.Context, meta *CharacterSkillMeta) error
 	DeleteCharacterSkillMeta(ctx context.Context, characterID uint64) error
 
 	CharacterSkills(ctx context.Context, characterID uint64) ([]*CharacterSkill, error)
@@ -67,6 +65,18 @@ type CharacterFlyableShip struct {
 	Ship *Type `json:"info"`
 }
 
+type CharacterSkillQueueSummary struct {
+	Summary []*QueueGroupSummary
+	Queue   []*CharacterSkillQueue
+}
+
+type QueueGroupSummary struct {
+	Group       *Group
+	Count       uint
+	Skillpoints uint
+	Duration    time.Duration
+}
+
 type CharacterSkillQueue struct {
 	CharacterID     uint64    `db:"character_id" json:"character_id" deep:"-"`
 	QueuePosition   uint      `db:"queue_position" json:"queue_position"`
@@ -79,13 +89,13 @@ type CharacterSkillQueue struct {
 	FinishDate      null.Time `db:"finish_date,omitempty" json:"finish_date,omitempty"`
 	CreatedAt       time.Time `db:"created_at" json:"-" deep:"-"`
 
-	Info *Type `json:"info"`
+	Type *Type `json:"info"`
 }
 
 type CharacterSkillMeta struct {
 	CharacterID   uint64    `db:"character_id" json:"character_id"`
 	TotalSP       uint      `db:"total_sp" json:"total_sp"`
-	UnallocatedSP *uint     `db:"unallocated_sp,omitempty" json:"unallocated_sp,omitempty"`
+	UnallocatedSP null.Uint `db:"unallocated_sp,omitempty" json:"unallocated_sp,omitempty"`
 	CreatedAt     time.Time `db:"created_at" json:"-"`
 	UpdatedAt     time.Time `db:"updated_at" json:"-"`
 
@@ -105,7 +115,28 @@ type CharacterSkill struct {
 }
 
 type CharacterSkillGroup struct {
-	Info         *Group            `json:"info"`
-	Skills       []*CharacterSkill `json:"skills"`
-	TotalGroupSP uint              `json:"totalGroupSP"`
+	*SkillGroup
+	TotalGroupSP uint `json:"totalGroupSP"`
 }
+
+type SkillGroup struct {
+	*Group
+	Skills []*SkillType `json:"skills"`
+}
+
+type SkillType struct {
+	*Type
+	Skill *CharacterSkill     `json:"skill"`
+	Rank  *TypeDogmaAttribute `json:"rank"`
+}
+
+// <%= for (v) in [1,2,3,4,5] { %>
+// 	<%= if (type.Skill && v <= type.Skill.TrainedSkillLevel) { %>
+// 	<i class="fas fa-square"></i>
+// 	<% } %>
+// 	<% } %>
+// 	<%= for (v) in [1,2,3,4,5] { %>
+// 	<%= if (!type.Skill || v > type.Skill.TrainedSkillLevel) { %>
+// 	<i class="far fa-square"></i>
+// 	<% } %>
+// 	<% } %>

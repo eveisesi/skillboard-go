@@ -3,8 +3,10 @@ package skill
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/eveisesi/skillz"
 	"github.com/eveisesi/skillz/internal/cache"
 	"github.com/eveisesi/skillz/internal/esi"
@@ -21,7 +23,7 @@ type API interface {
 	Skillz(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkill, error)
 	Attributes(ctx context.Context, characterID uint64) (*skillz.CharacterAttributes, error)
 	Flyable(ctx context.Context, characterID uint64) ([]*skillz.CharacterFlyableShip, error)
-	SkillQueue(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkillQueue, error)
+	SkillQueue(ctx context.Context, characterID uint64) (*skillz.CharacterSkillQueueSummary, error)
 	SkillsGrouped(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkillGroup, error)
 }
 
@@ -33,8 +35,6 @@ type Service struct {
 	universe universe.API
 
 	skills skillz.CharacterSkillRepository
-
-	scopes []skillz.Scope
 }
 
 var _ API = (*Service)(nil)
@@ -46,16 +46,20 @@ func New(logger *logrus.Logger, cache cache.SkillAPI, esi esi.SkillAPI, universe
 		esi:      esi,
 		universe: universe,
 		skills:   skills,
-
-		scopes: []skillz.Scope{skillz.ReadSkillsV1, skillz.ReadSkillQueueV1},
 	}
 }
 
 func (s *Service) Process(ctx context.Context, user *skillz.User) error {
 
 	var err error
-	var funcs = []func(context.Context, *skillz.User) error{
-		s.updateSkills, s.updateAttributes, s.updateSkillQueue,
+	var funcs = []func(context.Context, *skillz.User) error{}
+	for _, scope := range user.Scopes {
+		switch scope {
+		case skillz.ReadSkillsV1:
+			funcs = append(funcs, s.updateSkills, s.updateAttributes)
+		case skillz.ReadSkillQueueV1:
+			funcs = append(funcs, s.updateSkillQueue)
+		}
 	}
 
 	for _, f := range funcs {
@@ -69,10 +73,6 @@ func (s *Service) Process(ctx context.Context, user *skillz.User) error {
 
 	return err
 
-}
-
-func (s *Service) Scopes() []skillz.Scope {
-	return s.scopes
 }
 
 func (s *Service) Meta(ctx context.Context, characterID uint64) (*skillz.CharacterSkillMeta, error) {
@@ -184,8 +184,13 @@ func (s *Service) SkillsGrouped(ctx context.Context, characterID uint64) ([]*ski
 		return nil, err
 	}
 
-	if len(groupedSkillz) > 0 && err == nil {
+	if len(groupedSkillz) > 0 {
 		return groupedSkillz, err
+	}
+
+	groups, err := s.universe.SkillGroupsHydrated(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to fetch hydrated skill groups from universe")
 	}
 
 	skills, err := s.Skillz(ctx, characterID)
@@ -198,48 +203,42 @@ func (s *Service) SkillsGrouped(ctx context.Context, characterID uint64) ([]*ski
 		skillzMap[skill.SkillID] = skill
 	}
 
-	groups, err := s.universe.GroupsByCategory(ctx, 16)
-	if err != nil {
-		return nil, err
-	}
-
-	groupedSkillz = make([]*skillz.CharacterSkillGroup, 0, len(groups))
-
+	var characterSkillGroups = make([]*skillz.CharacterSkillGroup, 0, 50)
 	for _, group := range groups {
-		group.Types, err = s.universe.TypesByGroup(ctx, group.ID)
-		if err != nil {
-			return nil, err
-		}
-
-		groupedSkill := &skillz.CharacterSkillGroup{
-			Info:         group,
-			Skills:       make([]*skillz.CharacterSkill, 0, len(group.Types)),
-			TotalGroupSP: 0,
-		}
-
+		skillGroup := &skillz.SkillGroup{Group: group}
+		characterSkillGroup := &skillz.CharacterSkillGroup{SkillGroup: skillGroup}
+		skillGroup.Skills = make([]*skillz.SkillType, 0, len(group.Types))
 		for _, t := range group.Types {
-			skill, ok := skillzMap[t.ID]
-			if !ok {
-				continue
+			skillType := &skillz.SkillType{Type: t}
+
+			for _, attribute := range t.Attributes {
+				if attribute.AttributeID == 275 {
+					skillType.Rank = attribute
+					break
+				}
 			}
 
-			skill.Info = t
+			if skill, ok := skillzMap[t.ID]; ok {
+				skillType.Skill = skill
+				characterSkillGroup.TotalGroupSP += skill.SkillpointsInSkill
+			}
 
-			groupedSkill.Skills = append(groupedSkill.Skills, skill)
-			groupedSkill.TotalGroupSP += skill.SkillpointsInSkill
+			skillGroup.Skills = append(skillGroup.Skills, skillType)
+
 		}
 
-		groupedSkillz = append(groupedSkillz, groupedSkill)
+		characterSkillGroups = append(characterSkillGroups, characterSkillGroup)
+
 	}
 
 	defer func() {
-		err = s.cache.SetCharacterGroupedSkillz(ctx, characterID, groupedSkillz, time.Hour)
+		err = s.cache.SetCharacterGroupedSkillz(ctx, characterID, characterSkillGroups, time.Hour)
 		if err != nil {
 			s.logger.WithError(err).Error("failed to cache grouped skillz")
 		}
 	}()
 
-	return groupedSkillz, nil
+	return characterSkillGroups, nil
 }
 
 func (s *Service) updateSkills(ctx context.Context, user *skillz.User) error {
@@ -355,18 +354,18 @@ func (s *Service) updateAttributes(ctx context.Context, user *skillz.User) error
 
 }
 
-func (s *Service) SkillQueue(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkillQueue, error) {
+func (s *Service) SkillQueue(ctx context.Context, characterID uint64) (*skillz.CharacterSkillQueueSummary, error) {
 
-	queue, err := s.cache.CharacterSkillQueue(ctx, characterID)
+	summary, err := s.cache.CharacterSkillQueueSummary(ctx, characterID)
 	if err != nil {
 		return nil, err
 	}
 
-	if queue != nil {
-		return queue, nil
+	if summary != nil {
+		return summary, nil
 	}
 
-	queue, err = s.skills.CharacterSkillQueue(ctx, characterID)
+	queue, err := s.skills.CharacterSkillQueue(ctx, characterID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.Wrap(err, "failed to fetch character skill queue from data store")
 	}
@@ -381,24 +380,51 @@ func (s *Service) SkillQueue(ctx context.Context, characterID uint64) ([]*skillz
 		mapSkillInfo[info.ID] = info
 	}
 
+	mapGroupSummary := make(map[uint]*skillz.QueueGroupSummary)
+
 	for _, position := range queue {
 		if _, ok := mapSkillInfo[position.SkillID]; !ok {
 			continue
 		}
 
-		position.Info = mapSkillInfo[position.SkillID]
+		t := mapSkillInfo[position.SkillID]
+		position.Type = t
+
+		var gs *skillz.QueueGroupSummary
+		if _, ok := mapGroupSummary[t.GroupID]; !ok {
+			mapGroupSummary[t.GroupID] = new(skillz.QueueGroupSummary)
+		}
+		gs = mapGroupSummary[t.GroupID]
+		if t.Group != nil {
+			gs.Group = t.Group
+		}
+
+		gs.Count += 1
+		if position.LevelEndSp.Valid && position.LevelStartSp.Valid {
+			gs.Skillpoints += position.LevelEndSp.Uint - position.LevelStartSp.Uint
+		}
+		if position.FinishDate.Valid && position.StartDate.Valid {
+			gs.Duration += time.Duration(position.FinishDate.Time.Unix() - position.StartDate.Time.Unix())
+		}
 	}
 
+	summary = new(skillz.CharacterSkillQueueSummary)
+	summary.Summary = make([]*skillz.QueueGroupSummary, 0, len(mapGroupSummary))
+	for _, entry := range mapGroupSummary {
+		summary.Summary = append(summary.Summary, entry)
+	}
+	summary.Queue = queue
+
 	if len(queue) > 0 {
-		defer func(queue []*skillz.CharacterSkillQueue) {
-			err = s.cache.SetCharacterSkillQueue(ctx, characterID, queue, time.Hour)
+		defer func(summary *skillz.CharacterSkillQueueSummary) {
+			err = s.cache.SetCharacterSkillQueueSummary(ctx, characterID, summary, time.Hour)
 			if err != nil {
 				s.logger.WithError(err).Error("failed to character skill queue")
 			}
-		}(queue)
+		}(summary)
 	}
 
-	return queue, nil
+	return summary, nil
 
 }
 
@@ -439,28 +465,24 @@ func (s *Service) updateSkillQueue(ctx context.Context, user *skillz.User) error
 				return errors.Wrap(err, "failed to create character skill queue")
 			}
 
-			skillInfo, err := s.universe.SkillTypesHydrated(ctx)
-			if err != nil {
-				return errors.Wrap(err, "failed to fetch skill data")
-			}
+			// skillInfo, err := s.universe.SkillTypesHydrated(ctx)
+			// if err != nil {
+			// 	return errors.Wrap(err, "failed to fetch skill data")
+			// }
 
-			mapSkillInfo := make(map[uint]*skillz.Type)
-			for _, info := range skillInfo {
-				mapSkillInfo[info.ID] = info
-			}
+			// mapSkillInfo := make(map[uint]*skillz.Type)
+			// for _, info := range skillInfo {
+			// 	mapSkillInfo[info.ID] = info
+			// }
 
-			for _, position := range updatedQueue {
-				if _, ok := mapSkillInfo[position.SkillID]; !ok {
-					continue
-				}
+			// for _, position := range updatedQueue {
+			// 	if _, ok := mapSkillInfo[position.SkillID]; !ok {
+			// 		continue
+			// 	}
 
-				position.Info = mapSkillInfo[position.SkillID]
-			}
+			// 	position.Type = mapSkillInfo[position.SkillID]
+			// }
 
-			err = s.cache.SetCharacterSkillQueue(ctx, user.CharacterID, updatedQueue, time.Hour)
-			if err != nil {
-				return errors.Wrap(err, "failed to create character skill queue")
-			}
 		}
 	}
 
@@ -595,4 +617,68 @@ func skillFromSkillSlice(skillID uint, skills []*skillz.CharacterSkill) *skillz.
 
 	return nil
 
+}
+
+func PlushHelperHasSkillCount(group *skillz.SkillGroup) uint {
+	var out = uint(0)
+
+	for _, t := range group.Skills {
+		if t == nil {
+			spew.Dump(group)
+			fmt.Printf("group %s has nil t\n", group.Name)
+			continue
+		}
+
+		if t.Skill != nil {
+			out++
+		}
+	}
+	return out
+}
+
+func PlushHelperMissingSkill(group *skillz.SkillGroup) uint {
+	var out = uint(0)
+	for _, t := range group.Skills {
+		if t.Skill == nil {
+			out++
+		}
+	}
+	return out
+}
+
+func PlushHelperLevelVSkillCount(group *skillz.SkillGroup) uint {
+	var out = uint(0)
+
+	for _, t := range group.Skills {
+		if t.Skill != nil && t.Skill.TrainedSkillLevel == 5 {
+			out++
+		}
+	}
+
+	return out
+}
+
+func PlushHelperLevelVSPTotal(group *skillz.SkillGroup) uint {
+	var out = uint(0)
+
+	for _, t := range group.Skills {
+		if t.Skill != nil && t.Skill.TrainedSkillLevel == 5 {
+			out += t.Skill.SkillpointsInSkill
+		}
+	}
+
+	return out
+}
+
+func PlushHelperPossibleSPByRank(rank interface{}) float64 {
+
+	switch rank := rank.(type) {
+	case float64:
+		return float64(rank * 256000)
+	case int:
+		return float64(rank * 256000)
+
+	}
+
+	return 0
 }

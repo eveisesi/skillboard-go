@@ -6,6 +6,7 @@ import (
 
 	"github.com/eveisesi/skillz"
 	"github.com/eveisesi/skillz/internal"
+	"github.com/eveisesi/skillz/internal/cache"
 	"github.com/eveisesi/skillz/internal/user"
 	"github.com/go-redis/redis/v8"
 	"github.com/gofrs/uuid"
@@ -16,6 +17,7 @@ import (
 type Service struct {
 	logger *logrus.Logger
 	redis  *redis.Client
+	cache  *cache.Service
 	user   user.API
 
 	scopes skillz.ScopeProcessors
@@ -25,6 +27,7 @@ func New(logger *logrus.Logger, redisClient *redis.Client, user user.API, scopes
 	return &Service{
 		logger: logger,
 		redis:  redisClient,
+		cache:  cache.New(redisClient),
 		user:   user,
 		scopes: scopes,
 	}
@@ -89,18 +92,15 @@ func (s *Service) processUser(ctx context.Context, userID uuid.UUID) error {
 
 	ctx = internal.ContextWithUser(ctx, user)
 
-processorLoop:
-	for _, processor := range s.scopes {
-		scopes := processor.Scopes()
-		for _, scope := range user.Scopes {
-			if scopeInSlcScopes(scope, scopes) {
-				err = processor.Process(ctx, user)
-				if err != nil {
-					return errors.Wrap(err, "processor failed to process user")
-				}
+	err = s.cache.ResetUserCache(ctx, user)
+	if err != nil {
+		return err
+	}
 
-				continue processorLoop
-			}
+	for _, processor := range s.scopes {
+		err = processor.Process(ctx, user)
+		if err != nil {
+			return errors.Wrap(err, "processor failed to process user")
 		}
 		time.Sleep(time.Second)
 	}

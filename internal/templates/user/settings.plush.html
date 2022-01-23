@@ -1,0 +1,84 @@
+<div class="container">
+    <doiv class="row">
+        <div class="col-lg-6 offset-3">
+            <div class="card my-3">
+                <div class="card-header">
+                    <h5 class="text-center">User Settings</h5>
+                </div>
+                <form action="/users/settings" method="post">
+                    <div class="list-group">
+                        <div class="list-group-item text-white fs-5">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    Visibility
+                                </div>
+                                <div class="w-25">
+                                    <select class="form-select" name="visibility">
+                                        <option value="1">Private</option>
+                                        <option value="2">Token</option>
+                                        <option value="3">Public</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="list-group-item text-white fs-5">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    Hide Skills
+                                </div>
+                                <div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="hide_skills" role="switch" id="flexSwitchCheckDefault">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="list-group-item text-white fs-5">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    Hide Skill Queue
+                                </div>
+                                <div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="hide_queue" role="switch" id="flexSwitchCheckDefault">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="list-group-item text-white fs-5">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    Hide Attributes
+                                </div>
+                                <div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="hide_attributes" role="switch" id="flexSwitchCheckDefault">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="list-group-item text-white fs-5">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    Hide Flyable
+                                </div>
+                                <div>
+                                    <div class=" form-check form-switch d-flex flex-row align-items-end">
+                                        <input class="form-check-input" type="checkbox" name="hide_flyable" role="switch" id="flexSwitchCheckDefault">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="list-group-item text-white fs-5">
+                            <button type="submit" class="btn btn-primary btn-block">
+                                Update Settings
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+</div>
+</doiv>
+</div>

@@ -20,19 +20,21 @@ type SkillAPI interface {
 	SetCharacterSkills(ctx context.Context, characterID uint64, skills []*skillz.CharacterSkill, expires time.Duration) error
 	CharacterGroupedSkillz(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkillGroup, error)
 	SetCharacterGroupedSkillz(ctx context.Context, characterID uint64, groups []*skillz.CharacterSkillGroup, expires time.Duration) error
-	CharacterSkillQueue(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkillQueue, error)
-	SetCharacterSkillQueue(ctx context.Context, characterID uint64, positions []*skillz.CharacterSkillQueue, expires time.Duration) error
+	// CharacterSkillQueue(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkillQueue, error)
+	// SetCharacterSkillQueue(ctx context.Context, characterID uint64, positions []*skillz.CharacterSkillQueue, expires time.Duration) error
+	CharacterSkillQueueSummary(ctx context.Context, characterID uint64) (*skillz.CharacterSkillQueueSummary, error)
+	SetCharacterSkillQueueSummary(ctx context.Context, characterID uint64, summary *skillz.CharacterSkillQueueSummary, expires time.Duration) error
 	CharacterFlyableShips(ctx context.Context, characterID uint64) ([]*skillz.CharacterFlyableShip, error)
 	SetCharacterFlyableShips(ctx context.Context, characterID uint64, flyable []*skillz.CharacterFlyableShip, expires time.Duration) error
 }
 
 const (
-	characterAttributesKeyPrefix    = "character::attributes"
-	characterSkillMetaKeyPrefix     = "character::skill::meta"
-	characterSkillsKeyPrefix        = "character::skills"
-	characterSkillsGroupedKeyPrefix = "character::skills-grouped"
-	characterFlyableKeyPrefix       = "character::flyable"
-	characterSkillQueueKeyPrefix    = "character::skillqueue"
+	characterAttributesKeyPrefix        = "character::attributes"
+	characterSkillMetaKeyPrefix         = "character::skill::meta"
+	characterSkillsKeyPrefix            = "character::skills"
+	characterSkillsGroupedKeyPrefix     = "character::skills-grouped"
+	characterFlyableKeyPrefix           = "character::flyable"
+	characterSkillQueueKeySummaryPrefix = "character::skillqueue::summary"
 )
 
 func (s *Service) CharacterSkillMeta(ctx context.Context, characterID uint64) (*skillz.CharacterSkillMeta, error) {
@@ -209,60 +211,39 @@ func (s *Service) SetCharacterGroupedSkillz(ctx context.Context, characterID uin
 
 }
 
-func (s *Service) CharacterSkillQueue(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkillQueue, error) {
+func (s *Service) CharacterSkillQueueSummary(ctx context.Context, characterID uint64) (*skillz.CharacterSkillQueueSummary, error) {
 
-	var queue = make([]*skillz.CharacterSkillQueue, 0)
-
-	key := generateKey(characterSkillQueueKeyPrefix, strconv.FormatUint(characterID, 10))
-	results, err := s.redis.SMembers(ctx, key).Result()
+	key := generateKey(characterSkillQueueKeySummaryPrefix, strconv.FormatUint(characterID, 10))
+	result, err := s.redis.Get(ctx, key).Result()
 	if err != nil && !errors.Is(err, redis.Nil) {
-		return queue, errors.Wrapf(err, errorFFormat, skillAPI, "CharacterSkillQueue", "failed to fetch results from cache")
+		return nil, errors.Wrapf(err, errorFFormat, skillAPI, "CharacterSkillQueue", "failed to fetch results from cache")
 	}
 
-	if errors.Is(err, redis.Nil) || len(results) == 0 {
-		return queue, nil
+	if errors.Is(err, redis.Nil) {
+		return nil, nil
 	}
 
-	queue = make([]*skillz.CharacterSkillQueue, 0, len(results))
-	for _, result := range results {
-		var position = new(skillz.CharacterSkillQueue)
-		err = json.Unmarshal([]byte(result), position)
-		if err != nil {
-			return queue, errors.Wrapf(err, errorFFormat, skillAPI, "CharacterSkillQueue", "failed to decode json to structure")
-		}
+	var summary = new(skillz.CharacterSkillQueueSummary)
 
-		queue = append(queue, position)
+	err = json.Unmarshal([]byte(result), summary)
+	if err != nil {
+		return summary, errors.Wrapf(err, errorFFormat, skillAPI, "CharacterSkillQueue", "failed to decode json to structure")
 	}
 
-	return queue, nil
+	return summary, nil
 
 }
 
-func (s *Service) SetCharacterSkillQueue(ctx context.Context, characterID uint64, positions []*skillz.CharacterSkillQueue, expires time.Duration) error {
+func (s *Service) SetCharacterSkillQueueSummary(ctx context.Context, characterID uint64, summary *skillz.CharacterSkillQueueSummary, expires time.Duration) error {
 
-	members := make([]interface{}, 0, len(positions))
-	for _, position := range positions {
-		data, err := json.Marshal(position)
-		if err != nil {
-			return errors.Wrapf(err, errorFFormat, skillAPI, "SetCharacterSkillQueue", "failed to encode struct as json")
-		}
-
-		members = append(members, string(data))
-	}
-
-	if len(members) == 0 {
-		return nil
-	}
-
-	key := generateKey(characterSkillQueueKeyPrefix, strconv.FormatUint(characterID, 10))
-	err := s.redis.SAdd(ctx, key, members...).Err()
+	data, err := json.Marshal(summary)
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, skillAPI, "SetCharacterSkillQueue", "failed to write cache")
+		return errors.Wrapf(err, errorFFormat, skillAPI, "SetCharacterSkillQueueSummary", "failed to encode struct as json")
 	}
 
-	err = s.redis.Expire(ctx, key, expires).Err()
-
-	return errors.Wrapf(err, errorFFormat, skillAPI, "SetCharacterSkillQueue", "failed to set expiry on set")
+	key := generateKey(characterSkillQueueKeySummaryPrefix, strconv.FormatUint(characterID, 10))
+	err = s.redis.Set(ctx, key, data, expires).Err()
+	return errors.Wrapf(err, errorFFormat, skillAPI, "SetCharacterSkillQueueSummary", "failed to write cache")
 
 }
 
