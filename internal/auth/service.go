@@ -3,7 +3,6 @@ package auth
 import (
 	"fmt"
 	"net/http"
-	"net/url"
 
 	"github.com/eveisesi/skillz"
 	"github.com/eveisesi/skillz/internal/cache"
@@ -27,12 +26,13 @@ type Service struct {
 	cache   cache.AuthAPI
 }
 
+const jwksURIStr = "https://login.eveonline.com/oauth/jwks"
+
 func New(
 	env skillz.Environment,
 	client *http.Client,
 	cache cache.AuthAPI,
 	esiOAuth *oauth2.Config,
-	esiAuthJWKSEndpoint *url.URL,
 ) *Service {
 	s := &Service{
 		env:    env,
@@ -43,7 +43,7 @@ func New(
 		},
 	}
 
-	err := s.initializeESIJWKSet(esiAuthJWKSEndpoint)
+	err := s.initializeESIJWKSet()
 	if err != nil {
 		panic(fmt.Errorf("internal.Auth: %w", err))
 	}

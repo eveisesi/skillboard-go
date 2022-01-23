@@ -2,9 +2,7 @@ package main
 
 import (
 	"net/url"
-	"time"
 
-	"github.com/gofrs/uuid"
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/pkg/errors"
@@ -33,21 +31,7 @@ type config struct {
 		ClientSecret       string `envconfig:"EVE_CLIENT_SECRET" required:"true"`
 		CallbackURIStr     string `envconfig:"EVE_CALLBACK_URI" required:"true"`
 		CallbackURI        *url.URL
-		JWKSURIStr         string `envconfig:"EVE_JWKS_URI" required:"true"`
-		JWKSURI            *url.URL
 		InitializeUniverse uint `envconfig:"INITIALIZE_UNIVERSE" required:"true"`
-	}
-
-	Auth struct {
-		TokenKIDStr    string `envconfig:"AUTH_TOKEN_KID" required:"true"`
-		TokenKID       uuid.UUID
-		TokenExpiryStr string `envconfig:"AUTH_EXPIRY" required:"true"`
-		TokenExpiry    time.Duration
-		TokenDomain    string `envconfig:"AUTH_TOKEN_DOMAIN" required:"true"`
-	}
-
-	Server struct {
-		Port uint `envconfig:"SERVER_PORT" required:"true"`
 	}
 
 	SessionName string `envconfig:"SESSION_NAME" default:"__skillboard_session"`
@@ -58,22 +42,13 @@ type config struct {
 }
 
 func buildConfig() {
-	_ = godotenv.Load(".config/.env")
+	_ = godotenv.Load(".env")
 
 	cfg = new(config)
 	err := envconfig.Process("", cfg)
 	if err != nil {
 		panic(errors.Wrap(err, "failed to config env"))
 	}
-
-	dur, err := time.ParseDuration(cfg.Auth.TokenExpiryStr)
-	if err != nil {
-		panic(errors.Wrap(err, "failed to parse AUTH_EXPIRY"))
-	}
-
-	cfg.Auth.TokenExpiry = dur
-
-	cfg.Auth.TokenKID = uuid.Must(uuid.FromString(cfg.Auth.TokenKIDStr))
 
 	callbackURI, err := url.Parse(cfg.Eve.CallbackURIStr)
 	if err != nil {
@@ -82,10 +57,4 @@ func buildConfig() {
 
 	cfg.Eve.CallbackURI = callbackURI
 
-	jwksURI, err := url.Parse(cfg.Eve.JWKSURIStr)
-	if err != nil {
-		panic(errors.Wrap(err, "failed to parse EVE_JWKS_URI as a valid URI"))
-	}
-
-	cfg.Eve.JWKSURI = jwksURI
 }

@@ -68,7 +68,6 @@ func buffaloCmd(c *cli.Context) error {
 		httpClient(),
 		cache,
 		oauth2Config(),
-		cfg.Eve.JWKSURI,
 	)
 
 	user := user.New(redisClient, logger, cache, auth, alliance, character, corporation, skills, userRepo)

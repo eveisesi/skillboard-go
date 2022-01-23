@@ -5,7 +5,7 @@ CREATE TABLE `types` (
 	`published` TINYINT UNSIGNED NOT NULL DEFAULT '0',
 	`capacity` FLOAT NOT NULL DEFAULT '0.00',
 	`market_group_id` INT UNSIGNED NULL DEFAULT NULL,
-	`mass` FLOAT NOT NULL DEFAULT '0.00',
+	`mass` FLOAT DEFAULT '0.00',
 	`packaged_volume` FLOAT NOT NULL DEFAULT '0.00',
 	`portion_size` INT NULL DEFAULT NULL,
 	`radius` FLOAT NULL DEFAULT NULL,

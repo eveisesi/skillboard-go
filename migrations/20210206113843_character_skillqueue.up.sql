@@ -9,7 +9,6 @@ CREATE TABLE `character_skillqueue` (
     `level_start_sp` INT UNSIGNED NULL DEFAULT NULL,
     `level_end_sp` INT UNSIGNED NULL DEFAULT NULL,
     `created_at` DATETIME NOT NULL,
-    `updated_at` DATETIME NOT NULL,
     PRIMARY KEY (`character_id`, `queue_position`) USING BTREE,
     INDEX `character_skillqueue_skill_id_idx` (`skill_id`),
     INDEX `character_skillqueue_start_date_idx` (`start_date`),

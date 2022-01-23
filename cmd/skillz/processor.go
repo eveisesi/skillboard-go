@@ -52,11 +52,6 @@ func processorCommand(c *cli.Context) error {
 		httpClient(),
 		cache,
 		oauth2Config(),
-		keyConfig(),
-		cfg.Auth.TokenKID,
-		cfg.Auth.TokenDomain,
-		cfg.Auth.TokenExpiry,
-		cfg.Eve.JWKSURI,
 	)
 	universe := universe.New(logger, cache, esi, universeRepo)
 	clone := clone.New(logger, cache, etag, esi, universe, cloneRepo)
