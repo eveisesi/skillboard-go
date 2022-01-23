@@ -66,6 +66,12 @@ func migrateUpCommand(c *cli.Context) error {
 
 	var fileNames = make([]string, 0, len(files))
 	for _, file := range files {
+		if file.Name() == "embed.go" {
+			continue
+		}
+		if !strings.Contains(file.Name(), ".up.") {
+			continue
+		}
 		fileNames = append(fileNames, file.Name())
 	}
 
@@ -159,13 +165,13 @@ func migrateDownCommand(c *cli.Context) error {
 	for i := len(migrations) - 1; i >= 0; i-- {
 		migration := migrations[i]
 
-		fileName := fmt.Sprintf("%s%s.down.sql", migrationDir, migration.Name)
+		fileName := fmt.Sprintf("%s.down.sql", migration.Name)
 
 		entry := logger.WithFields(logrus.Fields{
 			"name":     migration.Name,
 			"fileName": fileName,
 		})
-		file, err := os.Open(fileName)
+		file, err := migrationFS.Open(fileName)
 		if err != nil {
 			entry.WithError(err).Fatal("failed to open migration file")
 		}
@@ -203,6 +209,11 @@ func migrateDownCommand(c *cli.Context) error {
 
 }
 
+const createTableStmt = `CREATE TABLE %s (
+	created_at DATETIME NOT NULL,
+	updated_at DATETIME NOT NULL
+) COLLATE = 'utf8mb4_unicode_ci' ENGINE = InnoDB;`
+
 func migrateCreateCommand(c *cli.Context) error {
 
 	name := c.Args().First()
@@ -224,10 +235,8 @@ func migrateCreateCommand(c *cli.Context) error {
 	defer upFile.Close()
 	_, _ = upFile.WriteString(
 		fmt.Sprintf(
-			"CREATE TABLE `%s` (\n\t%s\n\t%s\n) COLLATE = 'utf8mb4_unicode_ci' ENGINE = InnoDB;",
+			createTableStmt,
 			name,
-			"`created_at` TIMESTAMP NOT NULL,",
-			"`updated_at` TIMESTAMP NOT NULL,",
 		),
 	)
 
@@ -277,7 +286,7 @@ const createMigrationsTableQuery = `
 	CREATE TABLE migrations (
 		id INT UNSIGNED NOT NULL AUTO_INCREMENT, 
 		name VARCHAR(255) NOT NULL,                  
-		created_at TIMESTAMP NOT NULL,               
+		created_at DATETIME NOT NULL,               
 		PRIMARY KEY (id) USING BTREE,                
 		UNIQUE INDEX migrations_name_unique_idx (name)   
 	) COLLATE = 'utf8mb4_unicode_ci' ENGINE = INNODB;
@@ -288,14 +297,14 @@ const checkTableExistsQuery = `
 		COUNT(*)
 	FROM information_schema.tables
 	WHERE 
-		table_schema = ? AND table_name = '%s'
+		table_schema = ? AND table_name = ?
 	LIMIT 1;
 `
 
 func initializeMigrations() error {
 
 	var count uint
-	err := dbConn.Select(&count, fmt.Sprintf(checkTableExistsQuery, "migrations"))
+	err := dbConn.Get(&count, checkTableExistsQuery, cfg.MySQL.DB, "migrations")
 	if err != nil {
 		return err
 	}
@@ -328,14 +337,14 @@ func getMigration(name string) (*migration, error) {
 	`
 
 	var migration = new(migration)
-	err := dbConn.Get(&migration, query, name)
+	err := dbConn.Get(migration, query, name)
 	return migration, err
 
 }
 
 func createMigration(name string) error {
 	query := `
-		INSERT INTO migrations (name, created_at) (?, NOW())
+		INSERT INTO migrations (name, created_at)VALUES(?, NOW())
 	`
 
 	_, err := dbConn.Exec(query, name)

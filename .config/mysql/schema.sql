@@ -464,7 +464,7 @@ CREATE TABLE `user_settings` (
     `created_at` DATETIME NOT NULL,
     `updated_at` DATETIME NOT NULL,
     PRIMARY KEY (`user_id`) USING BTREE,
-    CONSTRAINT `user_settings_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `skillz`.`users` (`id`) ON UPDATE CASCADE ON DELETE CASCADE
+    CONSTRAINT `user_settings_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `skillboard`.`users` (`id`) ON UPDATE CASCADE ON DELETE CASCADE
 ) COLLATE = 'utf8mb4_unicode_ci' ENGINE = InnoDB;
 
 -- Data exporting was unselected.

@@ -6,7 +6,7 @@ CREATE TABLE `alliances` (
     `creator_corporation_id` INT UNSIGNED NOT NULL,
     `executor_corporation_id` INT UNSIGNED NULL DEFAULT NULL,
     `is_closed` TINYINT NOT NULL DEFAULT '0',
-    `date_founded` TIMESTAMP NULL DEFAULT NULL,
+    `date_founded` DATETIME NULL DEFAULT NULL,
     `created_at` DATETIME NOT NULL,
     `updated_at` DATETIME NOT NULL,
     PRIMARY KEY (`id`) USING BTREE,
