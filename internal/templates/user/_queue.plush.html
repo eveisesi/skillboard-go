@@ -1,7 +1,14 @@
-<div class="container">
+<div class="container mt-2">
     <div class="row">
+        <%= if (len(user.QueueSummary.Queue) == 0) { %>
+        <div class="col-lg-12">
+            <div class="alert alert-primary">
+                This user does not have an active queue at the moment
+            </div>
+        </div>
+        <% } else {  %>
         <div class="col-lg-4">
-            <h5 class="header mt-2">Queue Summary </h5>
+            <h5 class="header">Queue Summary </h5>
             <ul class="list-group">
                 <%= for (group) in user.QueueSummary.Summary { %>
                 <li class="list-group-item text-white d-flex w-100 justify-content-between">
@@ -16,7 +23,7 @@
             </ul>
         </div>
         <div class="col-lg-8">
-            <h5 class="header mt-2">
+            <h5 class="header">
                 Skill Queue
             </h5>
             <table class="table">
@@ -70,5 +77,6 @@
                 </tr>
             </table>
         </div>
+        <% } %>
     </div>
 </div>

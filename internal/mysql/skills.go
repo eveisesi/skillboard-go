@@ -237,7 +237,7 @@ func (r *skillRepository) DeleteCharacterFlyableShips(ctx context.Context, chara
 
 	query, args, err := sq.Delete(r.flyable.table).Where(sq.Eq{ColumnCharacterID: characterID}).ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, skillsRepositoryIdentifier, "CreateCharacterFlyableShips", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, skillsRepositoryIdentifier, "DeleteCharacterFlyableShips", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)

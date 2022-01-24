@@ -37,7 +37,7 @@ func (s *Service) SetCurrentUser(next buffalo.Handler) buffalo.Handler {
 func (s *Service) Authorize(next buffalo.Handler) buffalo.Handler {
 	return func(c buffalo.Context) error {
 		if userID := c.Session().Get(keyAuthenticatedUserID); userID == nil {
-			c.Flash().Add("da", "You must be logged in to see that page.")
+			c.Flash().Add("danger", "You must be logged in to see that page.")
 			return c.Redirect(http.StatusTemporaryRedirect, "rootPath()")
 		}
 		return next(c)

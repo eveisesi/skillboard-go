@@ -3,10 +3,8 @@ package skill
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/eveisesi/skillz"
 	"github.com/eveisesi/skillz/internal/cache"
 	"github.com/eveisesi/skillz/internal/esi"
@@ -65,6 +63,7 @@ func (s *Service) Process(ctx context.Context, user *skillz.User) error {
 	for _, f := range funcs {
 		err = f(ctx, user)
 		if err != nil {
+			s.logger.WithError(err).Error("encounted error executing processor")
 			break
 		}
 
@@ -588,12 +587,20 @@ OUTER:
 		flyableShips = append(flyableShips, flyable)
 	}
 
-	err = s.skills.CreateCharacterFlyableShips(ctx, flyableShips)
-	if err != nil {
-		return errors.Wrap(err, "failed to save flyable ships to data store")
-	}
+	if len(flyableShips) > 0 {
+		err = s.skills.CreateCharacterFlyableShips(ctx, flyableShips)
+		if err != nil {
+			return errors.Wrap(err, "failed to save flyable ships to data store")
+		}
 
-	return s.cache.SetCharacterFlyableShips(ctx, user.CharacterID, flyableShips, time.Hour)
+		defer func() {
+			err = s.cache.SetCharacterFlyableShips(ctx, user.CharacterID, flyableShips, time.Hour)
+			if err != nil {
+				s.logger.WithError(err).Error("failed to cache character flyable ships")
+			}
+		}()
+	}
+	return nil
 
 }
 
@@ -624,8 +631,6 @@ func PlushHelperHasSkillCount(group *skillz.SkillGroup) uint {
 
 	for _, t := range group.Skills {
 		if t == nil {
-			spew.Dump(group)
-			fmt.Printf("group %s has nil t\n", group.Name)
 			continue
 		}
 

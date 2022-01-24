@@ -11,6 +11,7 @@ CREATE TABLE `users` (
     `disabled_reason` VARCHAR(255) NULL DEFAULT NULL COLLATE 'utf8mb4_unicode_ci',
     `disabled_timestamp` DATETIME NULL DEFAULT NULL,
     `last_login` DATETIME NOT NULL,
+    `last_processed` DATETIME NOT NULL,
     `created_at` DATETIME NOT NULL,
     `updated_at` DATETIME NOT NULL,
     PRIMARY KEY (`id`) USING BTREE,

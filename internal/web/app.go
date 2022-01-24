@@ -11,6 +11,7 @@ import (
 	"github.com/eveisesi/skillz/public"
 	"github.com/gobuffalo/buffalo"
 	"github.com/gobuffalo/buffalo/render"
+	csrf "github.com/gobuffalo/mw-csrf"
 	"github.com/sirupsen/logrus"
 )
 
@@ -46,12 +47,11 @@ func NewService(
 ) *Service {
 
 	s := &Service{
-		cache:       cache,
-		auth:        auth,
-		user:        user,
-		renderer:    renderer,
-		logger:      logger,
-		activeCache: env == skillz.Production,
+		cache:    cache,
+		auth:     auth,
+		user:     user,
+		renderer: renderer,
+		logger:   logger,
 	}
 
 	s.app = buffalo.New(buffalo.Options{
@@ -63,28 +63,12 @@ func NewService(
 	})
 
 	s.app.Use(s.SetCurrentUser)
-
-	s.app.Use(s.Authorize)
-
-	var skippableHandlers = []buffalo.Handler{
-		s.indexHandler,
-		s.loginHandler,
-		s.robotsHandler,
-		s.userHandler,
-	}
-
-	// router := s.app.Muxer()
-	// router.Use(s.PageCacher)
-
 	s.app.GET("/", s.indexHandler)
 	s.app.GET("/login", s.loginHandler)
 	s.app.GET("/logout", s.logoutHandler)
-	// s.app.GET("/robots.txt", s.robotsHandler)
-	s.app.GET("/users/settings", s.userSettingsHandler)
-	s.app.POST("/users/settings", s.postUserSettingsHandler)
+	s.app.GET("/users/settings", csrf.New(s.Authorize(s.userSettingsHandler)))
+	s.app.PUT("/users/settings", csrf.New(s.Authorize(s.postUserSettingsHandler)))
 	s.app.GET("/users/{userID}", s.userHandler)
-	s.app.Middleware.Skip(s.Authorize, skippableHandlers...)
-	s.app.Middleware.Skip(s.SetCurrentUser, s.robotsHandler)
 
 	s.app.ServeFiles("/", http.FS(public.FS())) // serve files from the public directory
 
@@ -94,4 +78,12 @@ func NewService(
 
 func (s *Service) Start() error {
 	return s.app.Serve()
+}
+
+func (s *Service) flashDanger(c buffalo.Context, msg string) {
+	c.Flash().Add("danger", msg)
+}
+
+func (s *Service) flashSuccess(c buffalo.Context, msg string) {
+	c.Flash().Add("success", msg)
 }

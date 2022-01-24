@@ -1,3 +1,4 @@
+<% let user = authenticatedUser %>
 <div class="container">
     <doiv class="row">
         <div class="col-lg-6 offset-3">
@@ -6,6 +7,8 @@
                     <h5 class="text-center">User Settings</h5>
                 </div>
                 <form action="/users/settings" method="post">
+                    <input type="hidden" name="_method" value="PUT" />
+                    <input name="authenticity_token" type="hidden" value="<%= authenticity_token %>">
                     <div class="list-group">
                         <div class="list-group-item text-white fs-5">
                             <div class="d-flex justify-content-between">
@@ -14,13 +17,32 @@
                                 </div>
                                 <div class="w-25">
                                     <select class="form-select" name="visibility">
-                                        <option value="1">Private</option>
-                                        <option value="2">Token</option>
-                                        <option value="3">Public</option>
+                                        <%= for (value) in visibilities { %>
+                                        <%
+                                            let selected = ""
+                                            if (user.Settings.Visibility.String() == value.String()) {
+                                                selected = "selected"
+                                            }
+                                        %>
+                                        <option value="<%= value.Uint() %>" <%= selected %>><%=value.String()%></option>
+                                        <% } %>
+
                                     </select>
                                 </div>
                             </div>
                         </div>
+                        <%= if (user.Settings.Visibility.String() == "Token") { %>
+                        <div class="list-group-item text-white fs-5">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    Tokenize URL
+                                </div>
+                                <div>
+                                    <a class="btn btn-primary" href="<%= userPath({userID: user.ID, token: user.Settings.VisibilityToken}) %>">View My Tokenized Page</a>
+                                </div>
+                            </div>
+                        </div>
+                        <% } %>
                         <div class="list-group-item text-white fs-5">
                             <div class="d-flex justify-content-between">
                                 <div>
@@ -28,10 +50,12 @@
                                 </div>
                                 <div>
                                     <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" name="hide_skills" role="switch" id="flexSwitchCheckDefault">
+
+                                        <input class="form-check-input" type="checkbox" name="hide_skills" role="switch" <%= checked(user.Settings.HideSkills) %>>
                                     </div>
                                 </div>
                             </div>
+                            <div class="text-muted"><small>This does not include Skill Meta (i.e. Skill points) Those will continue to be displayed</small></div>
                         </div>
                         <div class="list-group-item text-white fs-5">
                             <div class="d-flex justify-content-between">
@@ -40,7 +64,7 @@
                                 </div>
                                 <div>
                                     <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" name="hide_queue" role="switch" id="flexSwitchCheckDefault">
+                                        <input class="form-check-input" type="checkbox" name="hide_queue" role="switch" <%= checked(user.Settings.HideQueue) %>>
                                     </div>
                                 </div>
                             </div>
@@ -52,7 +76,7 @@
                                 </div>
                                 <div>
                                     <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" name="hide_attributes" role="switch" id="flexSwitchCheckDefault">
+                                        <input class="form-check-input" type="checkbox" name="hide_attributes" role="switch" <%= checked(user.Settings.HideAttributes) %>>
                                     </div>
                                 </div>
                             </div>
@@ -64,7 +88,7 @@
                                 </div>
                                 <div>
                                     <div class=" form-check form-switch d-flex flex-row align-items-end">
-                                        <input class="form-check-input" type="checkbox" name="hide_flyable" role="switch" id="flexSwitchCheckDefault">
+                                        <input class="form-check-input" type="checkbox" name="hide_flyable" role="switch" <%= checked(user.Settings.HideFlyable) %>>
                                     </div>
                                 </div>
                             </div>

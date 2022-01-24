@@ -64,14 +64,49 @@ func (i *User) ApplyToken(t *oauth2.Token) {
 	i.Expires = t.Expiry
 }
 
+type Visibility uint
+
+const (
+	VisibilityPublic Visibility = iota + 1
+	VisibilityToken
+	VisibilityPrivate
+)
+
+var MapVisibility = map[Visibility]string{
+	VisibilityPrivate: "Private",
+	VisibilityToken:   "Token",
+	VisibilityPublic:  "Public",
+}
+
+var AllVisibilities = []Visibility{VisibilityPrivate, VisibilityPublic, VisibilityToken}
+
+func (v Visibility) Valid() bool {
+	for _, i := range AllVisibilities {
+		if i == v {
+			return true
+		}
+	}
+	return false
+}
+
+func (v Visibility) String() string {
+	return MapVisibility[v]
+}
+
+func (v Visibility) Uint() uint {
+	return uint(v)
+}
+
 type UserSettings struct {
-	UserID         uuid.UUID `db:"user_id" json:"-" form:"-"`
-	HideSkills     bool      `db:"hide_skills" form:"hide_skills"`
-	HideQueue      bool      `db:"hide_queue" form:"hide_queue"`
-	HideAttributes bool      `db:"hide_attributes" form:"hide_attributes"`
-	HideFlyable    bool      `db:"hide_ships" form:"hide_flyable"`
-	CreatedAt      time.Time `db:"created_at" json:"-" form:"-"`
-	UpdatedAt      time.Time `db:"updated_at" json:"-" form:"-"`
+	UserID          uuid.UUID  `db:"user_id" json:"user_id" form:"-"`
+	Visibility      Visibility `db:"visibility" form:"visibility"`
+	VisibilityToken string     `db:"visibility_token"`
+	HideSkills      bool       `db:"hide_skills" form:"hide_skills"`
+	HideQueue       bool       `db:"hide_queue" form:"hide_queue"`
+	HideAttributes  bool       `db:"hide_attributes" form:"hide_attributes"`
+	HideFlyable     bool       `db:"hide_flyable" form:"hide_flyable"`
+	CreatedAt       time.Time  `db:"created_at" json:"-" form:"-"`
+	UpdatedAt       time.Time  `db:"updated_at" json:"-" form:"-"`
 }
 
 type UserSearchResult struct {

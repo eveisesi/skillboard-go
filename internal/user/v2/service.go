@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"crypto/sha1"
 	"database/sql"
 	"fmt"
 	"sort"
@@ -233,6 +234,11 @@ func (s *Service) LoadUserAll(ctx context.Context, id uuid.UUID) (*skillz.User, 
 		return nil, ErrUserNotFound
 	}
 
+	user.Settings, err = s.UserSettings(ctx, user.ID)
+	if err != nil {
+		return nil, errors.Wrap(err, "unexpected error encountered fetch user")
+	}
+
 	entry := s.logger.
 		WithField("userID", user.ID)
 
@@ -391,18 +397,16 @@ func (s *Service) Login(ctx context.Context, code, state string) (*skillz.User, 
 		return nil, errors.Wrap(err, "unexpected error encountered fetch user settings")
 	}
 
-	if err != nil && errors.Is(err, sql.ErrNoRows) {
-		user.Settings = &skillz.UserSettings{
-			UserID: user.ID,
-		}
-
-		err = s.UserRepository.CreateUserSettings(ctx, user.Settings)
+	if user.Settings == nil {
+		err = s.CreateUserSettings(ctx, user.ID, &skillz.UserSettings{
+			Visibility: skillz.VisibilityPrivate,
+		})
 		if err != nil {
 			return nil, errors.Wrap(err, "unexpected error encountered whilst attempting to create user settings")
 		}
 	}
 
-	return user, err
+	return user, nil
 
 }
 
@@ -567,16 +571,21 @@ func (s *Service) UserSettings(ctx context.Context, id uuid.UUID) (*skillz.UserS
 func (s *Service) CreateUserSettings(ctx context.Context, id uuid.UUID, settings *skillz.UserSettings) error {
 
 	settings.UserID = id
+	if settings.VisibilityToken == "" {
+		settings.VisibilityToken = fmt.Sprintf("%x", sha1.Sum([]byte(time.Now().Format(time.RFC3339Nano))))
+	}
 
 	err := s.UserRepository.CreateUserSettings(ctx, settings)
 	if err != nil {
 		return errors.Wrap(err, "failed to cache user settings")
 	}
 
-	err = s.cache.SetUserSettings(ctx, settings.UserID, settings, time.Hour)
-	if err != nil {
-		s.logger.WithError(err).WithField("user_id", settings.UserID.String()).Error("failed to cache user settings")
-	}
+	defer func() {
+		err = s.cache.SetUserSettings(ctx, settings.UserID, settings, time.Hour)
+		if err != nil {
+			s.logger.WithError(err).WithField("user_id", settings.UserID.String()).Error("failed to cache user settings")
+		}
+	}()
 
 	return nil
 
