@@ -145,6 +145,7 @@ func (r *userRepository) CreateUser(ctx context.Context, user *skillz.User) erro
 		UserDisabledReason:    user.DisabledReason,
 		UserDisabledTimestamp: user.DisabledTimestamp,
 		UserLastLogin:         user.LastLogin,
+		UserLastProcessed:     user.LastProcessed,
 		ColumnCreatedAt:       user.CreatedAt,
 		ColumnUpdatedAt:       user.UpdatedAt,
 	}).ToSql()
