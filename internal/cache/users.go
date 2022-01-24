@@ -54,12 +54,11 @@ func (s *Service) ResetUserCache(ctx context.Context, user *skillz.User) error {
 
 	keys := []string{
 		generateKey(characterSkillMetaKeyPrefix, strconv.FormatUint(user.CharacterID, 10)),
-		generateKey(characterSkillMetaKeyPrefix, strconv.FormatUint(user.CharacterID, 10)),
 		generateKey(characterSkillsKeyPrefix, strconv.FormatUint(user.CharacterID, 10)),
 		generateKey(characterSkillsGroupedKeyPrefix, strconv.FormatUint(user.CharacterID, 10)),
 		generateKey(characterFlyableKeyPrefix, strconv.FormatUint(user.CharacterID, 10)),
 		generateKey(characterSkillQueueKeySummaryPrefix, strconv.FormatUint(user.CharacterID, 10)),
-		generateKey(characterImplantsKeyPrefix, strconv.FormatUint(user.CharacterID, 10)),
+		generateKey(characterAttributesKeyPrefix, strconv.FormatUint(user.CharacterID, 10)),
 	}
 
 	for _, key := range keys {

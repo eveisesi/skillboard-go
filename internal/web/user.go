@@ -168,6 +168,6 @@ func (s *Service) postUserSettingsHandler(c buffalo.Context) error {
 	}
 
 	s.flashSuccess(c, "Settings updated successfully")
-	return s.userSettingsHandler(c)
+	return c.Redirect(http.StatusFound, "usersSettingsPath()")
 
 }

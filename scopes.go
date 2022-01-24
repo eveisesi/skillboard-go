@@ -37,7 +37,7 @@ const (
 )
 
 var AllScopes = []Scope{
-	ReadImplantsV1,
+	// ReadImplantsV1,
 	// ReadClonesV1,
 	ReadSkillQueueV1,
 	ReadSkillsV1,

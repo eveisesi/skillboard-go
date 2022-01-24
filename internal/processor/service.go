@@ -90,8 +90,6 @@ func (s *Service) processUser(ctx context.Context, userID uuid.UUID) error {
 		return err
 	}
 
-	ctx = internal.ContextWithUser(ctx, user)
-
 	err = s.cache.ResetUserCache(ctx, user)
 	if err != nil {
 		return err
@@ -102,7 +100,6 @@ func (s *Service) processUser(ctx context.Context, userID uuid.UUID) error {
 		if err != nil {
 			return errors.Wrap(err, "processor failed to process user")
 		}
-		time.Sleep(time.Second)
 	}
 
 	user.IsNew = false
@@ -113,14 +110,4 @@ func (s *Service) processUser(ctx context.Context, userID uuid.UUID) error {
 	}
 
 	return nil
-}
-
-func scopeInSlcScopes(s skillz.Scope, slc []skillz.Scope) bool {
-	for _, scope := range slc {
-		if s == scope {
-			return true
-		}
-	}
-
-	return false
 }
