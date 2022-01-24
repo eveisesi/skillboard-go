@@ -58,7 +58,7 @@ func NewService(
 		Env:         env.String(),
 		SessionName: sessionName,
 		WorkerOff:   true,
-		Addr:        "127.0.0.1:54400",
+		Addr:        "0.0.0.0:54400",
 		// Logger:      logger,
 	})
 
