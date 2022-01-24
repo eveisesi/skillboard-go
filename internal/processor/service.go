@@ -95,19 +95,26 @@ func (s *Service) processUser(ctx context.Context, userID uuid.UUID) error {
 		return err
 	}
 
+	defer func() {
+		err = s.user.UpdateUser(ctx, user)
+		if err != nil {
+			s.logger.WithError(err).Error("failed to update user")
+		}
+	}()
+
 	for _, processor := range s.scopes {
 		err = processor.Process(ctx, user)
 		if err != nil {
-			return errors.Wrap(err, "processor failed to process user")
+			err = errors.Wrap(err, "processor failed to process user")
+			user.Disabled = true
+			user.DisabledReason.SetValid(err.Error())
+			user.DisabledTimestamp.SetValid(time.Now())
+			return err
 		}
 	}
 
 	user.IsNew = false
 	user.LastProcessed.SetValid(time.Now())
-	err = s.user.UpdateUser(ctx, user)
-	if err != nil {
-		return errors.Wrap(err, "failed to update user and set is_new to false")
-	}
 
 	return nil
 }
