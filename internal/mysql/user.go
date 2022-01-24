@@ -173,6 +173,7 @@ func (r *userRepository) UpdateUser(ctx context.Context, user *skillz.User) erro
 		UserDisabled:          user.Disabled,
 		UserDisabledReason:    user.DisabledReason,
 		UserDisabledTimestamp: user.DisabledTimestamp,
+		UserLastProcessed:     user.LastProcessed,
 		UserLastLogin:         user.LastLogin,
 		ColumnUpdatedAt:       user.UpdatedAt,
 	}).Where(sq.Eq{UserID: user.ID}).ToSql()
