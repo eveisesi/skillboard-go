@@ -2,7 +2,7 @@ version: "3.7"
 
 services:
     server:
-        image: ghcr.io/eveisesi/skillboard/skillboard-api:v0.2.0-rc1
+        image: ghcr.io/eveisesi/skillboard/skillboard-api:v0.2.0-rc2
         restart: unless-stopped
         container_name: skillboard-server
         environment:
@@ -14,21 +14,15 @@ services:
             - MYSQL_USER
             - MYSQL_PASSWORD
             - LOG_LEVEL
-            - EVE_JWKS_URI
             - EVE_CLIENT_ID
             - EVE_CLIENT_SECRET
             - EVE_CALLBACK_URI
-            - SERVER_PORT
-            - AUTH_KEY
-            - AUTH_EXPIRY
-            - AUTH_TOKEN_DOMAIN
-            - AUTH_TOKEN_KID
             - ENVIRONMENT
         command: /app/skillboard-api buffalo
         ports:
            - "54400:54400"
     processor:
-        image: ghcr.io/eveisesi/skillboard/skillboard-api:v0.2.0-rc1
+        image: ghcr.io/eveisesi/skillboard/skillboard-api:v0.2.0-rc2
         restart: unless-stopped
         container_name: skillboard-processor
         environment:
@@ -40,19 +34,13 @@ services:
             - MYSQL_USER
             - MYSQL_PASSWORD
             - LOG_LEVEL
-            - EVE_JWKS_URI
             - EVE_CLIENT_ID
             - EVE_CLIENT_SECRET
             - EVE_CALLBACK_URI
-            - SERVER_PORT
-            - AUTH_KEY
-            - AUTH_EXPIRY
-            - AUTH_TOKEN_DOMAIN
-            - AUTH_TOKEN_KID
             - ENVIRONMENT
         command: /app/skillboard-api processor
     cron:
-        image: ghcr.io/eveisesi/skillboard/skillboard-api:v0.2.0-rc1
+        image: ghcr.io/eveisesi/skillboard/skillboard-api:v0.2.0-rc2
         restart: unless-stopped
         container_name: skillboard-cron
         environment:
@@ -64,15 +52,9 @@ services:
             - MYSQL_USER
             - MYSQL_PASSWORD
             - LOG_LEVEL
-            - EVE_JWKS_URI
             - EVE_CLIENT_ID
             - EVE_CLIENT_SECRET
             - EVE_CALLBACK_URI
-            - SERVER_PORT
-            - AUTH_KEY
-            - AUTH_EXPIRY
-            - AUTH_TOKEN_DOMAIN
-            - AUTH_TOKEN_KID
             - ENVIRONMENT
         command: /app/skillboard-api cron
     redis:
