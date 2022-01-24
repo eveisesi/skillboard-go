@@ -18,6 +18,8 @@ services:
             - EVE_CLIENT_SECRET
             - EVE_CALLBACK_URI
             - ENVIRONMENT
+            - RUN_MIGRATIONS
+            - INITIALIZE_UNIVERSE
         command: /app/skillboard-api buffalo
         ports:
            - "54400:54400"
@@ -38,6 +40,8 @@ services:
             - EVE_CLIENT_SECRET
             - EVE_CALLBACK_URI
             - ENVIRONMENT
+            - RUN_MIGRATIONS
+            - INITIALIZE_UNIVERSE
         command: /app/skillboard-api processor
     cron:
         image: ghcr.io/eveisesi/skillboard/skillboard-api:0.2.0-rc4
@@ -56,6 +60,8 @@ services:
             - EVE_CLIENT_SECRET
             - EVE_CALLBACK_URI
             - ENVIRONMENT
+            - RUN_MIGRATIONS
+            - INITIALIZE_UNIVERSE
         command: /app/skillboard-api cron
     redis:
         image: redis:6.2.5
