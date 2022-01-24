@@ -2,7 +2,7 @@ version: "3.7"
 
 services:
     server:
-        image: ghcr.io/eveisesi/skillboard/skillboard-api:0.2.0-rc4
+        image: skillboard:local
         restart: unless-stopped
         container_name: skillboard-server
         environment:
