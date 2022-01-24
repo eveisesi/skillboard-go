@@ -3,8 +3,8 @@ package main
 import (
 	"github.com/eveisesi/skillz"
 	"github.com/eveisesi/skillz/internal/skill"
-	"github.com/eveisesi/skillz/internal/templates"
 	"github.com/eveisesi/skillz/public"
+	"github.com/eveisesi/skillz/templates"
 	"github.com/gobuffalo/buffalo/render"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"

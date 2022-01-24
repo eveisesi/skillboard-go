@@ -11,5 +11,5 @@ import (
 var files embed.FS
 
 func FS() fs.FS {
-	return buffalo.NewFS(files, "internal/templates")
+	return buffalo.NewFS(files, "templates")
 }
