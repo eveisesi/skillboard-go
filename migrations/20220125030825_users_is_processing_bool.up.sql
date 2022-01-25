@@ -1,2 +1,6 @@
 ALTER TABLE
-    users DROP COLUMN `is_processing`;
+    users
+ADD
+    COLUMN `is_processing` TINYINT(1) NOT NULL DEFAULT '0'
+AFTER
+    `is_new`;
