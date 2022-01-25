@@ -210,8 +210,8 @@ func (s *Service) Recent(ctx context.Context) ([]*skillz.User, []*skillz.User, e
 		return highlighted[i].Meta.TotalSP > highlighted[j].Meta.TotalSP
 	})
 
-	if len(highlighted) > 7 {
-		highlighted = highlighted[0:7]
+	if len(highlighted) > 6 {
+		highlighted = highlighted[0:6]
 	}
 
 	return highlighted, users, nil
