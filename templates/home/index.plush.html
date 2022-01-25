@@ -7,16 +7,12 @@
     <div class="row mt-2">
         <%= for (user) in highlighted { %>
         <div class="col-lg-2 text-center">
-            <h6><%= user.Character.Name %></h6>
             <a href="<%= userPath({userID: user.ID}) %>"><img src="https://images.evetech.net/characters/<%= user.CharacterID %>/portrait?size=256" class="rounded mx-auto d-block img-fluid" /></a>
-
             <h6 class="mt-2">
+                <%= user.Character.Name %>
                 <%= formatNum(user.Meta.TotalSP) %> SP<br>
             </h6>
-
         </div>
-
-
         <% } %>
     </div>
     <div class="row">
