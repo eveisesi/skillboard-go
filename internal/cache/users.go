@@ -3,6 +3,7 @@ package cache
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 	"time"
 
 	"github.com/eveisesi/skillz"
@@ -17,16 +18,58 @@ type UserAPI interface {
 
 	SearchUsers(ctx context.Context, q string) ([]*skillz.UserSearchResult, error)
 	SetSearchUsersResults(ctx context.Context, q string, users []*skillz.UserSearchResult, expires time.Duration) error
-	NewUsersBySP(ctx context.Context) ([]*skillz.UserWithSkillMeta, error)
-	SetNewUsersBySP(ctx context.Context, users []*skillz.UserWithSkillMeta, expires time.Duration) error
+	NewUsersBySP(ctx context.Context) ([]*skillz.User, error)
+	SetNewUsersBySP(ctx context.Context, users []*skillz.User, expires time.Duration) error
+
 	BustNewUsersBySP(ctx context.Context) error
+	ResetUserCache(ctx context.Context, user *skillz.User) error
 }
 
 const (
 	userSearchKeyPrefix   = "user::search"
 	userSettingsKeyPrefix = "user::settings"
 	usersNewBySPPrefix    = "users::new-by-sp"
+	recentUsersPrefix     = "users::recent"
 )
+
+func (s *Service) RecentUsers(ctx context.Context) (*skillz.RecentUsers, error) {
+
+	key := generateKey(recentUsersPrefix)
+	result, err := s.redis.Get(ctx, key).Bytes()
+	if err != nil && !errors.Is(err, redis.Nil) {
+		return nil, errors.Wrapf(err, errorFFormat, userAPI, "SearchUsers", "failed to fetch results from cache")
+	}
+
+	if errors.Is(err, redis.Nil) {
+		return nil, nil
+	}
+
+	var out = new(skillz.RecentUsers)
+	err = json.Unmarshal(result, out)
+	return out, errors.Wrapf(err, errorFFormat, userAPI, "UserSettings", "failed to decode json to structure")
+
+}
+
+func (s *Service) ResetUserCache(ctx context.Context, user *skillz.User) error {
+
+	keys := []string{
+		generateKey(characterSkillMetaKeyPrefix, strconv.FormatUint(user.CharacterID, 10)),
+		generateKey(characterSkillsKeyPrefix, strconv.FormatUint(user.CharacterID, 10)),
+		generateKey(characterSkillsGroupedKeyPrefix, strconv.FormatUint(user.CharacterID, 10)),
+		generateKey(characterFlyableKeyPrefix, strconv.FormatUint(user.CharacterID, 10)),
+		generateKey(characterSkillQueueKeySummaryPrefix, strconv.FormatUint(user.CharacterID, 10)),
+		generateKey(characterAttributesKeyPrefix, strconv.FormatUint(user.CharacterID, 10)),
+	}
+
+	for _, key := range keys {
+		err := s.redis.Del(ctx, key).Err()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
 
 func (s *Service) SearchUsers(ctx context.Context, q string) ([]*skillz.UserSearchResult, error) {
 
@@ -85,9 +128,9 @@ func (s *Service) SetSearchUsersResults(ctx context.Context, q string, users []*
 
 }
 
-func (s *Service) NewUsersBySP(ctx context.Context) ([]*skillz.UserWithSkillMeta, error) {
+func (s *Service) NewUsersBySP(ctx context.Context) ([]*skillz.User, error) {
 
-	var users = make([]*skillz.UserWithSkillMeta, 0)
+	var users = make([]*skillz.User, 0)
 
 	key := generateKey(usersNewBySPPrefix)
 	results, err := s.redis.SMembers(ctx, key).Result()
@@ -99,9 +142,9 @@ func (s *Service) NewUsersBySP(ctx context.Context) ([]*skillz.UserWithSkillMeta
 		return users, nil
 	}
 
-	users = make([]*skillz.UserWithSkillMeta, 0, len(results))
+	users = make([]*skillz.User, 0, len(results))
 	for _, result := range results {
-		var user = new(skillz.UserWithSkillMeta)
+		var user = new(skillz.User)
 		err = json.Unmarshal([]byte(result), user)
 		if err != nil {
 			return users, errors.Wrapf(err, errorFFormat, userAPI, "NewUsersBySP", "failed to decode json to structure")
@@ -114,7 +157,7 @@ func (s *Service) NewUsersBySP(ctx context.Context) ([]*skillz.UserWithSkillMeta
 
 }
 
-func (s *Service) SetNewUsersBySP(ctx context.Context, users []*skillz.UserWithSkillMeta, expires time.Duration) error {
+func (s *Service) SetNewUsersBySP(ctx context.Context, users []*skillz.User, expires time.Duration) error {
 
 	members := make([]interface{}, 0, len(users))
 	for _, user := range users {
@@ -143,8 +186,7 @@ func (s *Service) SetNewUsersBySP(ctx context.Context, users []*skillz.UserWithS
 }
 
 func (s *Service) BustNewUsersBySP(ctx context.Context) error {
-	key := generateKey(usersNewBySPPrefix)
-	return s.redis.Del(ctx, key).Err()
+	return s.redis.Del(ctx, generateKey(usersNewBySPPrefix)).Err()
 }
 
 func (s *Service) UserSettings(ctx context.Context, id uuid.UUID) (*skillz.UserSettings, error) {

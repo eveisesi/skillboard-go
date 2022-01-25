@@ -6,6 +6,7 @@ import (
 
 	"github.com/eveisesi/skillz"
 	"github.com/eveisesi/skillz/internal"
+	"github.com/eveisesi/skillz/internal/cache"
 	"github.com/eveisesi/skillz/internal/user"
 	"github.com/go-redis/redis/v8"
 	"github.com/gofrs/uuid"
@@ -16,6 +17,7 @@ import (
 type Service struct {
 	logger *logrus.Logger
 	redis  *redis.Client
+	cache  *cache.Service
 	user   user.API
 
 	scopes skillz.ScopeProcessors
@@ -25,6 +27,7 @@ func New(logger *logrus.Logger, redisClient *redis.Client, user user.API, scopes
 	return &Service{
 		logger: logger,
 		redis:  redisClient,
+		cache:  cache.New(redisClient),
 		user:   user,
 		scopes: scopes,
 	}
@@ -87,40 +90,37 @@ func (s *Service) processUser(ctx context.Context, userID uuid.UUID) error {
 		return err
 	}
 
-	ctx = internal.ContextWithUser(ctx, user)
-
-processorLoop:
-	for _, processor := range s.scopes {
-		scopes := processor.Scopes()
-		for _, scope := range user.Scopes {
-			if scopeInSlcScopes(scope, scopes) {
-				err = processor.Process(ctx, user)
-				if err != nil {
-					return errors.Wrap(err, "processor failed to process user")
-				}
-
-				continue processorLoop
-			}
-		}
-		time.Sleep(time.Second)
+	err = s.cache.ResetUserCache(ctx, user)
+	if err != nil {
+		return err
 	}
 
-	user.IsNew = false
-	user.LastProcessed.SetValid(time.Now())
+	user.IsProcessing = true
 	err = s.user.UpdateUser(ctx, user)
 	if err != nil {
-		return errors.Wrap(err, "failed to update user and set is_new to false")
+		s.logger.WithError(err).Error("failed to update user")
+	}
+
+	defer func() {
+		user.IsNew = false
+		user.LastProcessed.SetValid(time.Now())
+		user.IsProcessing = false
+		err = s.user.UpdateUser(ctx, user)
+		if err != nil {
+			s.logger.WithError(err).Error("failed to update user")
+		}
+	}()
+
+	for _, processor := range s.scopes {
+		err = processor.Process(ctx, user)
+		if err != nil {
+			err = errors.Wrap(err, "processor failed to process user")
+			user.Disabled = true
+			user.DisabledReason.SetValid(err.Error())
+			user.DisabledTimestamp.SetValid(time.Now())
+			return err
+		}
 	}
 
 	return nil
-}
-
-func scopeInSlcScopes(s skillz.Scope, slc []skillz.Scope) bool {
-	for _, scope := range slc {
-		if s == scope {
-			return true
-		}
-	}
-
-	return false
 }

@@ -6,7 +6,6 @@ import (
 	"github.com/eveisesi/skillz/internal/auth"
 	"github.com/eveisesi/skillz/internal/cache"
 	"github.com/eveisesi/skillz/internal/character"
-	"github.com/eveisesi/skillz/internal/clone"
 	"github.com/eveisesi/skillz/internal/corporation"
 	"github.com/eveisesi/skillz/internal/esi"
 	"github.com/eveisesi/skillz/internal/etag"
@@ -38,35 +37,30 @@ func processorCommand(c *cli.Context) error {
 	corporationRepo := mysql.NewCorporationRepository(mysqlClient)
 	characterRepo := mysql.NewCharacterRepository(mysqlClient)
 	// contactRepo := mysql.NewContactRepository(mysqlClient)
-	cloneRepo := mysql.NewCloneRepository(mysqlClient)
+	// cloneRepo := mysql.NewCloneRepository(mysqlClient)
 	skillsRepo := mysql.NewSkillRepository(mysqlClient)
 	userRepo := mysql.NewUserRepository(mysqlClient)
 	universeRepo := mysql.NewUniverseRepository(mysqlClient)
 
-	alliance := alliance.New(cache, esi, etag, allianceRepo)
-	corporation := corporation.New(cache, esi, etag, corporationRepo)
-	character := character.New(cache, esi, etag, characterRepo)
+	character := character.New(logger, cache, esi, etag, characterRepo)
+	corporation := corporation.New(logger, cache, esi, etag, corporationRepo)
+	alliance := alliance.New(logger, cache, esi, etag, allianceRepo)
 
 	auth := auth.New(
 		skillz.EnvironmentFromString(cfg.Environment),
 		httpClient(),
 		cache,
 		oauth2Config(),
-		keyConfig(),
-		cfg.Auth.TokenKID,
-		cfg.Auth.TokenDomain,
-		cfg.Auth.TokenExpiry,
-		cfg.Eve.JWKSURI,
 	)
-	universe := universe.New(cache, esi, universeRepo)
-	clone := clone.New(logger, cache, etag, esi, universe, cloneRepo)
+	universe := universe.New(logger, cache, esi, universeRepo)
+	// clone := clone.New(logger, cache, etag, esi, universe, cloneRepo)
 	skills := skill.New(logger, cache, esi, universe, skillsRepo)
 	// contact := contact.New(logger, cache, etag, esi, character, corporation, alliance, contactRepo)
 
 	user := user.New(redisClient, logger, cache, auth, alliance, character, corporation, skills, userRepo)
 
 	return processor.New(logger, redisClient, user, skillz.ScopeProcessors{
-		clone,
+		// clone,
 		skills,
 		// contact,
 	}).Run()

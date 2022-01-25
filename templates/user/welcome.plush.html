@@ -1,0 +1,24 @@
+<div class="container my-3">
+    <div class="row">
+        <div class="col-6 offset-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0 text-center">Welcome to Skillboard.Evie</h5>
+                </div>
+                <div class="card-body">
+                    Thanks for registering. We are in the process of creating your profile and syncing it with CCP. This typically takes less than 30 seconds. This page will continue to refresh every
+                    ten (10) seconds until your profile is ready. If the page continues to refresh for more than 2 minutes, please use the Discord link at the bottom of the page to report issues.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    window.setInterval('refresh()', 10000); 	// Call a function every 10000 milliseconds (OR 10 seconds).
+
+    // Refresh or reload page.
+    function refresh() {
+        window.location.reload();
+    }
+</script>

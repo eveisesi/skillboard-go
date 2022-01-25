@@ -5,7 +5,5 @@ Skillboard.Evie is a Golang Application. This repository contians the code for S
 runs entirely inside of Docker with the exception of some minor setup that makes use of the main binary (there are plans to move this to a docker container
 that'll be controlled by a combination of environment variables and redis queries)
 
-### Setup
+### Setup (Docker)
 
-
-<!-- https://www.scottbrady91.com/openssl/creating-rsa-keys-using-openssl -->

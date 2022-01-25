@@ -32,6 +32,8 @@ type Corporation struct {
 	WarEligible   bool        `db:"war_eligible" json:"war_eligible"`
 	CreatedAt     time.Time   `db:"created_at" json:"-"`
 	UpdatedAt     time.Time   `db:"updated_at" json:"-"`
+
+	Alliance *Alliance `json:"alliance,omitempty"`
 }
 
 type CorporationAllianceHistory struct {

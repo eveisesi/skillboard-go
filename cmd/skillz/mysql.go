@@ -43,6 +43,7 @@ func buildMySQL() {
 		log.Panicf("[MySQL Connect] Failed to ping mysql server: %s", err)
 	}
 
-	mysqlClient = mysql.NewQueryLogger(sqlx.NewDb(db, "mysql"), logger)
+	dbConn = sqlx.NewDb(db, "mysql")
+	mysqlClient = mysql.NewQueryLogger(dbConn, logger)
 
 }

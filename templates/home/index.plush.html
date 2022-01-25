@@ -1,0 +1,62 @@
+<div class="container">
+    <div class="row">
+        <div class="col">
+            <h4 class="header text-center">New Characters by Skillpoint - Last 7 Days</h4>
+        </div>
+    </div>
+    <div class="row mt-2">
+        <%= for (user) in highlighted { %>
+        <div class="col-lg-2 text-center">
+            <h6><%= user.Character.Name %></h6>
+            <a href="<%= userPath({userID: user.ID}) %>"><img src="https://images.evetech.net/characters/<%= user.CharacterID %>/portrait?size=256" class="rounded mx-auto d-block img-fluid" /></a>
+
+            <h6 class="mt-2">
+                <%= formatNum(user.Meta.TotalSP) %> SP<br>
+            </h6>
+
+        </div>
+
+
+        <% } %>
+    </div>
+    <div class="row">
+        <div class="col-lg-10 offset-1">
+            <div class="row">
+                <div class="col">
+                    <h4 class="header text-center mt-2">
+                        Recent Registrations - Last 50
+                    </h4>
+                </div>
+            </div>
+            <div class="list-group mb-2">
+                <%= for (user) in users { %>
+                <a href="<%= userPath({userID: user.ID})%>" class="list-group-item list-group-item-action">
+                    <div class="row">
+                        <div class="col-lg-4 d-flex flex-row align-items-center">
+                            <img src="https://images.evetech.net/characters/<%= user.CharacterID %>/portrait?size=64" class="rounded img-fluid" />
+                            <h5 class="text-white ms-2"><%= user.Character.Name %></h5>
+                        </div>
+                        <div class="col-lg-4 d-flex flex-row align-items-center">
+                            <span class="h5">
+                                <span class="text-muted me-3">
+                                    Skill Points:
+                                </span>
+                                <%= formatNum(user.Meta.TotalSP) %>
+                            </span>
+                        </div>
+                        <div class="col-lg-4 d-flex flex-row align-items-center">
+                            <span class="h5">
+                                <span class="text-muted me-3">
+                                    # Queued Skills:
+                                </span>
+                                <%= len(user.QueueSummary.Queue) %>
+                            </span>
+                        </div>
+                    </div>
+                </a>
+                <% } %>
+
+            </div>
+        </div>
+    </div>
+</div>

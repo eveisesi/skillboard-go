@@ -11,6 +11,7 @@ import (
 	"github.com/eveisesi/skillz/internal/etag"
 	"github.com/go-redis/redis/v8"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/null"
 )
 
@@ -19,17 +20,19 @@ type API interface {
 }
 
 type Service struct {
-	cache cache.AllianceAPI
-	esi   esi.AllianceAPI
-	etag  etag.API
+	logger *logrus.Logger
+	cache  cache.AllianceAPI
+	esi    esi.AllianceAPI
+	etag   etag.API
 
 	alliance skillz.AllianceRepository
 }
 
 var _ API = new(Service)
 
-func New(cache cache.AllianceAPI, esi esi.AllianceAPI, etag etag.API, alliance skillz.AllianceRepository) *Service {
+func New(logger *logrus.Logger, cache cache.AllianceAPI, esi esi.AllianceAPI, etag etag.API, alliance skillz.AllianceRepository) *Service {
 	return &Service{
+		logger:   logger,
 		cache:    cache,
 		esi:      esi,
 		etag:     etag,
@@ -95,6 +98,13 @@ func (s *Service) Alliance(ctx context.Context, allianceID uint) (*skillz.Allian
 
 	}
 
-	return alliance, s.cache.SetAlliance(ctx, alliance, time.Hour)
+	defer func(x context.Context, alliance *skillz.Alliance) {
+		err = s.cache.SetAlliance(ctx, alliance, time.Hour)
+		if err != nil {
+			s.logger.WithError(err).Error("failed to cache alliance")
+		}
+	}(context.Background(), alliance)
+
+	return alliance, nil
 
 }

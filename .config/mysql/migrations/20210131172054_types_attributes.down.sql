@@ -1,1 +1,0 @@
-DROP TABLE `type_attributes` 

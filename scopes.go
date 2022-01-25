@@ -17,7 +17,6 @@ import (
 
 type Processor interface {
 	Process(ctx context.Context, user *User) error
-	Scopes() []Scope
 }
 
 type ScopeProcessors []Processor
@@ -30,16 +29,19 @@ type ScopeResolver struct {
 type Scope string
 
 const (
-	ReadClonesV1     Scope = "esi-clones.read_clones.v1"
+	// ReadClonesV1     Scope = "esi-clones.read_clones.v1"
 	ReadImplantsV1   Scope = "esi-clones.read_implants.v1"
 	ReadSkillQueueV1 Scope = "esi-skills.read_skillqueue.v1"
 	ReadSkillsV1     Scope = "esi-skills.read_skills.v1"
-	ReadStructuresV1 Scope = "esi-universe.read_structures.v1"
+	// ReadStructuresV1 Scope = "esi-universe.read_structures.v1"
 )
 
 var AllScopes = []Scope{
-	ReadImplantsV1, ReadClonesV1,
-	ReadSkillQueueV1, ReadSkillsV1, ReadStructuresV1,
+	// ReadImplantsV1,
+	// ReadClonesV1,
+	ReadSkillQueueV1,
+	ReadSkillsV1,
+	// ReadStructuresV1,
 }
 
 func (s Scope) String() string {

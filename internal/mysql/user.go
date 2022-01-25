@@ -18,23 +18,26 @@ type userRepository struct {
 }
 
 const (
-	UserID                = "id"
-	UserAccessToken       = "access_token"
-	UserRefreshToken      = "refresh_token"
-	UserExpires           = "expires"
-	UserOwnerHash         = "owner_hash"
-	UserScopes            = "scopes"
-	UserIsNew             = "is_new"
-	UserDisabled          = "disabled"
-	UserDisabledReason    = "disabled_reason"
-	UserDisabledTimestamp = "disabled_timestamp"
-	UserLastLogin         = "last_login"
-	UserLastProcessed     = "last_processed"
-	SettingsUserID        = "user_id"
-	SettingsHideClones    = "hide_clones"
-	SettingsHideQueue     = "hide_queue"
-	SettingsHideStandings = "hide_standings"
-	SettingsHideShips     = "hide_ships"
+	UserID                  = "id"
+	UserAccessToken         = "access_token"
+	UserRefreshToken        = "refresh_token"
+	UserExpires             = "expires"
+	UserOwnerHash           = "owner_hash"
+	UserScopes              = "scopes"
+	UserIsNew               = "is_new"
+	UserIsProcessing        = "is_processing"
+	UserDisabled            = "disabled"
+	UserDisabledReason      = "disabled_reason"
+	UserDisabledTimestamp   = "disabled_timestamp"
+	UserLastLogin           = "last_login"
+	UserLastProcessed       = "last_processed"
+	SettingsUserID          = "user_id"
+	SettingsVisibility      = "visibility"
+	SettingsVisibilityToken = "visibility_token"
+	SettingsHideSkills      = "hide_skills"
+	SettingsHideQueue       = "hide_queue"
+	SettingsHideFlyable     = "hide_flyable"
+	SettingsHideAttributes  = "hide_attributes"
 )
 
 func NewUserRepository(db QueryExecContext) skillz.UserRepository {
@@ -46,16 +49,17 @@ func NewUserRepository(db QueryExecContext) skillz.UserRepository {
 				UserID, ColumnCharacterID,
 				UserAccessToken, UserRefreshToken,
 				UserExpires, UserOwnerHash,
-				UserScopes, UserIsNew, UserDisabled,
-				UserDisabledReason, UserDisabledTimestamp,
+				UserScopes, UserIsNew, UserIsProcessing,
+				UserDisabled, UserDisabledReason, UserDisabledTimestamp,
 				UserLastLogin, ColumnCreatedAt, ColumnUpdatedAt,
 			},
 		},
 		settings: tableConf{
 			table: TableUserSettings,
 			columns: []string{
-				SettingsUserID, SettingsHideClones,
-				SettingsHideQueue, SettingsHideStandings, SettingsHideShips,
+				SettingsUserID, SettingsVisibility,
+				SettingsHideQueue, SettingsHideFlyable,
+				SettingsHideSkills, SettingsHideAttributes,
 				ColumnCreatedAt, ColumnUpdatedAt,
 			},
 		},
@@ -148,7 +152,12 @@ func (r *userRepository) CreateUser(ctx context.Context, user *skillz.User) erro
 		UserLastProcessed:     user.LastProcessed,
 		ColumnCreatedAt:       user.CreatedAt,
 		ColumnUpdatedAt:       user.UpdatedAt,
-	}).ToSql()
+	}).Suffix(OnDuplicateKeyStmt(
+		UserAccessToken, UserRefreshToken, UserExpires,
+		UserOwnerHash, UserScopes, UserDisabled,
+		UserDisabledReason, UserDisabledTimestamp, UserLastLogin,
+		UserLastProcessed, ColumnUpdatedAt,
+	)).ToSql()
 	if err != nil {
 		return errors.Wrapf(err, errorFFormat, userRepositoryIdentifier, "CreateUser", "failed to generate sql")
 	}
@@ -170,6 +179,7 @@ func (r *userRepository) UpdateUser(ctx context.Context, user *skillz.User) erro
 		UserOwnerHash:         user.OwnerHash,
 		UserScopes:            user.Scopes,
 		UserIsNew:             user.IsNew,
+		UserIsProcessing:      user.IsProcessing,
 		UserDisabled:          user.Disabled,
 		UserDisabledReason:    user.DisabledReason,
 		UserDisabledTimestamp: user.DisabledTimestamp,
@@ -188,7 +198,10 @@ func (r *userRepository) UpdateUser(ctx context.Context, user *skillz.User) erro
 
 func (r *userRepository) UsersSortedByProcessedAtLimit(ctx context.Context, limit uint64) ([]*skillz.User, error) {
 
-	query, args, err := sq.Select(r.users.columns...).From(r.users.table).OrderBy(fmt.Sprintf("%s %s", UserLastProcessed, "DESC")).Limit(limit).ToSql()
+	query, args, err := sq.Select(r.users.columns...).
+		From(r.users.table).
+		Where(sq.Eq{UserDisabled: 0}).
+		OrderBy(fmt.Sprintf("%s %s", UserLastProcessed, "ASC")).Limit(limit).ToSql()
 	if err != nil {
 		return nil, errors.Wrapf(err, errorFFormat, userRepositoryIdentifier, "UsersSortedByProcessedAtLimit", "failed to generate sql")
 	}
@@ -199,7 +212,7 @@ func (r *userRepository) UsersSortedByProcessedAtLimit(ctx context.Context, limi
 
 }
 
-var skillMetaInnerJoin = fmt.Sprintf("%s csm on csm.character_id = users.character_id", TableCharacterSkillMeta)
+var userSettingsInnerJoin = fmt.Sprintf("%s settings on settings.user_id = users.id", TableUserSettings)
 
 func (r *userRepository) NewUsersBySP(ctx context.Context) ([]*skillz.User, error) {
 
@@ -210,8 +223,8 @@ func (r *userRepository) NewUsersBySP(ctx context.Context) ([]*skillz.User, erro
 
 	query, args, err := sq.Select(columns...).
 		From(r.users.table).
-		InnerJoin(skillMetaInnerJoin).
-		Where(fmt.Sprintf("users.%s >= DATE(NOW() - INTERVAL 7 DAY)", ColumnCreatedAt)).
+		InnerJoin(userSettingsInnerJoin).
+		Where(fmt.Sprintf("users.%s >= DATE(NOW() - INTERVAL 7 DAY) AND settings.visibility = ?", ColumnCreatedAt), skillz.VisibilityPublic).
 		OrderBy(fmt.Sprintf("users.%s DESC", ColumnCreatedAt)).
 		Limit(50).
 		ToSql()
@@ -248,14 +261,22 @@ func (r *userRepository) CreateUserSettings(ctx context.Context, settings *skill
 	settings.UpdatedAt = now
 
 	query, args, err := sq.Insert(r.settings.table).SetMap(map[string]interface{}{
-		SettingsUserID:        settings.UserID,
-		SettingsHideClones:    settings.HideClones,
-		SettingsHideQueue:     settings.HideQueue,
-		SettingsHideStandings: settings.HideStandings,
-		ColumnCreatedAt:       settings.CreatedAt,
-		ColumnUpdatedAt:       settings.UpdatedAt,
+		SettingsUserID:          settings.UserID,
+		SettingsVisibility:      settings.Visibility,
+		SettingsVisibilityToken: settings.VisibilityToken,
+		SettingsHideQueue:       settings.HideQueue,
+		SettingsHideFlyable:     settings.HideFlyable,
+		SettingsHideSkills:      settings.HideSkills,
+		SettingsHideAttributes:  settings.HideAttributes,
+		ColumnCreatedAt:         settings.CreatedAt,
+		ColumnUpdatedAt:         settings.UpdatedAt,
 	}).
-		Suffix(OnDuplicateKeyStmt(SettingsHideClones, SettingsHideQueue, SettingsHideStandings, ColumnUpdatedAt)).
+		Suffix(OnDuplicateKeyStmt(
+			SettingsVisibility, SettingsVisibilityToken,
+			SettingsHideQueue, SettingsHideFlyable,
+			SettingsHideSkills, SettingsHideAttributes,
+			ColumnUpdatedAt,
+		)).
 		ToSql()
 	if err != nil {
 		return errors.Wrapf(err, errorFFormat, userRepositoryIdentifier, "CreateUserSettings", "failed to generate sql")

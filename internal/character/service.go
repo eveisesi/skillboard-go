@@ -11,6 +11,7 @@ import (
 	"github.com/eveisesi/skillz/internal/etag"
 	"github.com/go-redis/redis/v8"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/null"
 )
 
@@ -19,17 +20,19 @@ type API interface {
 }
 
 type Service struct {
-	cache cache.CharacterAPI
-	etag  etag.API
-	esi   esi.CharacterAPI
+	logger *logrus.Logger
+	cache  cache.CharacterAPI
+	etag   etag.API
+	esi    esi.CharacterAPI
 
 	character skillz.CharacterRepository
 }
 
 var _ API = new(Service)
 
-func New(cache cache.CharacterAPI, esi esi.CharacterAPI, etag etag.API, character skillz.CharacterRepository) *Service {
+func New(logger *logrus.Logger, cache cache.CharacterAPI, esi esi.CharacterAPI, etag etag.API, character skillz.CharacterRepository) *Service {
 	return &Service{
+		logger:    logger,
 		cache:     cache,
 		esi:       esi,
 		etag:      etag,
@@ -91,6 +94,13 @@ func (s *Service) Character(ctx context.Context, characterID uint64) (*skillz.Ch
 
 	}
 
-	return character, s.cache.SetCharacter(ctx, character, time.Hour)
+	defer func(ctx context.Context, character *skillz.Character) {
+		err = s.cache.SetCharacter(ctx, character, time.Hour)
+		if err != nil {
+			s.logger.WithError(err).Error("failed to cache character")
+		}
+	}(context.Background(), character)
+
+	return character, nil
 
 }

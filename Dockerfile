@@ -9,5 +9,8 @@ WORKDIR /app
 RUN apk --no-cache add tzdata ca-certificates
 
 COPY --from=builder /app/.build/skillboard-api .
+COPY --from=builder /app/migrations ./migrations
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/templates ./templates
 
 LABEL maintainer="David Douglas <david@onetwentyseven.dev>"

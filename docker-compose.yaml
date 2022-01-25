@@ -14,17 +14,13 @@ services:
             - MYSQL_USER
             - MYSQL_PASSWORD
             - LOG_LEVEL
-            - EVE_JWKS_URI
             - EVE_CLIENT_ID
             - EVE_CLIENT_SECRET
             - EVE_CALLBACK_URI
-            - SERVER_PORT
-            - AUTH_KEY
-            - AUTH_EXPIRY
-            - AUTH_TOKEN_DOMAIN
-            - AUTH_TOKEN_KID
             - ENVIRONMENT
-        command: /app/skillboard-api server
+            - RUN_MIGRATIONS
+            - INITIALIZE_UNIVERSE
+        command: /app/skillboard-api buffalo
         ports:
            - "54400:54400"
     processor:
@@ -40,16 +36,12 @@ services:
             - MYSQL_USER
             - MYSQL_PASSWORD
             - LOG_LEVEL
-            - EVE_JWKS_URI
             - EVE_CLIENT_ID
             - EVE_CLIENT_SECRET
             - EVE_CALLBACK_URI
-            - SERVER_PORT
-            - AUTH_KEY
-            - AUTH_EXPIRY
-            - AUTH_TOKEN_DOMAIN
-            - AUTH_TOKEN_KID
             - ENVIRONMENT
+            - RUN_MIGRATIONS
+            - INITIALIZE_UNIVERSE
         command: /app/skillboard-api processor
     cron:
         image: ghcr.io/eveisesi/skillboard/skillboard-api:latest
@@ -64,16 +56,12 @@ services:
             - MYSQL_USER
             - MYSQL_PASSWORD
             - LOG_LEVEL
-            - EVE_JWKS_URI
             - EVE_CLIENT_ID
             - EVE_CLIENT_SECRET
             - EVE_CALLBACK_URI
-            - SERVER_PORT
-            - AUTH_KEY
-            - AUTH_EXPIRY
-            - AUTH_TOKEN_DOMAIN
-            - AUTH_TOKEN_KID
             - ENVIRONMENT
+            - RUN_MIGRATIONS
+            - INITIALIZE_UNIVERSE
         command: /app/skillboard-api cron
     redis:
         image: redis:6.2.5

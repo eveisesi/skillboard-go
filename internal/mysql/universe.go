@@ -1185,10 +1185,30 @@ func (r *universeRepository) UpdateType(ctx context.Context, item *skillz.Type) 
 	return errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "UpdateType")
 
 }
+
 func (r *universeRepository) TypeDogmaAttributes(ctx context.Context, typeID uint) ([]*skillz.TypeDogmaAttribute, error) {
 
 	query, args, err := builder.Select(r.typeAttributes.columns...).From(r.typeAttributes.table).
 		Where(builder.Eq{TypeDogmaAttributesTypeID: typeID}).ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "TypeDogmaAttributes", "failed to generate sql")
+	}
+
+	var typeAttributes = make([]*skillz.TypeDogmaAttribute, 0)
+	err = r.db.SelectContext(ctx, &typeAttributes, query, args...)
+	return typeAttributes, errors.Wrapf(err, prefixFormat, universeRepositoryIdentifier, "TypeDogmaAttributes")
+
+}
+
+func (r *universeRepository) TypeDogmaAttributesBulk(ctx context.Context, typeIDs []uint) ([]*skillz.TypeDogmaAttribute, error) {
+
+	ids := make([]interface{}, 0, len(typeIDs))
+	for _, i := range typeIDs {
+		ids = append(ids, i)
+	}
+
+	query, args, err := builder.Select(r.typeAttributes.columns...).From(r.typeAttributes.table).
+		Where(builder.In(TypeDogmaAttributesTypeID, ids...)).ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, errorFFormat, universeRepositoryIdentifier, "TypeDogmaAttributes", "failed to generate sql")
 	}

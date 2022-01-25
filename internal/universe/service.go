@@ -10,6 +10,7 @@ import (
 	"github.com/eveisesi/skillz/internal/esi"
 	"github.com/eveisesi/skillz/internal/mysql"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/null"
 )
 
@@ -26,20 +27,23 @@ type API interface {
 	Station(ctx context.Context, stationID uint) (*skillz.Station, error)
 	Structure(ctx context.Context, structureID uint64) (*skillz.Structure, error)
 	Type(ctx context.Context, itemID uint) (*skillz.Type, error)
+	SkillTypesHydrated(ctx context.Context) ([]*skillz.Type, error)
+	SkillGroupsHydrated(ctx context.Context) ([]*skillz.Group, error)
 	TypeAttributes(ctx context.Context, id uint) ([]*skillz.TypeDogmaAttribute, error)
 	TypesByGroup(ctx context.Context, groupID uint) ([]*skillz.Type, error)
 }
 
 type Service struct {
-	cache cache.UniverseAPI
-	esi   esi.UniverseAPI
+	logger *logrus.Logger
+	cache  cache.UniverseAPI
+	esi    esi.UniverseAPI
 
 	universe skillz.UniverseRepository
 }
 
-func New(cache cache.UniverseAPI, esi esi.UniverseAPI, universe skillz.UniverseRepository) *Service {
+func New(logger *logrus.Logger, cache cache.UniverseAPI, esi esi.UniverseAPI, universe skillz.UniverseRepository) *Service {
 	return &Service{
-
+		logger:   logger,
 		cache:    cache,
 		esi:      esi,
 		universe: universe,
@@ -162,7 +166,14 @@ func (s *Service) GroupsByCategory(ctx context.Context, categoryID uint) ([]*ski
 		return nil, errors.Wrap(err, "failed to fetch groups from data store")
 	}
 
-	return groups, s.cache.SetGroupsByCategoryID(ctx, categoryID, groups)
+	defer func(categoryID uint, groups []*skillz.Group) {
+		err = s.cache.SetGroupsByCategoryID(ctx, categoryID, groups)
+		if err != nil {
+			s.logger.WithError(err).Error("failed to cache groups by category id")
+		}
+	}(categoryID, groups)
+
+	return groups, nil
 
 }
 
@@ -306,6 +317,200 @@ func (s *Service) Structure(ctx context.Context, structureID uint64) (*skillz.St
 	}
 
 	return structure, s.cache.SetStructure(ctx, structure)
+
+}
+
+func (s *Service) SkillTypesHydrated(ctx context.Context) ([]*skillz.Type, error) {
+
+	types, err := s.cache.SkillTypes(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to fetch skill types from cache")
+	}
+
+	if len(types) > 0 {
+		return types, err
+	}
+
+	groups, err := s.GroupsByCategory(ctx, 16)
+	if err != nil {
+		return nil, err
+	}
+
+	mapGroups := make(map[uint]*skillz.Group)
+	groupIDs := make([]interface{}, 0, len(groups))
+	for _, group := range groups {
+		mapGroups[group.ID] = group
+		groupIDs = append(groupIDs, group.ID)
+	}
+
+	skillTypes, err := s.universe.Types(ctx, skillz.NewInOperator("group_id", groupIDs))
+	if err != nil {
+		return nil, err
+	}
+
+	for _, t := range skillTypes {
+		skillGroup, ok := mapGroups[t.GroupID]
+		if !ok {
+			continue
+		}
+
+		t.Group = skillGroup
+
+	}
+
+	defer func(types []*skillz.Type) {
+		err := s.cache.SetSkillTypes(ctx, skillTypes, 0)
+		if err != nil {
+			s.logger.WithError(err).Error("failed to cache skill types")
+		}
+	}(skillTypes)
+
+	return skillTypes, nil
+
+}
+
+func (s *Service) SkillGroupsHydrated(ctx context.Context) ([]*skillz.Group, error) {
+
+	groups, err := s.cache.SkillGroups(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to fetch skill groups from cache")
+	}
+
+	if len(groups) > 0 {
+		return groups, err
+	}
+
+	groups, err = s.GroupsByCategory(ctx, 16)
+	if err != nil {
+		return nil, err
+	}
+
+	mapGroups := make(map[uint]*skillz.Group)
+	groupIDs := make([]interface{}, 0, len(groups))
+	for _, group := range groups {
+		mapGroups[group.ID] = group
+		groupIDs = append(groupIDs, group.ID)
+	}
+
+	skillTypes, err := s.universe.Types(ctx, skillz.NewInOperator(mysql.TypesGroupID, groupIDs))
+	if err != nil {
+		return nil, err
+	}
+
+	skillIDs := make([]uint, 0, len(skillTypes))
+	for _, skill := range skillTypes {
+		skillIDs = append(skillIDs, skill.ID)
+	}
+
+	skillDogmaAttributes, err := s.universe.TypeDogmaAttributesBulk(ctx, skillIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	var mapTypeDogmaAttributes = make(map[uint][]*skillz.TypeDogmaAttribute)
+	for _, attribute := range skillDogmaAttributes {
+		if _, ok := mapTypeDogmaAttributes[attribute.TypeID]; !ok {
+			mapTypeDogmaAttributes[attribute.TypeID] = make([]*skillz.TypeDogmaAttribute, 0, 50)
+		}
+
+		mapTypeDogmaAttributes[attribute.TypeID] = append(mapTypeDogmaAttributes[attribute.TypeID], attribute)
+	}
+
+	for _, t := range skillTypes {
+		group := mapGroups[t.GroupID]
+		if group == nil {
+			continue
+		}
+
+		t.Attributes = mapTypeDogmaAttributes[t.ID]
+
+		if group.Types == nil {
+			group.Types = make([]*skillz.Type, 0, 15)
+		}
+
+		group.Types = append(group.Types, t)
+
+	}
+
+	defer func(groups []*skillz.Group) {
+		err := s.cache.SetSkillGroups(ctx, groups, 0)
+		if err != nil {
+			s.logger.WithError(err).Error("failed to cache skill groups")
+		}
+	}(groups)
+
+	return groups, nil
+
+}
+
+func (s *Service) ShipTypesHydrated(ctx context.Context) ([]*skillz.Type, error) {
+
+	types, err := s.cache.ShipTypes(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to fetch ship types from cache")
+	}
+
+	if len(types) > 0 {
+		return types, err
+	}
+
+	groups, err := s.GroupsByCategory(ctx, 6)
+	if err != nil {
+		return nil, err
+	}
+
+	mapGroups := make(map[uint]*skillz.Group)
+	groupIDs := make([]interface{}, 0, len(groups))
+	for _, group := range groups {
+		mapGroups[group.ID] = group
+		groupIDs = append(groupIDs, group.ID)
+	}
+
+	shipTypes, err := s.universe.Types(ctx, skillz.NewInOperator("group_id", groupIDs))
+	if err != nil {
+		return nil, err
+	}
+
+	tIDs := make([]uint, 0, len(shipTypes))
+	for _, t := range shipTypes {
+		tIDs = append(tIDs, t.ID)
+	}
+
+	attributes, err := s.universe.TypeDogmaAttributesBulk(ctx, tIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	mapAttributes := make(map[uint][]*skillz.TypeDogmaAttribute)
+	for _, attribute := range attributes {
+		if _, ok := mapAttributes[attribute.TypeID]; !ok {
+			mapAttributes[attribute.TypeID] = make([]*skillz.TypeDogmaAttribute, 0)
+		}
+
+		mapAttributes[attribute.TypeID] = append(mapAttributes[attribute.TypeID], attribute)
+	}
+
+	for _, t := range shipTypes {
+		group, ok := mapGroups[t.GroupID]
+		if !ok {
+			continue
+		}
+		t.Group = group
+		attriutes, ok := mapAttributes[t.ID]
+		if !ok {
+			continue
+		}
+		t.Attributes = attriutes
+	}
+
+	defer func(shipTypes []*skillz.Type) {
+		err = s.cache.SetShipTypes(ctx, shipTypes, 0)
+		if err != nil {
+			s.logger.WithError(err).Error("failed to cache ship types")
+		}
+	}(shipTypes)
+
+	return shipTypes, nil
 
 }
 

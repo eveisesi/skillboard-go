@@ -17,3 +17,12 @@ func EnvironmentFromString(env string) Environment {
 		return Development
 	}
 }
+
+func (e Environment) String() string {
+	switch e {
+	case Production:
+		return "production"
+	default:
+		return "development"
+	}
+}

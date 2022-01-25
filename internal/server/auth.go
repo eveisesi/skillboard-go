@@ -1,50 +1,43 @@
 package server
 
-import (
-	"net/http"
+// func (s *server) handleGetAuth(w http.ResponseWriter, r *http.Request) {
 
-	"github.com/eveisesi/skillz"
-	"github.com/pkg/errors"
-)
+// 	var ctx = r.Context()
 
-func (s *server) handleGetAuth(w http.ResponseWriter, r *http.Request) {
+// 	code := r.URL.Query().Get("code")
+// 	state := r.URL.Query().Get("state")
 
-	var ctx = r.Context()
+// 	if code != "" && state != "" {
+// 		user, err := s.user.Login(ctx, code, state)
+// 		if err != nil {
+// 			s.writeError(ctx, w, http.StatusBadRequest, err)
+// 			return
+// 		}
 
-	code := r.URL.Query().Get("code")
-	state := r.URL.Query().Get("state")
+// 		token, err := s.auth.UserToken(ctx, user.ID)
+// 		if err != nil {
+// 			s.writeError(ctx, w, http.StatusInternalServerError, errors.Wrap(err, "failed to generate token"))
+// 			return
+// 		}
 
-	if code != "" && state != "" {
-		user, err := s.user.Login(ctx, code, state)
-		if err != nil {
-			s.writeError(ctx, w, http.StatusBadRequest, err)
-			return
-		}
+// 		s.writeResponse(ctx, w, http.StatusOK, struct {
+// 			User  *skillz.User `json:"user"`
+// 			Token string       `json:"token"`
+// 		}{
+// 			user, token,
+// 		})
 
-		token, err := s.auth.UserToken(ctx, user.ID)
-		if err != nil {
-			s.writeError(ctx, w, http.StatusInternalServerError, errors.Wrap(err, "failed to generate token"))
-			return
-		}
+// 		return
+// 	}
 
-		s.writeResponse(ctx, w, http.StatusOK, struct {
-			User  *skillz.User `json:"user"`
-			Token string       `json:"token"`
-		}{
-			user, token,
-		})
+// 	attempt, err := s.auth.InitializeAttempt(ctx)
+// 	if err != nil {
+// 		s.writeError(ctx, w, http.StatusInternalServerError, err)
+// 		return
+// 	}
 
-		return
-	}
+// 	s.writeResponse(ctx, w, http.StatusOK, map[string]interface{}{
+// 		"url": s.auth.AuthorizationURI(ctx, attempt.State),
+// 	})
 
-	attempt, err := s.auth.InitializeAttempt(ctx)
-	if err != nil {
-		s.writeError(ctx, w, http.StatusInternalServerError, err)
-		return
-	}
-
-	s.writeResponse(ctx, w, http.StatusOK, map[string]interface{}{
-		"url": s.auth.AuthorizationURI(ctx, attempt.State),
-	})
-
-}
+// }

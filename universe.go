@@ -64,6 +64,7 @@ type UniverseRepository interface {
 	UpdateType(ctx context.Context, item *Type) error
 
 	TypeDogmaAttributes(ctx context.Context, typeID uint) ([]*TypeDogmaAttribute, error)
+	TypeDogmaAttributesBulk(ctx context.Context, typeIDs []uint) ([]*TypeDogmaAttribute, error)
 	CreateTypeDogmaAttributes(ctx context.Context, attributes []*TypeDogmaAttribute) error
 	DeleteTypeDogmaAttributes(ctx context.Context, typeID uint) error
 }
