@@ -25,6 +25,7 @@ const (
 	UserOwnerHash           = "owner_hash"
 	UserScopes              = "scopes"
 	UserIsNew               = "is_new"
+	UserIsProcessing        = "is_processing"
 	UserDisabled            = "disabled"
 	UserDisabledReason      = "disabled_reason"
 	UserDisabledTimestamp   = "disabled_timestamp"
@@ -48,8 +49,8 @@ func NewUserRepository(db QueryExecContext) skillz.UserRepository {
 				UserID, ColumnCharacterID,
 				UserAccessToken, UserRefreshToken,
 				UserExpires, UserOwnerHash,
-				UserScopes, UserIsNew, UserDisabled,
-				UserDisabledReason, UserDisabledTimestamp,
+				UserScopes, UserIsNew, UserIsProcessing,
+				UserDisabled, UserDisabledReason, UserDisabledTimestamp,
 				UserLastLogin, ColumnCreatedAt, ColumnUpdatedAt,
 			},
 		},
@@ -178,6 +179,7 @@ func (r *userRepository) UpdateUser(ctx context.Context, user *skillz.User) erro
 		UserOwnerHash:         user.OwnerHash,
 		UserScopes:            user.Scopes,
 		UserIsNew:             user.IsNew,
+		UserIsProcessing:      user.IsProcessing,
 		UserDisabled:          user.Disabled,
 		UserDisabledReason:    user.DisabledReason,
 		UserDisabledTimestamp: user.DisabledTimestamp,
@@ -195,7 +197,10 @@ func (r *userRepository) UpdateUser(ctx context.Context, user *skillz.User) erro
 
 func (r *userRepository) UsersSortedByProcessedAtLimit(ctx context.Context, limit uint64) ([]*skillz.User, error) {
 
-	query, args, err := sq.Select(r.users.columns...).From(r.users.table).OrderBy(fmt.Sprintf("%s %s", UserLastProcessed, "DESC")).Limit(limit).ToSql()
+	query, args, err := sq.Select(r.users.columns...).
+		From(r.users.table).
+		Where(sq.Eq{UserDisabled: 0}).
+		OrderBy(fmt.Sprintf("%s %s", UserLastProcessed, "ASC")).Limit(limit).ToSql()
 	if err != nil {
 		return nil, errors.Wrapf(err, errorFFormat, userRepositoryIdentifier, "UsersSortedByProcessedAtLimit", "failed to generate sql")
 	}

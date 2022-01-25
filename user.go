@@ -38,6 +38,7 @@ type User struct {
 	OwnerHash         string      `db:"owner_hash" json:"owner_hash"`
 	Scopes            UserScopes  `db:"scopes,omitempty" json:"scopes,omitempty"`
 	IsNew             bool        `db:"is_new" json:"is_new"`
+	IsProcessing      bool        `db:"is_processing" json:"is_processing"`
 	Disabled          bool        `db:"disabled" json:"disabled"`
 	DisabledReason    null.String `db:"disabled_reason,omitempty" json:"disabled_reason"`
 	DisabledTimestamp null.Time   `db:"disabled_timestamp,omitempty" json:"disabled_timestamp"`
