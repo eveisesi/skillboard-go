@@ -13,7 +13,7 @@ import (
 	"github.com/eveisesi/skillz/internal/processor"
 	"github.com/eveisesi/skillz/internal/skill"
 	"github.com/eveisesi/skillz/internal/universe"
-	"github.com/eveisesi/skillz/internal/user"
+	"github.com/eveisesi/skillz/internal/user/v2"
 	"github.com/urfave/cli/v2"
 )
 

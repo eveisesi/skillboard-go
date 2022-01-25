@@ -7,7 +7,7 @@ import (
 	"github.com/eveisesi/skillz"
 	"github.com/eveisesi/skillz/internal"
 	"github.com/eveisesi/skillz/internal/cache"
-	"github.com/eveisesi/skillz/internal/user"
+	"github.com/eveisesi/skillz/internal/user/v2"
 	"github.com/go-redis/redis/v8"
 	"github.com/gofrs/uuid"
 	"github.com/pkg/errors"

@@ -209,11 +209,6 @@ func migrateDownCommand(c *cli.Context) error {
 
 }
 
-const createTableStmt = `CREATE TABLE %s (
-	created_at DATETIME NOT NULL,
-	updated_at DATETIME NOT NULL
-) COLLATE = 'utf8mb4_unicode_ci' ENGINE = InnoDB;`
-
 func migrateCreateCommand(c *cli.Context) error {
 
 	name := c.Args().First()

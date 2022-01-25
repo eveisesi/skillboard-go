@@ -17,7 +17,7 @@ import (
 	"github.com/eveisesi/skillz/internal/mysql"
 	"github.com/eveisesi/skillz/internal/skill"
 	"github.com/eveisesi/skillz/internal/universe"
-	"github.com/eveisesi/skillz/internal/user"
+	"github.com/eveisesi/skillz/internal/user/v2"
 	"github.com/pkg/errors"
 	"github.com/robfig/cron/v3"
 	"github.com/urfave/cli/v2"

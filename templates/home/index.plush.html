@@ -9,7 +9,7 @@
         <div class="col-lg-2 text-center">
             <a href="<%= userPath({userID: user.ID}) %>"><img src="https://images.evetech.net/characters/<%= user.CharacterID %>/portrait?size=256" class="rounded mx-auto d-block img-fluid" /></a>
             <h6 class="mt-2">
-                <%= user.Character.Name %>
+                <%= user.Character.Name %> <br>
                 <%= formatNum(user.Meta.TotalSP) %> SP<br>
             </h6>
         </div>
@@ -41,11 +41,12 @@
                             </span>
                         </div>
                         <div class="col-lg-4 d-flex flex-row align-items-center">
-                            <span class="h5">
-                                <span class="text-muted me-3">
-                                    # Queued Skills:
-                                </span>
-                                <%= len(user.QueueSummary.Queue) %>
+                            <span class="h5"></span>
+                            <span class="text-muted me-3">
+                                # Queued Skills:
+                            </span>
+                            <span class="h5"></span>
+                            <%= len(user.QueueSummary.Queue) %>
                             </span>
                         </div>
                     </div>
