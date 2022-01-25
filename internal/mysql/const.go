@@ -36,7 +36,7 @@ const (
 	TableTypeCategories              string = "type_categories"
 	TableTypeGroups                  string = "type_groups"
 	TableUsers                       string = "users"
-	TableUserSettings                string = "user_settings_new"
+	TableUserSettings                string = "user_settings"
 )
 
 const (
