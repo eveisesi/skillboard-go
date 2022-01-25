@@ -229,27 +229,28 @@ func migrateCreateCommand(c *cli.Context) error {
 		"name": name,
 	})
 	upFile, err := os.Create(up)
+	entry = entry.WithField("up", up)
 	if err != nil {
-		entry.WithField("up", up).WithError(err).Fatal("failed to create up file")
+		entry.WithError(err).Fatal("failed to create up file")
 	}
-	defer upFile.Close()
-	_, _ = upFile.WriteString(
-		fmt.Sprintf(
-			createTableStmt,
-			name,
-		),
-	)
+	err = upFile.Close()
+	if err != nil {
+		entry.WithError(err).Fatal("failed to close up file")
+	}
 
-	entry.WithField("up", up).Info("migration created successfully")
+	entry.Info("migration created successfully")
 	down := fmt.Sprintf(filename, "down")
+	entry = entry.WithField("down", down)
 	downFile, err := os.Create(down)
 	if err != nil {
-		entry.WithField("down", down).WithError(err).Fatal("failed to create down file")
+		entry.WithError(err).Fatal("failed to create down file")
 	}
-	defer downFile.Close()
-	_, _ = downFile.WriteString(fmt.Sprintf("DROP TABLE `%s`;", name))
+	err = downFile.Close()
+	if err != nil {
+		entry.WithError(err).Fatal("failed to close down file")
+	}
 
-	entry.WithField("down", down).Info("migration created successfully")
+	entry.Info("migration created successfully")
 
 	return nil
 
