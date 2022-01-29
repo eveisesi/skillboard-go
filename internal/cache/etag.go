@@ -20,7 +20,9 @@ const (
 )
 
 func (s *Service) EtagByPath(ctx context.Context, path string) (*skillz.Etag, error) {
-
+	if s.disabled {
+		return nil, nil
+	}
 	key := generateKey(etagKeyPrefix, hash(path))
 
 	result, err := s.redis.Get(ctx, key).Bytes()

@@ -21,6 +21,9 @@ const (
 )
 
 func (s *Service) Alliance(ctx context.Context, allianceID uint) (*skillz.Alliance, error) {
+	if s.disabled {
+		return nil, nil
+	}
 
 	key := generateKey(allianceKeyPrefix, strconv.Itoa(int(allianceID)))
 

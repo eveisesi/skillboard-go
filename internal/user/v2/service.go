@@ -41,7 +41,7 @@ type API interface {
 
 	Recent(ctx context.Context) ([]*skillz.User, []*skillz.User, error)
 	// NewUsersBySP(ctx context.Context) ([]*skillz.UserWithSkillMeta, error)
-
+	ResetUserCache(ctx context.Context, user *skillz.User) error
 	ProcessUpdatableUsers(ctx context.Context) error
 
 	UserSettings(ctx context.Context, id uuid.UUID) (*skillz.UserSettings, error)
@@ -587,4 +587,8 @@ func (s *Service) CreateUserSettings(ctx context.Context, id uuid.UUID, settings
 
 	return nil
 
+}
+
+func (s *Service) ResetUserCache(ctx context.Context, user *skillz.User) error {
+	return s.cache.ResetUserCache(ctx, user)
 }

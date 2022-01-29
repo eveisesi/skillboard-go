@@ -18,8 +18,9 @@ type config struct {
 	}
 
 	Redis struct {
-		Host string `envconfig:"REDIS_HOST" required:"true"`
-		Pass string `envconfig:"REDIS_PASS" required:"true"`
+		Host         string `envconfig:"REDIS_HOST" required:"true"`
+		Pass         string `envconfig:"REDIS_PASS" required:"true"`
+		DisableCache uint   `envconfig:"DISABLE_CACHE" required:"true"`
 	}
 
 	Log struct {

@@ -6,7 +6,6 @@ import (
 
 	"github.com/eveisesi/skillz"
 	"github.com/eveisesi/skillz/internal"
-	"github.com/eveisesi/skillz/internal/cache"
 	"github.com/eveisesi/skillz/internal/user/v2"
 	"github.com/go-redis/redis/v8"
 	"github.com/gofrs/uuid"
@@ -17,8 +16,8 @@ import (
 type Service struct {
 	logger *logrus.Logger
 	redis  *redis.Client
-	cache  *cache.Service
-	user   user.API
+
+	user user.API
 
 	scopes skillz.ScopeProcessors
 }
@@ -27,7 +26,7 @@ func New(logger *logrus.Logger, redisClient *redis.Client, user user.API, scopes
 	return &Service{
 		logger: logger,
 		redis:  redisClient,
-		cache:  cache.New(redisClient),
+
 		user:   user,
 		scopes: scopes,
 	}
@@ -106,7 +105,7 @@ func (s *Service) processUser(ctx context.Context, userID uuid.UUID) error {
 		return err
 	}
 
-	err = s.cache.ResetUserCache(ctx, user)
+	err = s.user.ResetUserCache(ctx, user)
 	if err != nil {
 		return err
 	}

@@ -38,7 +38,9 @@ const (
 )
 
 func (s *Service) CharacterSkillMeta(ctx context.Context, characterID uint64) (*skillz.CharacterSkillMeta, error) {
-
+	if s.disabled {
+		return nil, nil
+	}
 	key := generateKey(characterSkillMetaKeyPrefix, strconv.FormatUint(characterID, 10))
 	result, err := s.redis.Get(ctx, key).Bytes()
 	if err != nil && !errors.Is(err, redis.Nil) {
@@ -69,7 +71,9 @@ func (s *Service) SetCharacterSkillMeta(ctx context.Context, meta *skillz.Charac
 }
 
 func (s *Service) CharacterAttributes(ctx context.Context, characterID uint64) (*skillz.CharacterAttributes, error) {
-
+	if s.disabled {
+		return nil, nil
+	}
 	key := generateKey(characterAttributesKeyPrefix, strconv.FormatUint(characterID, 10))
 	result, err := s.redis.Get(ctx, key).Bytes()
 	if err != nil && !errors.Is(err, redis.Nil) {
@@ -100,7 +104,9 @@ func (s *Service) SetCharacterAttributes(ctx context.Context, meta *skillz.Chara
 }
 
 func (s *Service) CharacterSkills(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkill, error) {
-
+	if s.disabled {
+		return nil, nil
+	}
 	var skills = make([]*skillz.CharacterSkill, 0)
 
 	key := generateKey(characterSkillsKeyPrefix, strconv.FormatUint(characterID, 10))
@@ -158,7 +164,9 @@ func (s *Service) SetCharacterSkills(ctx context.Context, characterID uint64, sk
 }
 
 func (s *Service) CharacterGroupedSkillz(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkillGroup, error) {
-
+	if s.disabled {
+		return nil, nil
+	}
 	key := generateKey(characterSkillsGroupedKeyPrefix, strconv.FormatUint(characterID, 10))
 	results, err := s.redis.SMembers(ctx, key).Result()
 	if err != nil && !errors.Is(err, redis.Nil) {
@@ -212,7 +220,9 @@ func (s *Service) SetCharacterGroupedSkillz(ctx context.Context, characterID uin
 }
 
 func (s *Service) CharacterSkillQueueSummary(ctx context.Context, characterID uint64) (*skillz.CharacterSkillQueueSummary, error) {
-
+	if s.disabled {
+		return nil, nil
+	}
 	key := generateKey(characterSkillQueueKeySummaryPrefix, strconv.FormatUint(characterID, 10))
 	result, err := s.redis.Get(ctx, key).Result()
 	if err != nil && !errors.Is(err, redis.Nil) {
@@ -248,7 +258,9 @@ func (s *Service) SetCharacterSkillQueueSummary(ctx context.Context, characterID
 }
 
 func (s *Service) CharacterFlyableShips(ctx context.Context, characterID uint64) ([]*skillz.ShipGroup, error) {
-
+	if s.disabled {
+		return nil, nil
+	}
 	key := generateKey(characterFlyableKeyPrefix, strconv.FormatUint(characterID, 10))
 	results, err := s.redis.SMembers(ctx, key).Result()
 	if err != nil && !errors.Is(err, redis.Nil) {

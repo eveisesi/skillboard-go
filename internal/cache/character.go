@@ -21,7 +21,9 @@ const (
 )
 
 func (s *Service) Character(ctx context.Context, characterID uint64) (*skillz.Character, error) {
-
+	if s.disabled {
+		return nil, nil
+	}
 	key := generateKey(characterKeyPrefix, strconv.FormatUint(characterID, 10))
 	result, err := s.redis.Get(ctx, key).Bytes()
 	if err != nil && !errors.Is(err, redis.Nil) {

@@ -21,7 +21,9 @@ const (
 )
 
 func (s *Service) Corporation(ctx context.Context, corporationID uint) (*skillz.Corporation, error) {
-
+	if s.disabled {
+		return nil, nil
+	}
 	key := generateKey(corporationKeyPrefix, strconv.FormatUint(uint64(corporationID), 10))
 
 	result, err := s.redis.Get(ctx, key).Bytes()

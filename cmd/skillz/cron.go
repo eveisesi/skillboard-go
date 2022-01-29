@@ -32,7 +32,7 @@ func init() {
 }
 
 func cronCommand(_ *cli.Context) error {
-	cache := cache.New(redisClient)
+	cache := cache.New(redisClient, cfg.Redis.DisableCache == 1)
 	allianceRepo := mysql.NewAllianceRepository(mysqlClient)
 	characterRepo := mysql.NewCharacterRepository(mysqlClient)
 	corporationRepo := mysql.NewCorporationRepository(mysqlClient)

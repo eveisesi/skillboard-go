@@ -33,7 +33,9 @@ const (
 )
 
 func (s *Service) RecentUsers(ctx context.Context) (*skillz.RecentUsers, error) {
-
+	if s.disabled {
+		return nil, nil
+	}
 	key := generateKey(recentUsersPrefix)
 	result, err := s.redis.Get(ctx, key).Bytes()
 	if err != nil && !errors.Is(err, redis.Nil) {
@@ -72,7 +74,9 @@ func (s *Service) ResetUserCache(ctx context.Context, user *skillz.User) error {
 }
 
 func (s *Service) SearchUsers(ctx context.Context, q string) ([]*skillz.UserSearchResult, error) {
-
+	if s.disabled {
+		return nil, nil
+	}
 	var users = make([]*skillz.UserSearchResult, 0)
 
 	key := generateKey(userSearchKeyPrefix, hash(q))
@@ -101,7 +105,9 @@ func (s *Service) SearchUsers(ctx context.Context, q string) ([]*skillz.UserSear
 }
 
 func (s *Service) SetSearchUsersResults(ctx context.Context, q string, users []*skillz.UserSearchResult, expires time.Duration) error {
-
+	if s.disabled {
+		return nil
+	}
 	members := make([]interface{}, 0, len(users))
 	for _, user := range users {
 		data, err := json.Marshal(user)
@@ -129,7 +135,9 @@ func (s *Service) SetSearchUsersResults(ctx context.Context, q string, users []*
 }
 
 func (s *Service) NewUsersBySP(ctx context.Context) ([]*skillz.User, error) {
-
+	if s.disabled {
+		return nil, nil
+	}
 	var users = make([]*skillz.User, 0)
 
 	key := generateKey(usersNewBySPPrefix)
@@ -158,7 +166,9 @@ func (s *Service) NewUsersBySP(ctx context.Context) ([]*skillz.User, error) {
 }
 
 func (s *Service) SetNewUsersBySP(ctx context.Context, users []*skillz.User, expires time.Duration) error {
-
+	if s.disabled {
+		return nil
+	}
 	members := make([]interface{}, 0, len(users))
 	for _, user := range users {
 		data, err := json.Marshal(user)
@@ -190,7 +200,9 @@ func (s *Service) BustNewUsersBySP(ctx context.Context) error {
 }
 
 func (s *Service) UserSettings(ctx context.Context, id uuid.UUID) (*skillz.UserSettings, error) {
-
+	if s.disabled {
+		return nil, nil
+	}
 	key := generateKey(userSettingsKeyPrefix, id.String())
 	result, err := s.redis.Get(ctx, key).Bytes()
 	if err != nil && !errors.Is(err, redis.Nil) {
@@ -208,7 +220,9 @@ func (s *Service) UserSettings(ctx context.Context, id uuid.UUID) (*skillz.UserS
 }
 
 func (s *Service) SetUserSettings(ctx context.Context, id uuid.UUID, settings *skillz.UserSettings, expires time.Duration) error {
-
+	if s.disabled {
+		return nil
+	}
 	key := generateKey(userSettingsKeyPrefix, id.String())
 	data, err := json.Marshal(settings)
 	if err != nil {

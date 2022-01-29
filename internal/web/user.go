@@ -156,17 +156,6 @@ func (s *Service) postUserSettingsHandler(c buffalo.Context) error {
 
 	user.Settings = settings
 
-	routeInfo, _ := s.app.Routes().Lookup("userPath")
-	if routeInfo != nil {
-		html, _ := routeInfo.BuildPathHelper()(map[string]interface{}{"userID": user.ID})
-		if string(html) != "" {
-			err = s.cache.BustPage(ctx, string(html))
-			if err != nil {
-				s.logger.WithError(err).Error("failed to bust page cache")
-			}
-		}
-	}
-
 	s.flashSuccess(c, "Settings updated successfully")
 	return c.Redirect(http.StatusFound, "usersSettingsPath()")
 

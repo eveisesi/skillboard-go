@@ -54,7 +54,7 @@ func buffaloCmd(c *cli.Context) error {
 	userRepo := mysql.NewUserRepository(mysqlClient)
 	universeRepo := mysql.NewUniverseRepository(mysqlClient)
 
-	cache := cache.New(redisClient)
+	cache := cache.New(redisClient, cfg.Redis.DisableCache == 1)
 	etag := etag.New(cache, etagRepo)
 	esi := esi.New(httpClient(), redisClient, logger, etag)
 	character := character.New(logger, cache, esi, etag, characterRepo)
@@ -76,7 +76,6 @@ func buffaloCmd(c *cli.Context) error {
 		env,
 		cfg.SessionName,
 		logger,
-		cache,
 		auth,
 		user,
 		renderer(),

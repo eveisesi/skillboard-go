@@ -29,7 +29,7 @@ func processorCommand(c *cli.Context) error {
 
 	etagRepo := mysql.NewETagRepository(mysqlClient)
 
-	cache := cache.New(redisClient)
+	cache := cache.New(redisClient, cfg.Redis.DisableCache == 1)
 	etag := etag.New(cache, etagRepo)
 	esi := esi.New(httpClient(), redisClient, logger, etag)
 

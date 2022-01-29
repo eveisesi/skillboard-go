@@ -24,7 +24,7 @@ func init() {
 func importCmd(c *cli.Context) error {
 
 	universeRepo := mysql.NewUniverseRepository(mysqlClient)
-	cache := cache.New(redisClient)
+	cache := cache.New(redisClient, cfg.Redis.DisableCache == 1)
 	etagRepo := mysql.NewETagRepository(mysqlClient)
 
 	etag := etag.New(cache, etagRepo)

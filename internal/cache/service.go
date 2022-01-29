@@ -9,7 +9,8 @@ import (
 )
 
 type Service struct {
-	redis *redis.Client
+	redis    *redis.Client
+	disabled bool
 }
 
 const (
@@ -30,9 +31,10 @@ const (
 	errorFFormat string = "[%s.%s] %s"
 )
 
-func New(redis *redis.Client) *Service {
+func New(redis *redis.Client, disabled bool) *Service {
 	return &Service{
-		redis: redis,
+		redis:    redis,
+		disabled: disabled,
 	}
 }
 

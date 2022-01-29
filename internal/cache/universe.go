@@ -69,7 +69,9 @@ const (
 )
 
 func (s *Service) Bloodline(ctx context.Context, bloodlineID uint) (*skillz.Bloodline, error) {
-
+	if s.disabled {
+		return nil, nil
+	}
 	key := generateKey(keyBloodline, strconv.FormatUint(uint64(bloodlineID), 10))
 	result, err := s.redis.Get(ctx, key).Bytes()
 	if err != nil && !errors.Is(err, redis.Nil) {
@@ -87,7 +89,9 @@ func (s *Service) Bloodline(ctx context.Context, bloodlineID uint) (*skillz.Bloo
 }
 
 func (s *Service) SetBloodline(ctx context.Context, bloodline *skillz.Bloodline) error {
-
+	if s.disabled {
+		return nil
+	}
 	key := generateKey(keyBloodline, strconv.FormatUint(uint64(bloodline.ID), 10))
 	data, err := json.Marshal(bloodline)
 	if err != nil {
@@ -100,7 +104,9 @@ func (s *Service) SetBloodline(ctx context.Context, bloodline *skillz.Bloodline)
 }
 
 func (s *Service) Race(ctx context.Context, id uint) (*skillz.Race, error) {
-
+	if s.disabled {
+		return nil, nil
+	}
 	key := generateKey(keyRace, strconv.FormatUint(uint64(id), 10))
 	result, err := s.redis.Get(ctx, key).Bytes()
 	if err != nil && !errors.Is(err, redis.Nil) {
@@ -118,7 +124,9 @@ func (s *Service) Race(ctx context.Context, id uint) (*skillz.Race, error) {
 }
 
 func (s *Service) SetRace(ctx context.Context, race *skillz.Race) error {
-
+	if s.disabled {
+		return nil
+	}
 	key := generateKey(keyRace, strconv.FormatUint(uint64(race.ID), 10))
 	data, err := json.Marshal(race)
 	if err != nil {
@@ -131,7 +139,9 @@ func (s *Service) SetRace(ctx context.Context, race *skillz.Race) error {
 }
 
 func (s *Service) Faction(ctx context.Context, id uint) (*skillz.Faction, error) {
-
+	if s.disabled {
+		return nil, nil
+	}
 	key := generateKey(keyFaction, strconv.FormatUint(uint64(id), 10))
 	result, err := s.redis.Get(ctx, key).Bytes()
 	if err != nil && !errors.Is(err, redis.Nil) {
@@ -149,7 +159,9 @@ func (s *Service) Faction(ctx context.Context, id uint) (*skillz.Faction, error)
 }
 
 func (s *Service) SetFaction(ctx context.Context, faction *skillz.Faction) error {
-
+	if s.disabled {
+		return nil
+	}
 	key := generateKey(keyFaction, strconv.FormatUint(uint64(faction.ID), 10))
 	data, err := json.Marshal(faction)
 	if err != nil {
@@ -162,7 +174,9 @@ func (s *Service) SetFaction(ctx context.Context, faction *skillz.Faction) error
 }
 
 func (s *Service) Region(ctx context.Context, id uint) (*skillz.Region, error) {
-
+	if s.disabled {
+		return nil, nil
+	}
 	key := generateKey(keyRegion, strconv.FormatUint(uint64(id), 10))
 	result, err := s.redis.Get(ctx, key).Bytes()
 	if err != nil && !errors.Is(err, redis.Nil) {
@@ -180,7 +194,9 @@ func (s *Service) Region(ctx context.Context, id uint) (*skillz.Region, error) {
 }
 
 func (s *Service) SetRegion(ctx context.Context, region *skillz.Region) error {
-
+	if s.disabled {
+		return nil
+	}
 	key := generateKey(keyRegion, strconv.FormatUint(uint64(region.ID), 10))
 	data, err := json.Marshal(region)
 	if err != nil {
@@ -193,7 +209,9 @@ func (s *Service) SetRegion(ctx context.Context, region *skillz.Region) error {
 }
 
 func (s *Service) Constellation(ctx context.Context, id uint) (*skillz.Constellation, error) {
-
+	if s.disabled {
+		return nil, nil
+	}
 	key := generateKey(keyConstellation, strconv.FormatUint(uint64(id), 10))
 	result, err := s.redis.Get(ctx, key).Bytes()
 	if err != nil && !errors.Is(err, redis.Nil) {
@@ -211,7 +229,9 @@ func (s *Service) Constellation(ctx context.Context, id uint) (*skillz.Constella
 }
 
 func (s *Service) SetConstellation(ctx context.Context, constellation *skillz.Constellation) error {
-
+	if s.disabled {
+		return nil
+	}
 	key := generateKey(keyConstellation, strconv.FormatUint(uint64(constellation.ID), 10))
 	data, err := json.Marshal(constellation)
 	if err != nil {
@@ -224,7 +244,9 @@ func (s *Service) SetConstellation(ctx context.Context, constellation *skillz.Co
 }
 
 func (s *Service) SolarSystem(ctx context.Context, id uint) (*skillz.SolarSystem, error) {
-
+	if s.disabled {
+		return nil, nil
+	}
 	key := generateKey(keySolarSystem, strconv.FormatUint(uint64(id), 10))
 	result, err := s.redis.Get(ctx, key).Bytes()
 	if err != nil && !errors.Is(err, redis.Nil) {
@@ -242,7 +264,9 @@ func (s *Service) SolarSystem(ctx context.Context, id uint) (*skillz.SolarSystem
 }
 
 func (s *Service) SetSolarSystem(ctx context.Context, solarSystem *skillz.SolarSystem) error {
-
+	if s.disabled {
+		return nil
+	}
 	key := generateKey(keySolarSystem, strconv.FormatUint(uint64(solarSystem.ID), 10))
 	data, err := json.Marshal(solarSystem)
 	if err != nil {
@@ -255,7 +279,9 @@ func (s *Service) SetSolarSystem(ctx context.Context, solarSystem *skillz.SolarS
 }
 
 func (s *Service) Station(ctx context.Context, id uint) (*skillz.Station, error) {
-
+	if s.disabled {
+		return nil, nil
+	}
 	key := generateKey(keyStation, strconv.FormatUint(uint64(id), 10))
 	result, err := s.redis.Get(ctx, key).Bytes()
 	if err != nil && !errors.Is(err, redis.Nil) {
@@ -273,7 +299,9 @@ func (s *Service) Station(ctx context.Context, id uint) (*skillz.Station, error)
 }
 
 func (s *Service) SetStation(ctx context.Context, station *skillz.Station) error {
-
+	if s.disabled {
+		return nil
+	}
 	key := generateKey(keyStation, strconv.FormatUint(uint64(station.ID), 10))
 	data, err := json.Marshal(station)
 	if err != nil {
@@ -286,7 +314,9 @@ func (s *Service) SetStation(ctx context.Context, station *skillz.Station) error
 }
 
 func (s *Service) Structure(ctx context.Context, id uint64) (*skillz.Structure, error) {
-
+	if s.disabled {
+		return nil, nil
+	}
 	key := generateKey(keyStructure, strconv.FormatUint(uint64(id), 10))
 	result, err := s.redis.Get(ctx, key).Bytes()
 	if err != nil && !errors.Is(err, redis.Nil) {
@@ -304,7 +334,9 @@ func (s *Service) Structure(ctx context.Context, id uint64) (*skillz.Structure, 
 }
 
 func (s *Service) SetStructure(ctx context.Context, structure *skillz.Structure) error {
-
+	if s.disabled {
+		return nil
+	}
 	key := generateKey(keyStructure, strconv.FormatUint(uint64(structure.ID), 10))
 	data, err := json.Marshal(structure)
 	if err != nil {
@@ -317,7 +349,9 @@ func (s *Service) SetStructure(ctx context.Context, structure *skillz.Structure)
 }
 
 func (s *Service) Category(ctx context.Context, id uint) (*skillz.Category, error) {
-
+	if s.disabled {
+		return nil, nil
+	}
 	key := generateKey(keyCategory, strconv.FormatUint(uint64(id), 10))
 	result, err := s.redis.Get(ctx, key).Bytes()
 	if err != nil && !errors.Is(err, redis.Nil) {
@@ -335,7 +369,9 @@ func (s *Service) Category(ctx context.Context, id uint) (*skillz.Category, erro
 }
 
 func (s *Service) SetCategory(ctx context.Context, category *skillz.Category) error {
-
+	if s.disabled {
+		return nil
+	}
 	key := generateKey(keyCategory, strconv.FormatUint(uint64(category.ID), 10))
 	data, err := json.Marshal(category)
 	if err != nil {
@@ -348,7 +384,9 @@ func (s *Service) SetCategory(ctx context.Context, category *skillz.Category) er
 }
 
 func (s *Service) Group(ctx context.Context, id uint) (*skillz.Group, error) {
-
+	if s.disabled {
+		return nil, nil
+	}
 	key := generateKey(keyGroup, strconv.FormatUint(uint64(id), 10))
 	result, err := s.redis.Get(ctx, key).Bytes()
 	if err != nil && !errors.Is(err, redis.Nil) {
@@ -366,7 +404,9 @@ func (s *Service) Group(ctx context.Context, id uint) (*skillz.Group, error) {
 }
 
 func (s *Service) SetGroup(ctx context.Context, group *skillz.Group) error {
-
+	if s.disabled {
+		return nil
+	}
 	key := generateKey(keyGroup, strconv.FormatUint(uint64(group.ID), 10))
 	data, err := json.Marshal(group)
 	if err != nil {
@@ -379,7 +419,9 @@ func (s *Service) SetGroup(ctx context.Context, group *skillz.Group) error {
 }
 
 func (s *Service) GroupsByCategoryID(ctx context.Context, id uint) ([]*skillz.Group, error) {
-
+	if s.disabled {
+		return nil, nil
+	}
 	var groups = make([]*skillz.Group, 0)
 
 	key := generateKey(keyGroupByCategory, strconv.FormatUint(uint64(id), 10))
@@ -398,7 +440,9 @@ func (s *Service) GroupsByCategoryID(ctx context.Context, id uint) ([]*skillz.Gr
 }
 
 func (s *Service) SetGroupsByCategoryID(ctx context.Context, categoryID uint, groups []*skillz.Group) error {
-
+	if s.disabled {
+		return nil
+	}
 	key := generateKey(keyGroupByCategory, strconv.FormatUint(uint64(categoryID), 10))
 	data, err := json.Marshal(groups)
 	if err != nil {
@@ -411,7 +455,9 @@ func (s *Service) SetGroupsByCategoryID(ctx context.Context, categoryID uint, gr
 }
 
 func (s *Service) Type(ctx context.Context, id uint) (*skillz.Type, error) {
-
+	if s.disabled {
+		return nil, nil
+	}
 	key := generateKey(keyType, strconv.FormatUint(uint64(id), 10))
 	result, err := s.redis.Get(ctx, key).Bytes()
 	if err != nil && !errors.Is(err, redis.Nil) {
@@ -459,7 +505,9 @@ func (s *Service) decodeTypes(ctx context.Context, results []string) ([]*skillz.
 }
 
 func (s *Service) ShipTypes(ctx context.Context) ([]*skillz.Type, error) {
-
+	if s.disabled {
+		return nil, nil
+	}
 	key := generateKey(keyShipsTypes)
 	results, err := s.redis.SMembers(ctx, key).Result()
 	if err != nil && !errors.Is(err, redis.Nil) {
@@ -480,7 +528,9 @@ func (s *Service) ShipTypes(ctx context.Context) ([]*skillz.Type, error) {
 }
 
 func (s *Service) SkillTypes(ctx context.Context) ([]*skillz.Type, error) {
-
+	if s.disabled {
+		return nil, nil
+	}
 	key := generateKey(keySkillTypes)
 	results, err := s.redis.SMembers(ctx, key).Result()
 	if err != nil && !errors.Is(err, redis.Nil) {
@@ -516,7 +566,9 @@ func (s *Service) formatSliceSkillTypes(ctx context.Context, items []*skillz.Typ
 }
 
 func (s *Service) SetSkillTypes(ctx context.Context, items []*skillz.Type, expires time.Duration) error {
-
+	if s.disabled {
+		return nil
+	}
 	members, err := s.formatSliceSkillTypes(ctx, items)
 	if err != nil {
 		return err
@@ -537,7 +589,9 @@ func (s *Service) SetSkillTypes(ctx context.Context, items []*skillz.Type, expir
 }
 
 func (s *Service) SetShipTypes(ctx context.Context, items []*skillz.Type, expires time.Duration) error {
-
+	if s.disabled {
+		return nil
+	}
 	members, err := s.formatSliceSkillTypes(ctx, items)
 	if err != nil {
 		return err
@@ -558,7 +612,9 @@ func (s *Service) SetShipTypes(ctx context.Context, items []*skillz.Type, expire
 }
 
 func (s *Service) SkillGroups(ctx context.Context) ([]*skillz.Group, error) {
-
+	if s.disabled {
+		return nil, nil
+	}
 	key := generateKey(keySkillGroups)
 	results, err := s.redis.SMembers(ctx, key).Result()
 	if err != nil && !errors.Is(err, redis.Nil) {
@@ -586,7 +642,9 @@ func (s *Service) SkillGroups(ctx context.Context) ([]*skillz.Group, error) {
 }
 
 func (s *Service) SetSkillGroups(ctx context.Context, groups []*skillz.Group, expires time.Duration) error {
-
+	if s.disabled {
+		return nil
+	}
 	members := make([]interface{}, 0, len(groups))
 	for _, item := range groups {
 		data, err := json.Marshal(item)
@@ -616,7 +674,9 @@ func (s *Service) SetSkillGroups(ctx context.Context, groups []*skillz.Group, ex
 }
 
 func (s *Service) TypeAttributes(ctx context.Context, id uint) ([]*skillz.TypeDogmaAttribute, error) {
-
+	if s.disabled {
+		return nil, nil
+	}
 	var attributes = make([]*skillz.TypeDogmaAttribute, 0)
 
 	key := generateKey(keyTypeAttributes, strconv.FormatUint(uint64(id), 10))
@@ -635,7 +695,9 @@ func (s *Service) TypeAttributes(ctx context.Context, id uint) ([]*skillz.TypeDo
 }
 
 func (s *Service) SetTypeAttributes(ctx context.Context, id uint, attributes []*skillz.TypeDogmaAttribute) error {
-
+	if s.disabled {
+		return nil
+	}
 	key := generateKey(keyTypeAttributes, strconv.FormatUint(uint64(id), 10))
 	data, err := json.Marshal(attributes)
 	if err != nil {
@@ -648,7 +710,9 @@ func (s *Service) SetTypeAttributes(ctx context.Context, id uint, attributes []*
 }
 
 func (s *Service) TypesByGroupID(ctx context.Context, id uint) ([]*skillz.Type, error) {
-
+	if s.disabled {
+		return nil, nil
+	}
 	var types = make([]*skillz.Type, 0)
 
 	key := generateKey(keyTypesByGroup, strconv.FormatUint(uint64(id), 10))
@@ -667,7 +731,9 @@ func (s *Service) TypesByGroupID(ctx context.Context, id uint) ([]*skillz.Type, 
 }
 
 func (s *Service) SetTypesByGroupID(ctx context.Context, groupID uint, types []*skillz.Type) error {
-
+	if s.disabled {
+		return nil
+	}
 	key := generateKey(keyTypesByGroup, strconv.FormatUint(uint64(groupID), 10))
 	data, err := json.Marshal(types)
 	if err != nil {
