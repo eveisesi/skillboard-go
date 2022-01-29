@@ -88,7 +88,14 @@ func (s *Service) Meta(ctx context.Context, characterID uint64) (*skillz.Charact
 		return nil, errors.Wrap(err, "failed to fetch character skills from data store")
 	}
 
-	return meta, s.cache.SetCharacterSkillMeta(ctx, meta, time.Hour)
+	defer func() {
+		err = s.cache.SetCharacterSkillMeta(ctx, meta, time.Hour)
+		if err != nil {
+			s.logger.WithError(err).Error("failed to cache character skill meta")
+		}
+	}()
+
+	return meta, nil
 
 }
 
@@ -289,18 +296,6 @@ func (s *Service) updateSkills(ctx context.Context, user *skillz.User) error {
 			return errors.Wrap(err, "failed to update skills")
 		}
 
-		err = s.cache.SetCharacterSkills(ctx, updateSkills.CharacterID, updateSkills.Skills, time.Hour)
-		if err != nil {
-			return errors.Wrap(err, "failed to cache character skills")
-		}
-
-		updateSkills.Skills = nil
-
-		err = s.cache.SetCharacterSkillMeta(ctx, updateSkills, time.Hour)
-		if err != nil {
-			return errors.Wrap(err, "failed to cache character skill meta")
-		}
-
 	}
 
 	return s.processFlyableShips(ctx, user)
@@ -322,6 +317,13 @@ func (s *Service) Attributes(ctx context.Context, characterID uint64) (*skillz.C
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.Wrap(err, "failed to fetch character attributes from data store")
 	}
+
+	defer func() {
+		err = s.cache.SetCharacterAttributes(ctx, attributes, time.Hour)
+		if err != nil {
+			s.logger.WithError(err).Error("failed to cache character attributes")
+		}
+	}()
 
 	return attributes, nil
 
@@ -355,11 +357,6 @@ func (s *Service) updateAttributes(ctx context.Context, user *skillz.User) error
 		err = s.skills.CreateCharacterAttributes(ctx, updatedAttributes)
 		if err != nil {
 			return errors.Wrap(err, "failed to create/update character skill attributes")
-		}
-
-		err = s.cache.SetCharacterAttributes(ctx, updatedAttributes, time.Hour)
-		if err != nil {
-			return errors.Wrap(err, "failed to cache character attributes")
 		}
 
 	}
@@ -513,7 +510,6 @@ func (s *Service) processFlyableShips(ctx context.Context, user *skillz.User) er
 		return errors.Wrap(err, "failed to fetch ship groups by category")
 	}
 
-	shipGroups := make([]*skillz.ShipGroup, 0, len(groups))
 	flyableShips := make([]*skillz.CharacterFlyableShip, 0, 550)
 
 	for _, group := range groups {
@@ -581,8 +577,6 @@ func (s *Service) processFlyableShips(ctx context.Context, user *skillz.User) er
 
 		}
 
-		shipGroups = append(shipGroups, shipGroup)
-
 	}
 
 	if len(flyableShips) > 0 {
@@ -591,12 +585,6 @@ func (s *Service) processFlyableShips(ctx context.Context, user *skillz.User) er
 			return errors.Wrap(err, "failed to save flyable ships to data store")
 		}
 
-		defer func() {
-			err = s.cache.SetCharacterFlyableShips(ctx, user.CharacterID, shipGroups, time.Hour)
-			if err != nil {
-				s.logger.WithError(err).Error("failed to cache character flyable ships")
-			}
-		}()
 	}
 	return nil
 
