@@ -41,7 +41,9 @@ func (s *Service) Character(ctx context.Context, characterID uint64) (*skillz.Ch
 }
 
 func (s *Service) SetCharacter(ctx context.Context, character *skillz.Character, expires time.Duration) error {
-
+	if s.disabled {
+		return nil
+	}
 	data, err := json.Marshal(character)
 	if err != nil {
 		return errors.Wrapf(err, errorFFormat, characterAPI, "SetCharacter", "failed to encode struct as json")

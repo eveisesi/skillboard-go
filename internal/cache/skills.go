@@ -58,7 +58,9 @@ func (s *Service) CharacterSkillMeta(ctx context.Context, characterID uint64) (*
 }
 
 func (s *Service) SetCharacterSkillMeta(ctx context.Context, meta *skillz.CharacterSkillMeta, expires time.Duration) error {
-
+	if s.disabled {
+		return nil
+	}
 	data, err := json.Marshal(meta)
 	if err != nil {
 		return errors.Wrapf(err, errorFFormat, skillAPI, "SetCharacterSkillMeta", "failed to encode struct as json")
@@ -91,7 +93,9 @@ func (s *Service) CharacterAttributes(ctx context.Context, characterID uint64) (
 }
 
 func (s *Service) SetCharacterAttributes(ctx context.Context, meta *skillz.CharacterAttributes, expires time.Duration) error {
-
+	if s.disabled {
+		return nil
+	}
 	data, err := json.Marshal(meta)
 	if err != nil {
 		return errors.Wrapf(err, errorFFormat, skillAPI, "SetCharacterAttributes", "failed to encode struct as json")
@@ -136,6 +140,9 @@ func (s *Service) CharacterSkills(ctx context.Context, characterID uint64) ([]*s
 }
 
 func (s *Service) SetCharacterSkills(ctx context.Context, characterID uint64, skills []*skillz.CharacterSkill, expires time.Duration) error {
+	if s.disabled {
+		return nil
+	}
 
 	members := make([]interface{}, 0, len(skills))
 	for _, skill := range skills {
@@ -193,7 +200,9 @@ func (s *Service) CharacterGroupedSkillz(ctx context.Context, characterID uint64
 }
 
 func (s *Service) SetCharacterGroupedSkillz(ctx context.Context, characterID uint64, groups []*skillz.CharacterSkillGroup, expires time.Duration) error {
-
+	if s.disabled {
+		return nil
+	}
 	members := make([]interface{}, 0, len(groups))
 	for _, group := range groups {
 		data, err := json.Marshal(group)
@@ -245,7 +254,9 @@ func (s *Service) CharacterSkillQueueSummary(ctx context.Context, characterID ui
 }
 
 func (s *Service) SetCharacterSkillQueueSummary(ctx context.Context, characterID uint64, summary *skillz.CharacterSkillQueueSummary, expires time.Duration) error {
-
+	if s.disabled {
+		return nil
+	}
 	data, err := json.Marshal(summary)
 	if err != nil {
 		return errors.Wrapf(err, errorFFormat, skillAPI, "SetCharacterSkillQueueSummary", "failed to encode struct as json")
@@ -287,7 +298,9 @@ func (s *Service) CharacterFlyableShips(ctx context.Context, characterID uint64)
 }
 
 func (s *Service) SetCharacterFlyableShips(ctx context.Context, characterID uint64, flyable []*skillz.ShipGroup, expires time.Duration) error {
-
+	if s.disabled {
+		return nil
+	}
 	members := make([]interface{}, 0, len(flyable))
 	for _, skill := range flyable {
 		data, err := json.Marshal(skill)

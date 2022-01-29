@@ -45,7 +45,9 @@ func (s *Service) CharacterImplants(ctx context.Context, characterID uint64) ([]
 }
 
 func (s *Service) SetCharacterImplants(ctx context.Context, characterID uint64, implants []*skillz.CharacterImplant, expires time.Duration) error {
-
+	if s.disabled {
+		return nil
+	}
 	data, err := json.Marshal(implants)
 	if err != nil {
 		return errors.Wrapf(err, errorFFormat, cloneAPI, "SetCharacterImplants", "failed to encode struct as json")

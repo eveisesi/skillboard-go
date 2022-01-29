@@ -41,7 +41,9 @@ func (s *Service) EtagByPath(ctx context.Context, path string) (*skillz.Etag, er
 }
 
 func (s *Service) SetEtag(ctx context.Context, etag *skillz.Etag, expires time.Duration) error {
-
+	if s.disabled {
+		return nil
+	}
 	data, err := json.Marshal(etag)
 	if err != nil {
 		return errors.Wrapf(err, errorFFormat, universeAPI, "SetBloodline", "failed to encode struct as json")

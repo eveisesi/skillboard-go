@@ -43,7 +43,9 @@ func (s *Service) Alliance(ctx context.Context, allianceID uint) (*skillz.Allian
 }
 
 func (s *Service) SetAlliance(ctx context.Context, alliance *skillz.Alliance, expires time.Duration) error {
-
+	if s.disabled {
+		return nil
+	}
 	data, err := json.Marshal(alliance)
 	if err != nil {
 		return errors.Wrapf(err, errorFFormat, allianceAPI, "SetAlliance", "failed to encode struct as json")

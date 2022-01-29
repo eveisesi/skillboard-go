@@ -42,7 +42,9 @@ func (s *Service) Corporation(ctx context.Context, corporationID uint) (*skillz.
 }
 
 func (s *Service) SetCorporation(ctx context.Context, corporation *skillz.Corporation, expires time.Duration) error {
-
+	if s.disabled {
+		return nil
+	}
 	data, err := json.Marshal(corporation)
 	if err != nil {
 		return errors.Wrapf(err, errorFFormat, corporationAPI, "SetCorporation", "failed to encode struct as json")
