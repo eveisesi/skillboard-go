@@ -1,7 +1,6 @@
 package web
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/eveisesi/skillz"
@@ -15,21 +14,19 @@ import (
 )
 
 type Service struct {
-	app      *buffalo.App
-	auth     auth.API
-	user     user.API
-	logger   *logrus.Logger
-	renderer *render.Engine
+	env        skillz.Environment
+	baseDomain string
+	app        *buffalo.App
+	auth       auth.API
+	user       user.API
+	logger     *logrus.Logger
+	renderer   *render.Engine
 }
 
 const keyAuthenticatedUser = "authenticatedUser"
 const keyAuthenticatedUserID = "authenticatedUserID"
 
 const titleSuffix = "|| Eve Is ESI || A Third Party Eve Online App"
-
-var defaultTitle = func() (string, string) {
-	return "title", fmt.Sprintf("Welcome to Skillboard.Eve %s", titleSuffix)
-}
 
 func NewService(
 	env skillz.Environment,
@@ -42,11 +39,18 @@ func NewService(
 	renderer *render.Engine,
 ) *Service {
 
+	var baseDomain = "https://skillboard.local"
+	if env == skillz.Production {
+		baseDomain = "https://skillboard.eveisesi.space"
+	}
+
 	s := &Service{
-		auth:     auth,
-		user:     user,
-		renderer: renderer,
-		logger:   logger,
+		env:        env,
+		baseDomain: baseDomain,
+		auth:       auth,
+		user:       user,
+		renderer:   renderer,
+		logger:     logger,
 	}
 
 	s.app = buffalo.New(buffalo.Options{
@@ -54,15 +58,15 @@ func NewService(
 		SessionName: sessionName,
 		WorkerOff:   true,
 		Addr:        "0.0.0.0:54400",
-		// Logger:      logger,
 	})
 
-	s.app.Use(s.SetCurrentUser)
+	s.app.Use(s.setBaseDomain)
+	s.app.Use(s.setCurrentUser)
 	s.app.GET("/", s.indexHandler)
 	s.app.GET("/login", s.loginHandler)
 	s.app.GET("/logout", s.logoutHandler)
-	s.app.GET("/users/settings", csrf.New(s.Authorize(s.userSettingsHandler)))
-	s.app.PUT("/users/settings", csrf.New(s.Authorize(s.postUserSettingsHandler)))
+	s.app.GET("/users/settings", csrf.New(s.authorize(s.userSettingsHandler)))
+	s.app.PUT("/users/settings", csrf.New(s.authorize(s.postUserSettingsHandler)))
 	s.app.GET("/users/{userID}", s.userHandler)
 
 	s.app.ServeFiles("/", http.FS(public.FS())) // serve files from the public directory

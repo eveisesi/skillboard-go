@@ -9,7 +9,14 @@ import (
 	"github.com/gofrs/uuid"
 )
 
-func (s *Service) SetCurrentUser(next buffalo.Handler) buffalo.Handler {
+func (s *Service) setBaseDomain(next buffalo.Handler) buffalo.Handler {
+	return func(c buffalo.Context) error {
+		c.Set("baseDomain", s.baseDomain)
+		return next(c)
+	}
+}
+
+func (s *Service) setCurrentUser(next buffalo.Handler) buffalo.Handler {
 	return func(c buffalo.Context) error {
 		if uuidInf := c.Session().Get(keyAuthenticatedUserID); uuidInf != nil {
 			userID, ok := uuidInf.(uuid.UUID)
@@ -34,7 +41,7 @@ func (s *Service) SetCurrentUser(next buffalo.Handler) buffalo.Handler {
 	}
 }
 
-func (s *Service) Authorize(next buffalo.Handler) buffalo.Handler {
+func (s *Service) authorize(next buffalo.Handler) buffalo.Handler {
 	return func(c buffalo.Context) error {
 		if userID := c.Session().Get(keyAuthenticatedUserID); userID == nil {
 			c.Flash().Add("danger", "You must be logged in to see that page.")

@@ -63,15 +63,15 @@
                                 </th>
                             </tr>
                         </thead>
-                        <% let meta = user.Meta %>
+                        <% let skillInfo = user.Meta %>
                         <tbody>
-                            <%= if (meta.UnallocatedSP.Valid) { %>
+                            <%= if (skillInfo.UnallocatedSP.Valid) { %>
                             <tr>
                                 <td>
                                     Unallocated SP
                                 </td>
                                 <td>
-                                    <%= formatNum(meta.UnallocatedSP.Uint) %> Skillpoints
+                                    <%= formatNum(skillInfo.UnallocatedSP.Uint) %> Skillpoints
                                 </td>
                             </tr>
                             <% } %>
@@ -81,7 +81,7 @@
                                     Allocated SP
                                 </td>
                                 <td>
-                                    <%= formatNum(meta.TotalSP) %> Skillpoints
+                                    <%= formatNum(skillInfo.TotalSP) %> Skillpoints
                                 </td>
                             </tr>
                             <tr>
@@ -89,7 +89,7 @@
                                     Total SP
                                 </td>
                                 <td>
-                                    <%= formatNum(addUint(meta.TotalSP, meta.UnallocatedSP.Uint)) %> Skillpoints
+                                    <%= formatNum(addUint(skillInfo.TotalSP, skillInfo.UnallocatedSP.Uint)) %> Skillpoints
                                 </td>
                             </tr>
                         </tbody>

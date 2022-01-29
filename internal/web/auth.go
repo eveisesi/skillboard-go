@@ -16,7 +16,6 @@ func (s *Service) logoutHandler(c buffalo.Context) error {
 }
 
 func (s *Service) loginHandler(c buffalo.Context) error {
-	c.Set(defaultTitle())
 
 	var ctx = c.Request().Context()
 
