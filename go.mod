@@ -6,7 +6,6 @@ require (
 	github.com/Masterminds/squirrel v1.5.1
 	github.com/davecgh/go-spew v1.1.1
 	github.com/gertd/go-pluralize v0.1.7
-	github.com/go-chi/chi/v5 v5.0.5
 	github.com/go-http-utils/headers v0.0.0-20181008091004-fed159eddc2a
 	github.com/go-redis/redis/v8 v8.11.4
 	github.com/go-sql-driver/mysql v1.6.0

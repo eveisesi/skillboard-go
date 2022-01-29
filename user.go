@@ -19,7 +19,7 @@ type UserRepository interface {
 	UserSettings(ctx context.Context, id uuid.UUID) (*UserSettings, error)
 	CreateUserSettings(ctx context.Context, settings *UserSettings) error
 
-	UsersSortedByProcessedAtLimit(ctx context.Context, limit uint64) ([]*User, error)
+	UsersSortedByProcessedAtLimit(ctx context.Context) ([]*User, error)
 
 	NewUsersBySP(ctx context.Context) ([]*User, error)
 }

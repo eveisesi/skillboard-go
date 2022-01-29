@@ -196,12 +196,12 @@ func (r *userRepository) UpdateUser(ctx context.Context, user *skillz.User) erro
 
 }
 
-func (r *userRepository) UsersSortedByProcessedAtLimit(ctx context.Context, limit uint64) ([]*skillz.User, error) {
+func (r *userRepository) UsersSortedByProcessedAtLimit(ctx context.Context) ([]*skillz.User, error) {
 
 	query, args, err := sq.Select(r.users.columns...).
 		From(r.users.table).
 		Where(sq.Eq{UserDisabled: 0}).
-		OrderBy(fmt.Sprintf("%s %s", UserLastProcessed, "ASC")).Limit(limit).ToSql()
+		OrderBy(fmt.Sprintf("%s %s", UserLastProcessed, "ASC")).ToSql()
 	if err != nil {
 		return nil, errors.Wrapf(err, errorFFormat, userRepositoryIdentifier, "UsersSortedByProcessedAtLimit", "failed to generate sql")
 	}

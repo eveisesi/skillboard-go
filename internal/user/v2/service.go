@@ -507,7 +507,7 @@ func memberIDFromSubject(sub string) (uint64, error) {
 
 func (s *Service) ProcessUpdatableUsers(ctx context.Context) error {
 
-	users, err := s.UserRepository.UsersSortedByProcessedAtLimit(ctx, 100)
+	users, err := s.UserRepository.UsersSortedByProcessedAtLimit(ctx)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return errors.Wrap(err, "failed to query users table for processable users")
 	}
@@ -519,8 +519,6 @@ func (s *Service) ProcessUpdatableUsers(ctx context.Context) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to push user id to processing queue")
 		}
-
-		time.Sleep(time.Second)
 	}
 
 	return nil
