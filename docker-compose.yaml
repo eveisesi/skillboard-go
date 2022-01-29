@@ -2,7 +2,7 @@ version: "3.7"
 
 services:
     server:
-        image: ghcr.io/eveisesi/skillboard/skillboard-api:0.3.8
+        image: ghcr.io/eveisesi/skillboard/skillboard-api:0.3.10
         restart: unless-stopped
         container_name: skillboard-server
         env_file: .env
@@ -10,13 +10,13 @@ services:
         ports:
            - "54400:54400"
     processor:
-        image: ghcr.io/eveisesi/skillboard/skillboard-api:0.3.8
+        image: ghcr.io/eveisesi/skillboard/skillboard-api:0.3.10
         restart: unless-stopped
         container_name: skillboard-processor
         env_file: .env
         command: /app/skillboard-api processor
     cron:
-        image: ghcr.io/eveisesi/skillboard/skillboard-api:0.3.8
+        image: ghcr.io/eveisesi/skillboard/skillboard-api:0.3.10
         restart: unless-stopped
         container_name: skillboard-cron
         env_file: .env
