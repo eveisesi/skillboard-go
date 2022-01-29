@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/eveisesi/skillz"
 	"github.com/eveisesi/skillz/internal/user/v2"
 	"github.com/gertd/go-pluralize"
@@ -34,8 +33,16 @@ func (s *Service) userPageMeta(ctx context.Context, user *skillz.User) (string, 
 			len(user.QueueSummary.Queue),
 		)
 	}
-	spew.Dump(meta)
 	return "meta", meta
+}
+
+func (s *Service) userSettingsMeta(ctx context.Context, user *skillz.User) (string, string) {
+
+	name := pluralize.NewClient().Plural(user.Character.Name)
+	title := fmt.Sprintf("%s Skillboard Settings %s", name, titleSuffix)
+
+	return "meta", title
+
 }
 
 var userSettingsPageTitle = func(name string) (string, string) {
@@ -129,13 +136,15 @@ func (s *Service) userHandler(c buffalo.Context) error {
 
 func (s *Service) userSettingsHandler(c buffalo.Context) error {
 
+	var ctx = c.Request().Context()
+
 	user := c.Data()[keyAuthenticatedUser].(*skillz.User)
 	if user == nil {
 		s.logger.Debug("user is missing from session")
 		return c.Redirect(http.StatusTemporaryRedirect, "rootPath()")
 	}
 
-	// c.Set(userSettingsMeta(user))
+	c.Set(s.userSettingsMeta(ctx, user))
 	c.Set("checked", func(b bool) string {
 		o := ""
 		if b {
