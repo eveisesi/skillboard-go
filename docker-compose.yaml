@@ -2,24 +2,10 @@ version: "3.7"
 
 services:
     server:
-        image: ghcr.io/eveisesi/skillboard/skillboard-api:latest
+        image: ${IMAGE_URI}
         restart: unless-stopped
         container_name: skillboard-server
-        environment:
-            - USER_AGENT
-            - REDIS_HOST
-            - REDIS_PASS
-            - MYSQL_HOST
-            - MYSQL_DATABASE
-            - MYSQL_USER
-            - MYSQL_PASSWORD
-            - LOG_LEVEL
-            - EVE_CLIENT_ID
-            - EVE_CLIENT_SECRET
-            - EVE_CALLBACK_URI
-            - ENVIRONMENT
-            - RUN_MIGRATIONS
-            - INITIALIZE_UNIVERSE
+        env_file: .env
         command: /app/skillboard-api buffalo
         ports:
            - "54400:54400"
@@ -27,48 +13,19 @@ services:
         image: ghcr.io/eveisesi/skillboard/skillboard-api:latest
         restart: unless-stopped
         container_name: skillboard-processor
-        environment:
-            - USER_AGENT
-            - REDIS_HOST
-            - REDIS_PASS
-            - MYSQL_HOST
-            - MYSQL_DATABASE
-            - MYSQL_USER
-            - MYSQL_PASSWORD
-            - LOG_LEVEL
-            - EVE_CLIENT_ID
-            - EVE_CLIENT_SECRET
-            - EVE_CALLBACK_URI
-            - ENVIRONMENT
-            - RUN_MIGRATIONS
-            - INITIALIZE_UNIVERSE
+        env_file: .env
         command: /app/skillboard-api processor
     cron:
         image: ghcr.io/eveisesi/skillboard/skillboard-api:latest
         restart: unless-stopped
         container_name: skillboard-cron
-        environment:
-            - USER_AGENT
-            - REDIS_HOST
-            - REDIS_PASS
-            - MYSQL_HOST
-            - MYSQL_DATABASE
-            - MYSQL_USER
-            - MYSQL_PASSWORD
-            - LOG_LEVEL
-            - EVE_CLIENT_ID
-            - EVE_CLIENT_SECRET
-            - EVE_CALLBACK_URI
-            - ENVIRONMENT
-            - RUN_MIGRATIONS
-            - INITIALIZE_UNIVERSE
+        env_file: .env
         command: /app/skillboard-api cron
     redis:
         image: redis:6.2.5
         restart: unless-stopped
         container_name: skillboard-redis
-        environment:
-            - REDIS_PASS
+        env_file: .env
         ports:
             - "54410:6379"
         command: >
@@ -81,11 +38,7 @@ services:
         image: mysql:5.7
         restart: unless-stopped
         container_name: skillboard-mysql
-        environment:
-            - MYSQL_DATABASE
-            - MYSQL_USER
-            - MYSQL_PASSWORD
-            - MYSQL_ROOT_PASSWORD
+        env_file: .env
         ports:
             - "54420:3306"
         volumes:

@@ -3,6 +3,7 @@ package skill
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/eveisesi/skillz"
@@ -20,7 +21,7 @@ type API interface {
 	Meta(ctx context.Context, characterID uint64) (*skillz.CharacterSkillMeta, error)
 	Skillz(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkill, error)
 	Attributes(ctx context.Context, characterID uint64) (*skillz.CharacterAttributes, error)
-	Flyable(ctx context.Context, characterID uint64) ([]*skillz.CharacterFlyableShip, error)
+	Flyable(ctx context.Context, characterID uint64) ([]*skillz.ShipGroup, error)
 	SkillQueue(ctx context.Context, characterID uint64) (*skillz.CharacterSkillQueueSummary, error)
 	SkillsGrouped(ctx context.Context, characterID uint64) ([]*skillz.CharacterSkillGroup, error)
 }
@@ -66,8 +67,6 @@ func (s *Service) Process(ctx context.Context, user *skillz.User) error {
 			s.logger.WithError(err).Error("encounted error executing processor")
 			break
 		}
-
-		time.Sleep(time.Second)
 	}
 
 	return err
@@ -94,40 +93,57 @@ func (s *Service) Meta(ctx context.Context, characterID uint64) (*skillz.Charact
 
 }
 
-func (s *Service) Flyable(ctx context.Context, characterID uint64) ([]*skillz.CharacterFlyableShip, error) {
+func (s *Service) Flyable(ctx context.Context, characterID uint64) ([]*skillz.ShipGroup, error) {
 
-	flyable, err := s.cache.CharacterFlyableShips(ctx, characterID)
+	flyableShipGroups, err := s.cache.CharacterFlyableShips(ctx, characterID)
 	if err != nil && !errors.Is(err, redis.Nil) {
 		return nil, err
 	}
 
-	if len(flyable) > 0 {
-		return flyable, nil
+	if len(flyableShipGroups) > 0 {
+		return flyableShipGroups, nil
 	}
 
-	flyable, err = s.skills.CharacterFlyableShips(ctx, characterID)
+	flyable, err := s.skills.CharacterFlyableShips(ctx, characterID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.Wrap(err, "failed to fetch character skills from data store")
 	}
 
-	for _, ship := range flyable {
-
-		shipType, err := s.universe.Type(ctx, ship.ShipTypeID)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to fetch ship info")
-		}
-
-		shipGroup, err := s.universe.Group(ctx, shipType.GroupID)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to fetch ship group info")
-		}
-
-		shipType.Group = shipGroup
-		ship.Ship = shipType
-
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
 	}
 
-	return flyable, s.cache.SetCharacterFlyableShips(ctx, characterID, flyable, time.Hour)
+	flyableShipsMap := make(map[uint]struct{})
+	for _, entry := range flyable {
+		flyableShipsMap[entry.ShipTypeID] = struct{}{}
+	}
+
+	groups, err := s.universe.TypeGroupsHydrated(ctx, universe.CategoryShips)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, errors.Wrap(err, "failed to fetch hydrated ship groups")
+	}
+
+	shipGroups := make([]*skillz.ShipGroup, 0, len(groups))
+	for _, group := range groups {
+		shipGroup := &skillz.ShipGroup{Group: group, Ships: make([]*skillz.ShipType, 0, len(group.Types))}
+		for _, ship := range group.Types {
+			shipType := &skillz.ShipType{Type: ship, Flyable: false}
+			if _, ok := flyableShipsMap[ship.ID]; ok {
+				shipType.Flyable = true
+			}
+			shipGroup.Ships = append(shipGroup.Ships, shipType)
+		}
+		shipGroups = append(shipGroups, shipGroup)
+	}
+
+	defer func() {
+		err := s.cache.SetCharacterFlyableShips(ctx, characterID, shipGroups, time.Hour)
+		if err != nil {
+			s.logger.WithError(err).Error("failed to cache character flyable ships")
+		}
+	}()
+
+	return shipGroups, nil
 
 }
 
@@ -187,7 +203,7 @@ func (s *Service) SkillsGrouped(ctx context.Context, characterID uint64) ([]*ski
 		return groupedSkillz, err
 	}
 
-	groups, err := s.universe.SkillGroupsHydrated(ctx)
+	groups, err := s.universe.TypeGroupsHydrated(ctx, universe.CategorySkills)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to fetch hydrated skill groups from universe")
 	}
@@ -464,24 +480,6 @@ func (s *Service) updateSkillQueue(ctx context.Context, user *skillz.User) error
 				return errors.Wrap(err, "failed to create character skill queue")
 			}
 
-			// skillInfo, err := s.universe.SkillTypesHydrated(ctx)
-			// if err != nil {
-			// 	return errors.Wrap(err, "failed to fetch skill data")
-			// }
-
-			// mapSkillInfo := make(map[uint]*skillz.Type)
-			// for _, info := range skillInfo {
-			// 	mapSkillInfo[info.ID] = info
-			// }
-
-			// for _, position := range updatedQueue {
-			// 	if _, ok := mapSkillInfo[position.SkillID]; !ok {
-			// 		continue
-			// 	}
-
-			// 	position.Type = mapSkillInfo[position.SkillID]
-			// }
-
 		}
 	}
 
@@ -511,80 +509,83 @@ func (s *Service) processFlyableShips(ctx context.Context, user *skillz.User) er
 		skillzMap[skill.SkillID] = skill
 	}
 
-	groups, err := s.universe.GroupsByCategory(ctx, 6)
+	groups, err := s.universe.TypeGroupsHydrated(ctx, universe.CategoryShips)
 	if err != nil {
 		return errors.Wrap(err, "failed to fetch ship groups by category")
 	}
 
-	shipData := make([]*skillz.Type, 0)
+	shipGroups := make([]*skillz.ShipGroup, 0, len(groups))
+	flyableShips := make([]*skillz.CharacterFlyableShip, 0, 550)
+
 	for _, group := range groups {
-
-		groupShips, err := s.universe.TypesByGroup(ctx, group.ID)
-		if err != nil {
-			return errors.Wrap(err, "failed to fetch types by group id")
+		shipGroup := &skillz.ShipGroup{
+			Group: group,
+			Ships: make([]*skillz.ShipType, 0, len(group.Types)),
 		}
 
-		for _, ship := range groupShips {
-
-			dogma, err := s.universe.TypeAttributes(ctx, ship.ID)
-			if err != nil {
-				return errors.Wrap(err, "failed to fetch attributes for type")
+	SHIPLOOP:
+		for _, ship := range group.Types {
+			mapShipDogma := make(map[uint]*skillz.TypeDogmaAttribute)
+			for _, attribute := range ship.Attributes {
+				mapShipDogma[attribute.AttributeID] = attribute
 			}
 
-			ship.Attributes = dogma
-			ship.Group = group
-			shipData = append(shipData, ship)
+			shipType := &skillz.ShipType{
+				Type: ship,
+			}
+
+			shipGroup.Ships = append(shipGroup.Ships, shipType)
+
+			for _, nameAttributeID := range skillNameDogmaSlice {
+				// Check to see if this ships dogma attributes contain an entry for this dogma attribute
+				// If it doesn't, then that means that this ship does not have this level of skill requirements
+				// We can break and say that the character is able to fly this ship.
+				// Human translation of this is the ship might have a single required skill
+				// This will fail when looking for a second required skill
+				if _, ok := mapShipDogma[nameAttributeID]; !ok {
+					fmt.Println("breaking attribute loop")
+					break
+				}
+
+				fmt.Println("not breaking attribute loop")
+				// Okay, so we've confirm that this ship has this level of skill requirements. Now we need
+				// to find the level of the skill that is required. This shouldn't be missing, but if it is,
+				// then we cannot properly determine if the ship is flyable or not, so we will continue  the
+				// outer loop to the next ship
+				if _, ok := mapShipDogma[skillNameToLevelDogmaMap[nameAttributeID]]; !ok {
+					continue SHIPLOOP
+				}
+
+				// This turns the dogma value into a comparable uint
+				skillID := uint(mapShipDogma[nameAttributeID].Value)
+				level := uint(mapShipDogma[skillNameToLevelDogmaMap[nameAttributeID]].Value)
+
+				// Check to see if this character has the required skill
+				skill := skillFromSkillSlice(skillID, skills)
+				// Character does not have the skill, ship is not flytable, continue to next ship
+				if skill == nil {
+					continue SHIPLOOP
+				}
+
+				// Character has previously trained the skill to the required level.
+				// Since we don't care about Omega status exactly, we can look at the "Omega" skill level
+				// as opposed to the "Alpha" skil level
+				if skill.TrainedSkillLevel < level {
+					continue SHIPLOOP
+				}
+
+			}
+
+			flyableShips = append(flyableShips, &skillz.CharacterFlyableShip{
+				CharacterID: user.CharacterID,
+				ShipTypeID:  ship.ID,
+			})
+			shipType.Flyable = true
+
 		}
 
-	}
+		shipGroups = append(shipGroups, shipGroup)
 
-	flyableShips := make([]*skillz.CharacterFlyableShip, 0, len(shipData))
-
-OUTER:
-	for _, ship := range shipData {
-		mapShipDogma := make(map[uint]*skillz.TypeDogmaAttribute)
-		for _, attribute := range ship.Attributes {
-			mapShipDogma[attribute.AttributeID] = attribute
-		}
-
-		flyable := &skillz.CharacterFlyableShip{
-			CharacterID: user.CharacterID,
-			ShipTypeID:  ship.ID,
-			Ship:        ship,
-		}
-
-		for _, nameAttributeID := range skillNameDogmaSlice {
-			if _, ok := mapShipDogma[nameAttributeID]; !ok {
-				// Skill Level Name Attribute for the level is missing, can break and save as flyable
-				break
-			}
-
-			if _, ok := mapShipDogma[skillNameToLevelDogmaMap[nameAttributeID]]; !ok {
-				// Skill Level Attribute is missing, this is an error,
-				// log the missing attribute, continue outer loop
-				// Save that the ship is not flyable
-				flyableShips = append(flyableShips, flyable)
-				continue OUTER
-			}
-
-			skillID := uint(mapShipDogma[nameAttributeID].Value)
-			level := uint(mapShipDogma[skillNameToLevelDogmaMap[nameAttributeID]].Value)
-
-			skill := skillFromSkillSlice(skillID, skills)
-			if skill == nil {
-				flyableShips = append(flyableShips, flyable)
-				continue OUTER
-			}
-
-			if skill.TrainedSkillLevel < level {
-				flyableShips = append(flyableShips, flyable)
-				continue OUTER
-			}
-
-		}
-
-		flyable.Flyable = true
-		flyableShips = append(flyableShips, flyable)
 	}
 
 	if len(flyableShips) > 0 {
@@ -594,7 +595,7 @@ OUTER:
 		}
 
 		defer func() {
-			err = s.cache.SetCharacterFlyableShips(ctx, user.CharacterID, flyableShips, time.Hour)
+			err = s.cache.SetCharacterFlyableShips(ctx, user.CharacterID, shipGroups, time.Hour)
 			if err != nil {
 				s.logger.WithError(err).Error("failed to cache character flyable ships")
 			}

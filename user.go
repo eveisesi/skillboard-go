@@ -55,7 +55,7 @@ type User struct {
 	SkillsGrouped []*CharacterSkillGroup      `json:"groupedSkillz,omitempty"`
 	QueueSummary  *CharacterSkillQueueSummary `json:"queue,omitempty"`
 	Attributes    *CharacterAttributes        `json:"attributes,omitempty"`
-	Flyable       []*CharacterFlyableShip     `json:"flyable,omitempty"`
+	Flyable       []*ShipGroup                `json:"flyable,omitempty"`
 	Meta          *CharacterSkillMeta         `json:"meta,omitempty"`
 }
 

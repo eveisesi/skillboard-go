@@ -43,7 +43,6 @@ const (
 	AttributesAccruedRemapCooldownDate string = "accrued_remap_cooldown_date"
 
 	FlyableShipTypeID string = "ship_type_id"
-	FlyableFlyable    string = "flyable"
 )
 
 func NewSkillRepository(db QueryExecContext) skillz.CharacterSkillRepository {
@@ -65,7 +64,6 @@ func NewSkillRepository(db QueryExecContext) skillz.CharacterSkillRepository {
 			columns: []string{
 				ColumnCharacterID,
 				FlyableShipTypeID,
-				FlyableFlyable,
 				ColumnCreatedAt,
 			},
 		},
@@ -218,11 +216,9 @@ func (r *skillRepository) CreateCharacterFlyableShips(ctx context.Context, ships
 		i = i.Values(
 			ship.CharacterID,
 			ship.ShipTypeID,
-			ship.Flyable,
 			ship.CreatedAt,
 		)
 	}
-	i = i.Suffix(OnDuplicateKeyStmt(FlyableFlyable))
 
 	query, args, err := i.ToSql()
 	if err != nil {

@@ -1,23 +1,23 @@
 SHELL := /bin/bash
 
 deps:
-	aws-vault exec skillboard -- chamber exec skillboard/development -- docker compose up -d redis mysql
+	docker compose up -d redis mysql
 
 processor:
 	go mod tidy
-	aws-vault exec skillboard -- chamber exec skillboard/development -- go run ./cmd/skillz/*.go processor
+	go run ./cmd/skillz/*.go processor
 
 server:
 	go mod tidy
-	aws-vault exec skillboard -- chamber exec skillboard/development -- go run ./cmd/skillz/*.go server
+	go run ./cmd/skillz/*.go server
 
 buffalo:
 	go mod tidy
-	aws-vault exec skillboard -- chamber exec skillboard/development -- go run ./cmd/skillz/*.go buffalo
+	go run ./cmd/skillz/*.go buffalo
 
 test:
 	go mod tidy
-	aws-vault exec skillboard -- chamber exec skillboard/development -- go run ./cmd/skillz/*.go test
+	go run ./cmd/skillz/*.go test
 
 dup:
 	aws-vault exec skillboard -- chamber exec skillboard/production -- docker compose up -d

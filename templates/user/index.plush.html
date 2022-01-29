@@ -215,6 +215,7 @@
                     </table>
                 </div>
                 <% } %>
+
             </div>
         </div>
     </div>
@@ -225,19 +226,18 @@
                 <ul class="nav nav-pills mb-3 justify-content-center" id="nav-tabs" role="tablist">
                     <%= if (!settings.HideSkills) { %>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="skillListTab" data-bs-toggle="pill" data-bs-target="#skillListContent" type="button" role="tab" aria-controls="pills-home"
-                            aria-selected="true">Skillz</button>
+                        <button class="nav-link <%=activeNav("skills", settings) %>" id="skillListTab" data-bs-toggle="pill" data-bs-target="#skillListContent" type="button" role="tab">Skillz</button>
                     </li>
                     <% } %>
                     <%= if (!settings.HideQueue) { %>
                     <li class="nav-item" role="presentation">
-                        <%= if(settings.HideSkills) {%>
-                        <button class="nav-link active" id="skillQueueTab" data-bs-toggle="pill" data-bs-target="#skillQueueContent" type="button" role="tab">Skill Queue</button>
-                        <% } else { %>
-                        <button class="nav-link" id="skillQueueTab" data-bs-toggle="pill" data-bs-target="#skillQueueContent" type="button" role="tab">Skill Queue</button>
-                        <% } %>
+                        <button class="nav-link <%=activeNav("queue", settings) %>" id="skillQueueTab" data-bs-toggle="pill" data-bs-target="#skillQueueContent" type="button" role="tab">Skill
+                            Queue</button>
                     </li>
                     <% } %>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link <%=activeNav("flyable", settings) %>" id="flyableTab" data-bs-toggle="pill" data-bs-target="#flyableContent" type="button" role="tab">Flyable</button>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -246,22 +246,18 @@
         <div class="col-lg-12">
             <div class="tab-content" id="pills-tabContent">
                 <%= if (!settings.HideSkills) { %>
-                <div class="tab-pane fade show active" id="skillListContent" role="tabpanel">
+                <div class="tab-pane fade <%=activeTabPane("skills", settings) %>" id="skillListContent" role="tabpanel">
                     <%= partial("user/skills.plush.html") %>
                 </div>
                 <% } %>
                 <%= if (!settings.HideQueue) { %>
-                <div class="tab-pane fade" id="skillQueueContent" role="tabpanel">
+                <div class="tab-pane fade <%=activeTabPane("queue", settings) %>" id="skillQueueContent" role="tabpanel">
                     <%= partial("user/queue.plush.html") %>
                 </div>
                 <% } %>
-                <%= if(settings.HideSkills) {%>
-                <div class="tab-pane fade show active" id="skillQueueContent" role="tabpanel">
-                    <%= partial("user/queue.plush.html") %>
-                </div>
-                <% } else { %>
-                <div class="tab-pane fade" id="skillQueueContent" role="tabpanel">
-                    <%= partial("user/queue.plush.html") %>
+                <%= if (!settings.HideFlyable) { %>
+                <div class="tab-pane fade <%=activeTabPane("flyable", settings) %>" id="flyableContent" role="tabpanel">
+                    <%= partial("user/flyable.plush.html") %>
                 </div>
                 <% } %>
             </div>

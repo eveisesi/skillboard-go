@@ -405,7 +405,7 @@ func (s *Service) SetGroupsByCategoryID(ctx context.Context, categoryID uint, gr
 		return errors.Wrapf(err, errorFFormat, universeAPI, "SetGroupsByCategoryID", "failed to encode structure as json")
 	}
 
-	err = s.redis.Set(ctx, key, data, time.Hour).Err()
+	err = s.redis.Set(ctx, key, data, 0).Err()
 	return errors.Wrapf(err, errorFFormat, universeAPI, "SetGroupsByCategoryID", "failed to write cache")
 
 }

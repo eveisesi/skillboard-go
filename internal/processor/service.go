@@ -74,6 +74,8 @@ func (s *Service) Run() error {
 		if err != nil {
 			return err
 		}
+
+		time.Sleep(time.Millisecond * 500)
 	}
 
 }

@@ -28,7 +28,7 @@ type API interface {
 	Structure(ctx context.Context, structureID uint64) (*skillz.Structure, error)
 	Type(ctx context.Context, itemID uint) (*skillz.Type, error)
 	SkillTypesHydrated(ctx context.Context) ([]*skillz.Type, error)
-	SkillGroupsHydrated(ctx context.Context) ([]*skillz.Group, error)
+	TypeGroupsHydrated(ctx context.Context, categoryID uint) ([]*skillz.Group, error)
 	TypeAttributes(ctx context.Context, id uint) ([]*skillz.TypeDogmaAttribute, error)
 	TypesByGroup(ctx context.Context, groupID uint) ([]*skillz.Type, error)
 }
@@ -369,9 +369,15 @@ func (s *Service) SkillTypesHydrated(ctx context.Context) ([]*skillz.Type, error
 
 }
 
-func (s *Service) SkillGroupsHydrated(ctx context.Context) ([]*skillz.Group, error) {
+const (
+	CategoryShips    = uint(6)
+	CategorySkills   = uint(16)
+	CategoryImplants = uint(20)
+)
 
-	groups, err := s.cache.SkillGroups(ctx)
+func (s *Service) TypeGroupsHydrated(ctx context.Context, categoryID uint) ([]*skillz.Group, error) {
+
+	groups, err := s.cache.GroupsByCategoryID(ctx, categoryID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to fetch skill groups from cache")
 	}
@@ -380,7 +386,7 @@ func (s *Service) SkillGroupsHydrated(ctx context.Context) ([]*skillz.Group, err
 		return groups, err
 	}
 
-	groups, err = s.GroupsByCategory(ctx, 16)
+	groups, err = s.GroupsByCategory(ctx, categoryID)
 	if err != nil {
 		return nil, err
 	}
@@ -433,7 +439,7 @@ func (s *Service) SkillGroupsHydrated(ctx context.Context) ([]*skillz.Group, err
 	}
 
 	defer func(groups []*skillz.Group) {
-		err := s.cache.SetSkillGroups(ctx, groups, 0)
+		err := s.cache.SetGroupsByCategoryID(ctx, categoryID, groups)
 		if err != nil {
 			s.logger.WithError(err).Error("failed to cache skill groups")
 		}

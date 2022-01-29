@@ -1,0 +1,56 @@
+<div class="container">
+    <div class="row">
+        <div class="col-lg-4">
+            <h5 class="header mt-2">Ship Groups (Flyable / Total)</h5>
+            <ul class="list-group">
+                <%= for (group) in user.Flyable { %>
+                <li class="list-group-item text-white d-flex w-100 justify-content-between">
+                    <span>
+                        <%= group.Name %>
+                    </span>
+                    <%= if(group.Ships) {%>
+                    <span>
+                        (<%= hasShipCount(group.Ships) %> / <%= len(group.Ships) %>)
+                    </span>
+                    <% } %>
+                </li>
+                <% } %>
+            </ul>
+        </div>
+        <div class="col-lg-8">
+            <h5 class="header mt-2">Ships</h5>
+            <%= for (group) in user.Flyable { %>
+            <% 
+            if (len(group.Ships) == 0) {
+                continue
+            }
+            %>
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0 d-flex w-100 justify-content-between">
+                        <span>
+                            <%= group.Name %> Group<br>
+                            <small class="text-muted">
+                                <%= percentageShipsTrained(group.Ships)  %>% Ship Trained
+                            </small>
+                        </span>
+                        <%= if (group.Ships) { %>
+                        <span>
+                            (<%= hasShipCount(group.Ships) %> / <%= len(group.Ships) %>)
+
+                        </span>
+                        <% } %>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <%= for (ship) in group.Ships { %>
+                    <a href="https://zkillboard.com/ship/<%=ship.ID%>" target="_blank">
+                        <img class="<%=notFlyable(ship.Flyable)%>" src="https://images.evetech.net/types/<%=ship.ID%>/icon?size=64" width="64px" height="64px" title="<%=ship.Name%>" />
+                    </a>
+                    <% } %>
+                </div>
+            </div>
+            <% } %>
+        </div>
+    </div>
+</div>

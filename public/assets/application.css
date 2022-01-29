@@ -13,3 +13,7 @@
 .h145rem {
     font-size: 1.40rem
 }
+
+.notFlyable{
+    opacity: 0.4;
+}

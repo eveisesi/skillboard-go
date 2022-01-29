@@ -56,15 +56,6 @@ type CharacterAttributes struct {
 	UpdatedAt                time.Time `db:"updated_at" json:"-" deep:"-"`
 }
 
-type CharacterFlyableShip struct {
-	CharacterID uint64    `db:"character_id" json:"character_id"`
-	ShipTypeID  uint      `db:"ship_type_id" json:"ship_type_id"`
-	Flyable     bool      `db:"flyable" json:"flyable"`
-	CreatedAt   time.Time `db:"created_at" json:"-"`
-
-	Ship *Type `json:"info"`
-}
-
 type CharacterSkillQueueSummary struct {
 	Summary []*QueueGroupSummary
 	Queue   []*CharacterSkillQueue
@@ -130,13 +121,20 @@ type SkillType struct {
 	Rank  *TypeDogmaAttribute `json:"rank"`
 }
 
-// <%= for (v) in [1,2,3,4,5] { %>
-// 	<%= if (type.Skill && v <= type.Skill.TrainedSkillLevel) { %>
-// 	<i class="fas fa-square"></i>
-// 	<% } %>
-// 	<% } %>
-// 	<%= for (v) in [1,2,3,4,5] { %>
-// 	<%= if (!type.Skill || v > type.Skill.TrainedSkillLevel) { %>
-// 	<i class="far fa-square"></i>
-// 	<% } %>
-// 	<% } %>
+// CharacterFlyableShip is a model of the database table
+type CharacterFlyableShip struct {
+	CharacterID uint64    `db:"character_id" json:"character_id"`
+	ShipTypeID  uint      `db:"ship_type_id" json:"ship_type_id"`
+	CreatedAt   time.Time `db:"created_at" json:"-"`
+}
+
+// ShipGroup is what is used on the frontend to render the Flyable Ships view
+type ShipGroup struct {
+	*Group
+	Ships []*ShipType
+}
+
+type ShipType struct {
+	*Type
+	Flyable bool
+}

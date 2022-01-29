@@ -24,8 +24,8 @@ type SkillAPI interface {
 	// SetCharacterSkillQueue(ctx context.Context, characterID uint64, positions []*skillz.CharacterSkillQueue, expires time.Duration) error
 	CharacterSkillQueueSummary(ctx context.Context, characterID uint64) (*skillz.CharacterSkillQueueSummary, error)
 	SetCharacterSkillQueueSummary(ctx context.Context, characterID uint64, summary *skillz.CharacterSkillQueueSummary, expires time.Duration) error
-	CharacterFlyableShips(ctx context.Context, characterID uint64) ([]*skillz.CharacterFlyableShip, error)
-	SetCharacterFlyableShips(ctx context.Context, characterID uint64, flyable []*skillz.CharacterFlyableShip, expires time.Duration) error
+	CharacterFlyableShips(ctx context.Context, characterID uint64) ([]*skillz.ShipGroup, error)
+	SetCharacterFlyableShips(ctx context.Context, characterID uint64, flyable []*skillz.ShipGroup, expires time.Duration) error
 }
 
 const (
@@ -247,7 +247,7 @@ func (s *Service) SetCharacterSkillQueueSummary(ctx context.Context, characterID
 
 }
 
-func (s *Service) CharacterFlyableShips(ctx context.Context, characterID uint64) ([]*skillz.CharacterFlyableShip, error) {
+func (s *Service) CharacterFlyableShips(ctx context.Context, characterID uint64) ([]*skillz.ShipGroup, error) {
 
 	key := generateKey(characterFlyableKeyPrefix, strconv.FormatUint(characterID, 10))
 	results, err := s.redis.SMembers(ctx, key).Result()
@@ -256,12 +256,12 @@ func (s *Service) CharacterFlyableShips(ctx context.Context, characterID uint64)
 	}
 
 	if errors.Is(err, redis.Nil) || len(results) == 0 {
-		return make([]*skillz.CharacterFlyableShip, 0), nil
+		return make([]*skillz.ShipGroup, 0), nil
 	}
 
-	flyables := make([]*skillz.CharacterFlyableShip, 0, len(results))
+	flyables := make([]*skillz.ShipGroup, 0, len(results))
 	for _, result := range results {
-		var flyable = new(skillz.CharacterFlyableShip)
+		var flyable = new(skillz.ShipGroup)
 		err = json.Unmarshal([]byte(result), flyable)
 		if err != nil {
 			return flyables, errors.Wrapf(err, errorFFormat, skillAPI, "CharacterSkills", "failed to decode json to structure")
@@ -274,7 +274,7 @@ func (s *Service) CharacterFlyableShips(ctx context.Context, characterID uint64)
 
 }
 
-func (s *Service) SetCharacterFlyableShips(ctx context.Context, characterID uint64, flyable []*skillz.CharacterFlyableShip, expires time.Duration) error {
+func (s *Service) SetCharacterFlyableShips(ctx context.Context, characterID uint64, flyable []*skillz.ShipGroup, expires time.Duration) error {
 
 	members := make([]interface{}, 0, len(flyable))
 	for _, skill := range flyable {

@@ -62,8 +62,6 @@ func (s *Service) Process(ctx context.Context, user *skillz.User) error {
 		if err != nil {
 			break
 		}
-
-		time.Sleep(time.Second)
 	}
 
 	return err
