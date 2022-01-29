@@ -41,7 +41,7 @@ func (s *Service) userSettingsMeta(ctx context.Context, user *skillz.User) (stri
 	name := pluralize.NewClient().Plural(user.Character.Name)
 	title := fmt.Sprintf("%s Skillboard Settings %s", name, titleSuffix)
 
-	return "meta", title
+	return "title", title
 
 }
 
