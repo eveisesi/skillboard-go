@@ -21,11 +21,6 @@ type Processor interface {
 
 type ScopeProcessors []Processor
 
-type ScopeResolver struct {
-	Name string
-	Func func(context.Context, *User) (*Etag, error)
-}
-
 type Scope string
 
 const (
