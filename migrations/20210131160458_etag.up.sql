@@ -4,5 +4,5 @@ CREATE TABLE `etags` (
 	`cached_until` DATETIME NOT NULL,
 	`created_at` DATETIME NOT NULL,
 	`updated_at` DATETIME NOT NULL,
-	INDEX `path` (`path`) USING BTREE
+	PRIMARY KEY (`path`) USING BTREE
 ) COLLATE = 'utf8mb4_unicode_ci' ENGINE = InnoDB;
