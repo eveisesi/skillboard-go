@@ -3,7 +3,6 @@ package skill
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"time"
 
 	"github.com/eveisesi/skillz"
@@ -543,11 +542,9 @@ func (s *Service) processFlyableShips(ctx context.Context, user *skillz.User) er
 				// Human translation of this is the ship might have a single required skill
 				// This will fail when looking for a second required skill
 				if _, ok := mapShipDogma[nameAttributeID]; !ok {
-					fmt.Println("breaking attribute loop")
 					break
 				}
 
-				fmt.Println("not breaking attribute loop")
 				// Okay, so we've confirm that this ship has this level of skill requirements. Now we need
 				// to find the level of the skill that is required. This shouldn't be missing, but if it is,
 				// then we cannot properly determine if the ship is flyable or not, so we will continue  the
