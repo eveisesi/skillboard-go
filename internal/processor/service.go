@@ -87,8 +87,22 @@ func (s *Service) processUser(ctx context.Context, userID uuid.UUID) error {
 		return errors.Wrap(err, "failed to fetch user from data store")
 	}
 
+	defer func() {
+		user.IsNew = false
+		user.LastProcessed.SetValid(time.Now())
+		user.IsProcessing = false
+		err = s.user.UpdateUser(ctx, user)
+		if err != nil {
+			s.logger.WithError(err).Error("failed to update user")
+		}
+	}()
+
 	err = s.user.ValidateCurrentToken(ctx, user)
 	if err != nil {
+		err = errors.Wrap(err, "failed to validate token")
+		user.Disabled = true
+		user.DisabledReason.SetValid(err.Error())
+		user.DisabledTimestamp.SetValid(time.Now())
 		return err
 	}
 
@@ -102,16 +116,6 @@ func (s *Service) processUser(ctx context.Context, userID uuid.UUID) error {
 	if err != nil {
 		s.logger.WithError(err).Error("failed to update user")
 	}
-
-	defer func() {
-		user.IsNew = false
-		user.LastProcessed.SetValid(time.Now())
-		user.IsProcessing = false
-		err = s.user.UpdateUser(ctx, user)
-		if err != nil {
-			s.logger.WithError(err).Error("failed to update user")
-		}
-	}()
 
 	for _, processor := range s.scopes {
 		err = processor.Process(ctx, user)
