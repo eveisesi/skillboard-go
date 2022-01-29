@@ -110,6 +110,7 @@ func (s *Service) userHandler(c buffalo.Context) error {
 	}
 
 	if u.IsNew {
+		c.Set("title", fmt.Sprintf("Welcome to Skillboard.Evie %s", titleSuffix))
 		return c.Render(http.StatusOK, s.renderer.HTML("user/welcome.plush.html"))
 	}
 
@@ -175,6 +176,7 @@ func (s *Service) postUserSettingsHandler(c buffalo.Context) error {
 	}
 
 	user.Settings = settings
+	c.Set(userSettingsPageTitle(user.Character.Name))
 
 	s.flashSuccess(c, "Settings updated successfully")
 	return c.Redirect(http.StatusFound, "usersSettingsPath()")

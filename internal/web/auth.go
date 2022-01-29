@@ -16,6 +16,7 @@ func (s *Service) logoutHandler(c buffalo.Context) error {
 }
 
 func (s *Service) loginHandler(c buffalo.Context) error {
+	c.Set("title", fmt.Sprintf("Welcome to Skillboard.Evie %s", titleSuffix))
 
 	var ctx = c.Request().Context()
 
