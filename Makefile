@@ -20,16 +20,16 @@ test:
 	go run ./cmd/skillz/*.go test
 
 dup:
-	aws-vault exec skillboard -- chamber exec skillboard/production -- docker compose up -d
+	docker compose up -d
 
 dpull:
-	aws-vault exec skillboard -- chamber exec skillboard/production -- docker compose pull
+	docker compose pull
 
 ddown:
-	aws-vault exec skillboard -- chamber exec skillboard/production -- docker compose down
+	docker compose down
 
 ddownv:
-	aws-vault exec skillboard -- chamber exec skillboard/production -- docker compose down -v
+	docker compose down -v
 
 dlogsf:
-	aws-vault exec skillboard -- chamber exec skillboard/production -- docker compose logs -f server cron processor
+	docker compose logs -f server cron processor
