@@ -1,13 +1,12 @@
 <% let user = authenticatedUser %>
 <div class="container">
-    <doiv class="row">
+    <div class="row">
         <div class="col-lg-6 offset-3">
             <div class="card my-3">
                 <div class="card-header">
                     <h5 class="text-center">User Settings</h5>
                 </div>
                 <form action="/users/settings" method="post">
-                    <input type="hidden" name="_method" value="PUT" />
                     <input name="authenticity_token" type="hidden" value="<%= authenticity_token %>">
                     <div class="list-group">
                         <div class="list-group-item text-white fs-5">
@@ -110,11 +109,38 @@
                                 Update Settings
                             </button>
                         </div>
+                        <div class="list-group-item text-white fs-5">
+                            <button type="button" class="btn btn-danger btn-block" data-bs-toggle="modal" data-bs-target="#exampleModal">
+                                Delete My User
+                            </button>
+                        </div>
                     </div>
                 </form>
-
             </div>
         </div>
+    </div>
 </div>
-</doiv>
+
+<!-- Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Please Confirm This Action</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                You are about to delete your account from Skillboard.Evie. This action is irreversible. If you would like to continue, please confirm below.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Nope, Get Me Outta Here</button>
+                <form action="<%= usersSettingsPath() %>" method="post">
+                    <input type="hidden" name="confirmed" value="true" />
+                    <input type="hidden" name="_method" value="DELETE" />
+                    <input name="authenticity_token" type="hidden" value="<%= authenticity_token %>">
+                    <button type="submit" class="btn btn-danger">Delete My Account</button>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>

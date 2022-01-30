@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/eveisesi/skillz"
 	"github.com/eveisesi/skillz/internal/user/v2"
 	"github.com/gertd/go-pluralize"
@@ -56,7 +57,7 @@ func (s *Service) userHandler(c buffalo.Context) error {
 	userID, err := uuid.FromString(c.Param("userID"))
 	if err != nil {
 		c.Flash().Add("danger", "invalid id supplied for userID")
-		return c.Redirect(http.StatusTemporaryRedirect, "rootPath()")
+		return c.Redirect(http.StatusFound, "rootPath()")
 	}
 
 	u, err := s.user.User(ctx, userID)
@@ -66,7 +67,7 @@ func (s *Service) userHandler(c buffalo.Context) error {
 
 	if errors.Is(err, user.ErrUserNotFound) {
 		c.Flash().Add("danger", err.Error())
-		return c.Redirect(http.StatusTemporaryRedirect, "rootPath()")
+		return c.Redirect(http.StatusFound, "rootPath()")
 	}
 
 	settings := u.Settings
@@ -75,13 +76,13 @@ func (s *Service) userHandler(c buffalo.Context) error {
 			sessionUser := c.Data()[keyAuthenticatedUser]
 			if sessionUser == nil {
 				s.flashDanger(c, "User Not Found")
-				return c.Redirect(http.StatusTemporaryRedirect, "rootPath()")
+				return c.Redirect(http.StatusFound, "rootPath()")
 			}
 
 			authenticatedUser := sessionUser.(*skillz.User)
 			if authenticatedUser.ID != userID {
 				s.flashDanger(c, "User Not Found")
-				return c.Redirect(http.StatusTemporaryRedirect, "rootPath()")
+				return c.Redirect(http.StatusFound, "rootPath()")
 			}
 		}
 
@@ -91,24 +92,24 @@ func (s *Service) userHandler(c buffalo.Context) error {
 
 				if token != "" && token != settings.VisibilityToken {
 					s.flashDanger(c, "User Not Found")
-					return c.Redirect(http.StatusTemporaryRedirect, "rootPath()")
+					return c.Redirect(http.StatusFound, "rootPath()")
 				}
 			} else {
 				sessionUser := c.Data()[keyAuthenticatedUser]
 				if sessionUser == nil {
 					s.flashDanger(c, "User Not Found")
-					return c.Redirect(http.StatusTemporaryRedirect, "rootPath()")
+					return c.Redirect(http.StatusFound, "rootPath()")
 				}
 
 				authenticatedUser, ok := sessionUser.(*skillz.User)
 				if !ok {
 					s.flashDanger(c, "User Not Found")
-					return c.Redirect(http.StatusTemporaryRedirect, "rootPath()")
+					return c.Redirect(http.StatusFound, "rootPath()")
 				}
 
 				if authenticatedUser.ID != userID {
 					s.flashDanger(c, "User Not Found")
-					return c.Redirect(http.StatusTemporaryRedirect, "rootPath()")
+					return c.Redirect(http.StatusFound, "rootPath()")
 				}
 			}
 
@@ -140,7 +141,7 @@ func (s *Service) userSettingsHandler(c buffalo.Context) error {
 	user := c.Data()[keyAuthenticatedUser].(*skillz.User)
 	if user == nil {
 		s.logger.Debug("user is missing from session")
-		return c.Redirect(http.StatusTemporaryRedirect, "rootPath()")
+		return c.Redirect(http.StatusFound, "rootPath()")
 	}
 
 	c.Set(s.userSettingsMeta(ctx, user))
@@ -161,7 +162,7 @@ func (s *Service) postUserSettingsHandler(c buffalo.Context) error {
 
 	user := c.Data()[keyAuthenticatedUser].(*skillz.User)
 	if user == nil {
-		return c.Redirect(http.StatusTemporaryRedirect, "rootPath()")
+		return c.Redirect(http.StatusFound, "rootPath()")
 	}
 
 	settings := new(skillz.UserSettings)
@@ -170,12 +171,12 @@ func (s *Service) postUserSettingsHandler(c buffalo.Context) error {
 	err := c.Bind(settings)
 	if err != nil {
 		s.flashDanger(c, "failed to process form. Please try again")
-		return s.userSettingsHandler(c)
+		return c.Redirect(http.StatusFound, "usersSettingsPath()")
 	}
 
 	if !settings.Visibility.Valid() {
 		s.flashDanger(c, "Invalid value for Visibilty. Please try again")
-		return s.userSettingsHandler(c)
+		return c.Redirect(http.StatusFound, "usersSettingsPath()")
 	}
 
 	err = s.user.CreateUserSettings(ctx, user.ID, settings)
@@ -188,5 +189,37 @@ func (s *Service) postUserSettingsHandler(c buffalo.Context) error {
 
 	s.flashSuccess(c, "Settings updated successfully")
 	return c.Redirect(http.StatusFound, "usersSettingsPath()")
+
+}
+
+func (s *Service) deleteUserSettingsHandler(c buffalo.Context) error {
+	var r = c.Request()
+	var ctx = r.Context()
+	var form = r.Form
+
+	spew.Dump(form)
+
+	if !form.Has("confirmed") {
+		return c.Redirect(http.StatusFound, "usersSettingsPath()")
+	}
+
+	if form.Get("confirmed") != "true" {
+		return c.Redirect(http.StatusFound, "usersSettingsPath()")
+	}
+
+	user := c.Data()[keyAuthenticatedUser].(*skillz.User)
+	if user == nil {
+		return c.Redirect(http.StatusFound, "rootPath()")
+	}
+
+	err := s.user.DeleteUser(ctx, user)
+	if err != nil {
+		s.flashDanger(c, "Failed to delete user. Please contact the maintainer")
+		return c.Redirect(http.StatusFound, "usersSettingsPath()")
+	}
+
+	c.Session().Clear()
+	s.flashSuccess(c, "You account has successfully been deleted. Goodbye :-(")
+	return c.Redirect(http.StatusFound, "rootPath()")
 
 }

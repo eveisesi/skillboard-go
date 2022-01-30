@@ -39,6 +39,7 @@ type API interface {
 	UserByCharacterID(ctx context.Context, characterID uint64) (*skillz.User, error)
 	SearchUsers(ctx context.Context, q string) ([]*skillz.UserSearchResult, error)
 	CreateUser(ctx context.Context, user *skillz.User) error
+	DeleteUser(ctx context.Context, user *skillz.User) error
 
 	Recent(ctx context.Context) ([]*skillz.User, []*skillz.User, error)
 	// NewUsersBySP(ctx context.Context) ([]*skillz.UserWithSkillMeta, error)

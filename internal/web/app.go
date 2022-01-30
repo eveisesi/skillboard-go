@@ -67,7 +67,8 @@ func NewService(
 	s.app.POST("/login", csrf.New(s.loginPostHandler))
 	s.app.GET("/logout", s.logoutHandler)
 	s.app.GET("/users/settings", csrf.New(s.authorize(s.userSettingsHandler)))
-	s.app.PUT("/users/settings", csrf.New(s.authorize(s.postUserSettingsHandler)))
+	s.app.POST("/users/settings", csrf.New(s.authorize(s.postUserSettingsHandler)))
+	s.app.DELETE("/users/settings", csrf.New(s.authorize(s.deleteUserSettingsHandler)))
 	s.app.GET("/users/{userID}", s.userHandler)
 
 	s.app.ServeFiles("/", http.FS(public.FS())) // serve files from the public directory

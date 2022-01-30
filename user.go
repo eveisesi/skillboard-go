@@ -14,6 +14,7 @@ type UserRepository interface {
 	UserByCharacterID(ctx context.Context, characterID uint64) (*User, error)
 	SearchUsers(ctx context.Context, q string) ([]*User, error)
 	CreateUser(ctx context.Context, user *User) error
+	DeleteUser(ctx context.Context, user *User) error
 
 	UserSettings(ctx context.Context, id uuid.UUID) (*UserSettings, error)
 	CreateUserSettings(ctx context.Context, settings *UserSettings) error

@@ -23,7 +23,7 @@ func (s *Service) setCurrentUser(next buffalo.Handler) buffalo.Handler {
 			if !ok {
 				c.Flash().Add("error", "unable to verify authenticated user session")
 				c.Session().Delete(keyAuthenticatedUserID)
-				return c.Redirect(http.StatusTemporaryRedirect, "rootPath()")
+				return c.Redirect(http.StatusFound, "rootPath()")
 			}
 
 			var ctx = c.Request().Context()
@@ -32,7 +32,7 @@ func (s *Service) setCurrentUser(next buffalo.Handler) buffalo.Handler {
 			if err != nil {
 				c.Flash().Add("danger", fmt.Sprintf("%s is not a valid user id", userID))
 				c.Session().Delete(keyAuthenticatedUserID)
-				return c.Redirect(http.StatusTemporaryRedirect, "rootPath()")
+				return c.Redirect(http.StatusFound, "rootPath()")
 			}
 
 			c.Set(keyAuthenticatedUser, user)
@@ -45,7 +45,7 @@ func (s *Service) authorize(next buffalo.Handler) buffalo.Handler {
 	return func(c buffalo.Context) error {
 		if userID := c.Session().Get(keyAuthenticatedUserID); userID == nil {
 			c.Flash().Add("danger", "You must be logged in to see that page.")
-			return c.Redirect(http.StatusTemporaryRedirect, "rootPath()")
+			return c.Redirect(http.StatusFound, "rootPath()")
 		}
 		return next(c)
 	}

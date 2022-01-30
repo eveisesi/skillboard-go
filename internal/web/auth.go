@@ -13,7 +13,7 @@ import (
 func (s *Service) logoutHandler(c buffalo.Context) error {
 	c.Session().Clear()
 	c.Flash().Add("success", "You've been logged out successfully")
-	return c.Redirect(http.StatusTemporaryRedirect, "rootPath()")
+	return c.Redirect(http.StatusFound, "rootPath()")
 }
 
 func (s *Service) loginGetHandler(c buffalo.Context) error {
@@ -33,7 +33,7 @@ func (s *Service) loginGetHandler(c buffalo.Context) error {
 
 		c.Session().Set(keyAuthenticatedUserID, user.ID)
 
-		return c.Redirect(http.StatusTemporaryRedirect, "userPath()", render.Data{"userID": user.ID.String()})
+		return c.Redirect(http.StatusFound, "userPath()", render.Data{"userID": user.ID.String()})
 
 	}
 

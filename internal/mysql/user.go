@@ -179,33 +179,15 @@ func (r *userRepository) CreateUser(ctx context.Context, user *skillz.User) erro
 
 }
 
-func (r *userRepository) UpdateUser(ctx context.Context, user *skillz.User) error {
+func (r *userRepository) DeleteUser(ctx context.Context, user *skillz.User) error {
 
-	user.UpdatedAt = time.Now()
-
-	query, args, err := sq.Update(r.users.table).SetMap(map[string]interface{}{
-		ColumnCharacterID:     user.CharacterID,
-		UserAccessToken:       user.AccessToken,
-		UserRefreshToken:      user.RefreshToken,
-		UserExpires:           user.Expires,
-		UserOwnerHash:         user.OwnerHash,
-		UserScopes:            user.Scopes,
-		UserIsNew:             user.IsNew,
-		UserIsProcessing:      user.IsProcessing,
-		UserDisabled:          user.Disabled,
-		UserDisabledReason:    user.DisabledReason,
-		UserDisabledTimestamp: user.DisabledTimestamp,
-		UserLastProcessed:     user.LastProcessed,
-		UserLastLogin:         user.LastLogin,
-		ColumnUpdatedAt:       user.UpdatedAt,
-	}).Where(sq.Eq{UserID: user.ID}).ToSql()
+	query, args, err := sq.Delete(r.users.table).Where(sq.Eq{UserID: user.ID}).ToSql()
 	if err != nil {
-		return errors.Wrapf(err, errorFFormat, userRepositoryIdentifier, "UpdateUser", "failed to generate sql")
+		return errors.Wrapf(err, errorFFormat, userRepositoryIdentifier, "DeleteUser", "failed to generate sql")
 	}
 
 	_, err = r.db.ExecContext(ctx, query, args...)
-	return errors.Wrapf(err, prefixFormat, userRepositoryIdentifier, "UpdateUser")
-
+	return errors.Wrapf(err, prefixFormat, userRepositoryIdentifier, "DeleteUser")
 }
 
 func (r *userRepository) UsersSortedByProcessedAtLimit(ctx context.Context) ([]*skillz.User, error) {
