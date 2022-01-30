@@ -31,7 +31,7 @@ func importCmd(c *cli.Context) error {
 	esi := esi.New(httpClient(), redisClient, logger, etag)
 
 	var ctx = context.Background()
-	for _, categoryID := range []uint{6, 16} {
+	for _, categoryID := range []uint{6, 16, 20} {
 
 		entry := logger.WithField("categoryID", categoryID)
 

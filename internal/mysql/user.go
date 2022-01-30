@@ -38,6 +38,7 @@ const (
 	SettingsHideQueue       = "hide_queue"
 	SettingsHideFlyable     = "hide_flyable"
 	SettingsHideAttributes  = "hide_attributes"
+	SettingsHideImplants    = "hide_implants"
 )
 
 func NewUserRepository(db QueryExecContext) skillz.UserRepository {
@@ -59,7 +60,7 @@ func NewUserRepository(db QueryExecContext) skillz.UserRepository {
 			columns: []string{
 				SettingsUserID, SettingsVisibility,
 				SettingsHideQueue, SettingsHideFlyable,
-				SettingsHideSkills, SettingsHideAttributes,
+				SettingsHideSkills, SettingsHideAttributes, SettingsHideImplants,
 				ColumnCreatedAt, ColumnUpdatedAt,
 			},
 		},
@@ -145,6 +146,8 @@ func (r *userRepository) CreateUser(ctx context.Context, user *skillz.User) erro
 		UserExpires:           user.Expires,
 		UserOwnerHash:         user.OwnerHash,
 		UserScopes:            user.Scopes,
+		UserIsNew:             user.IsNew,
+		UserIsProcessing:      user.IsProcessing,
 		UserDisabled:          user.Disabled,
 		UserDisabledReason:    user.DisabledReason,
 		UserDisabledTimestamp: user.DisabledTimestamp,
@@ -153,10 +156,19 @@ func (r *userRepository) CreateUser(ctx context.Context, user *skillz.User) erro
 		ColumnCreatedAt:       user.CreatedAt,
 		ColumnUpdatedAt:       user.UpdatedAt,
 	}).Suffix(OnDuplicateKeyStmt(
-		UserAccessToken, UserRefreshToken, UserExpires,
-		UserOwnerHash, UserScopes, UserDisabled,
-		UserDisabledReason, UserDisabledTimestamp, UserLastLogin,
-		UserLastProcessed, ColumnUpdatedAt,
+		UserAccessToken,
+		UserRefreshToken,
+		UserExpires,
+		UserOwnerHash,
+		UserScopes,
+		UserIsNew,
+		UserIsProcessing,
+		UserDisabled,
+		UserDisabledReason,
+		UserDisabledTimestamp,
+		UserLastLogin,
+		UserLastProcessed,
+		ColumnUpdatedAt,
 	)).ToSql()
 	if err != nil {
 		return errors.Wrapf(err, errorFFormat, userRepositoryIdentifier, "CreateUser", "failed to generate sql")
@@ -268,6 +280,7 @@ func (r *userRepository) CreateUserSettings(ctx context.Context, settings *skill
 		SettingsHideFlyable:     settings.HideFlyable,
 		SettingsHideSkills:      settings.HideSkills,
 		SettingsHideAttributes:  settings.HideAttributes,
+		SettingsHideImplants:    settings.HideImplants,
 		ColumnCreatedAt:         settings.CreatedAt,
 		ColumnUpdatedAt:         settings.UpdatedAt,
 	}).
@@ -275,7 +288,7 @@ func (r *userRepository) CreateUserSettings(ctx context.Context, settings *skill
 			SettingsVisibility, SettingsVisibilityToken,
 			SettingsHideQueue, SettingsHideFlyable,
 			SettingsHideSkills, SettingsHideAttributes,
-			ColumnUpdatedAt,
+			SettingsHideImplants, ColumnUpdatedAt,
 		)).
 		ToSql()
 	if err != nil {

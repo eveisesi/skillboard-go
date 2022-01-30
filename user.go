@@ -14,7 +14,6 @@ type UserRepository interface {
 	UserByCharacterID(ctx context.Context, characterID uint64) (*User, error)
 	SearchUsers(ctx context.Context, q string) ([]*User, error)
 	CreateUser(ctx context.Context, user *User) error
-	UpdateUser(ctx context.Context, user *User) error
 
 	UserSettings(ctx context.Context, id uuid.UUID) (*UserSettings, error)
 	CreateUserSettings(ctx context.Context, settings *UserSettings) error
@@ -57,6 +56,7 @@ type User struct {
 	Attributes    *CharacterAttributes        `json:"attributes,omitempty"`
 	Flyable       []*ShipGroup                `json:"flyable,omitempty"`
 	Meta          *CharacterSkillMeta         `json:"meta,omitempty"`
+	Implants      []*CharacterImplant
 }
 
 func (i *User) ApplyToken(t *oauth2.Token) {
@@ -106,6 +106,7 @@ type UserSettings struct {
 	HideQueue       bool       `db:"hide_queue" form:"hide_queue"`
 	HideAttributes  bool       `db:"hide_attributes" form:"hide_attributes"`
 	HideFlyable     bool       `db:"hide_flyable" form:"hide_flyable"`
+	HideImplants    bool       `db:"hide_implants" form:"hide_settings"`
 	CreatedAt       time.Time  `db:"created_at" json:"-" form:"-"`
 	UpdatedAt       time.Time  `db:"updated_at" json:"-" form:"-"`
 }

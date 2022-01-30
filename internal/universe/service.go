@@ -543,7 +543,14 @@ func (s *Service) Type(ctx context.Context, itemID uint) (*skillz.Type, error) {
 
 	item.Attributes = attributes
 
-	return item, s.cache.SetType(ctx, item)
+	defer func() {
+		err := s.cache.SetType(ctx, item)
+		if err != nil {
+			s.logger.WithError(err).Error("failed to cache type")
+		}
+	}()
+
+	return item, nil
 
 }
 

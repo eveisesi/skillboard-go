@@ -11,6 +11,7 @@ import (
 	"github.com/eveisesi/skillz/internal/auth"
 	"github.com/eveisesi/skillz/internal/cache"
 	"github.com/eveisesi/skillz/internal/character"
+	"github.com/eveisesi/skillz/internal/clone"
 	"github.com/eveisesi/skillz/internal/corporation"
 	"github.com/eveisesi/skillz/internal/esi"
 	"github.com/eveisesi/skillz/internal/etag"
@@ -38,6 +39,7 @@ func cronCommand(_ *cli.Context) error {
 	corporationRepo := mysql.NewCorporationRepository(mysqlClient)
 	etagRepo := mysql.NewETagRepository(mysqlClient)
 	userRepo := mysql.NewUserRepository(mysqlClient)
+	cloneRepo := mysql.NewCloneRepository(mysqlClient)
 	skillsRepo := mysql.NewSkillRepository(mysqlClient)
 	universeRepo := mysql.NewUniverseRepository(mysqlClient)
 
@@ -53,8 +55,9 @@ func cronCommand(_ *cli.Context) error {
 	corporation := corporation.New(logger, cache, esi, etag, corporationRepo)
 	alliance := alliance.New(logger, cache, esi, etag, allianceRepo)
 	universe := universe.New(logger, cache, esi, universeRepo)
+	clone := clone.New(logger, cache, etag, esi, universe, cloneRepo)
 	skill := skill.New(logger, cache, esi, universe, skillsRepo)
-	user := user.New(redisClient, logger, cache, auth, alliance, character, corporation, skill, userRepo)
+	user := user.New(redisClient, logger, cache, auth, alliance, character, corporation, skill, clone, userRepo)
 
 	cron := cron.New()
 

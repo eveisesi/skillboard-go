@@ -12,14 +12,11 @@ import (
 )
 
 type CloneAPI interface {
-	CharacterClones(ctx context.Context, characterID uint64) (*skillz.CharacterCloneMeta, error)
-	SetCharacterClones(ctx context.Context, characterID uint64, clones *skillz.CharacterCloneMeta, expires time.Duration) error
 	CharacterImplants(ctx context.Context, characterID uint64) ([]*skillz.CharacterImplant, error)
 	SetCharacterImplants(ctx context.Context, characterID uint64, implants []*skillz.CharacterImplant, expires time.Duration) error
 }
 
 const (
-	characterClonesKeyPrefix   = "character::clones"
 	characterImplantsKeyPrefix = "character::implants"
 )
 

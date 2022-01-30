@@ -66,6 +66,21 @@ func (s *Service) LoadAttributes(ctx context.Context, user *skillz.User, entry *
 	user.Attributes = attributes
 }
 
+func (s *Service) LoadImplants(ctx context.Context, user *skillz.User, entry *logrus.Entry, mx *sync.Mutex, wg *sync.WaitGroup) {
+	defer wg.Done()
+	implants, err := s.clones.Implants(ctx, user.CharacterID)
+	if err != nil {
+		entry.WithError(err).
+			Error("failed to fetch character attributes")
+		mx.Lock()
+		defer mx.Unlock()
+		user.Errors = append(user.Errors, fmt.Errorf("failed to fetch character attributes"))
+		return
+	}
+
+	user.Implants = implants
+}
+
 func (s *Service) LoadSkills(ctx context.Context, user *skillz.User, entry *logrus.Entry, mx *sync.Mutex, wg *sync.WaitGroup) {
 	defer wg.Done()
 	skills, err := s.skills.Skillz(ctx, user.CharacterID)

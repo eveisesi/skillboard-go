@@ -1,0 +1,62 @@
+<div class="col-lg-6">
+    <table class="table table-sm">
+        <thead class="table-dark">
+            <tr>
+                <td colspan="2" class="text-center">Attribute Overview</td>
+            </tr>
+        </thead>
+        <tbody>
+            <% let attributes = user.Attributes %>
+            <%= if (attributes.BonusRemaps.Valid) {%>
+            <tr>
+                <td>
+                    Available Remaps
+                </td>
+                <td>
+                    <%= attributes.BonusRemaps.Uint %>
+                </td>
+            </tr>
+            <% } %>
+            <tr>
+                <td>
+                    Charisma
+                </td>
+                <td>
+                    <%= attributes.Charisma %>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    Intelligence
+                </td>
+                <td>
+                    <%= attributes.Intelligence %>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    Memory
+                </td>
+                <td>
+                    <%= attributes.Memory %>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    Perception
+                </td>
+                <td>
+                    <%= attributes.Perception %>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    Willpower
+                </td>
+                <td>
+                    <%= attributes.Willpower %>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>

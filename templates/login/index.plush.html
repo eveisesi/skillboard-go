@@ -2,35 +2,49 @@
     <div class="row">
         <div class="col-6 offset-3">
             <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0 text-center">Welcome to Skillboard.Evie</h5>
-                </div>
-                <div class="card-body">
-                    To to continue logging in, please continue to CCP's SSO using the Login button below. Prior to leaving, please review the scope that we've listed below. These are the scopes that
-                    we
-                    will be requesting permission to use on your behalf. They will grant us access to the necessary data that we need to properly render a skillboard for the character you log in with.
-                    <div class="text-center mt-2">
-                        <a href="<%= authorizationURL %>">
-                            <img src="https://web.ccpgamescdn.com/eveonlineassets/developers/eve-sso-login-white-large.png" />
-                        </a>
+                <form action="<%= loginPath() %>" method="post">
+                    <input name="authenticity_token" type="hidden" value="<%= authenticity_token %>">
+                    <div class="card-header">
+                        <h5 class="mb-0 text-center">Welcome to Skillboard.Evie</h5>
                     </div>
-                </div>
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item text-white">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h5 class="mb-1">Skills</h5>
-                            <span>esi-skills.read_skills.v1</span>
+                    <div class="card-body">
+                        To to continue logging in, please continue to CCP's SSO using the Login button below. Prior to leaving, please review the scope that we've listed below. These are the scopes
+                        that
+                        we
+                        will be requesting permission to use on your behalf. They will grant us access to the necessary data that we need to properly render a skillboard for the character you log in
+                        with.
+                        <div class="text-center mt-2">
+                            <input type="image" src="https://web.ccpgamescdn.com/eveonlineassets/developers/eve-sso-login-white-large.png" />
                         </div>
-                        <p class="mb-1">Allows us to pull skills and attributes to generate the skillboard and a list of ships you can fly</p>
-                    </li>
-                    <li class="list-group-item text-white">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h5 class="mb-1">Skill Queue</h5>
-                            <span>esi-skills.read_skillqueue.v1</span>
-                        </div>
-                        <p class="mb-1">Allows us to pull your current skill queue so we can list which skills you are currently training</p>
-                    </li>
-                </ul>
+                    </div>
+                    <div class="list-group list-group-flush">
+                        <li class="list-group-item text-white">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">Skills</h5>
+                                <span>esi-skills.read_skills.v1</span>
+                            </div>
+                            <p class="mb-1">Allows us to pull skills and attributes to generate the skillboard and a list of ships you can fly</p>
+                        </li>
+                        <li class="list-group-item text-white">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">Skill Queue</h5>
+                                <span>esi-skills.read_skillqueue.v1</span>
+                            </div>
+                            <p class="mb-1">Allows us to pull your current skill queue so we can list which skills you are currently training</p>
+                        </li>
+                        <label class="list-group-item text-white">
+                            <div class="d-flex w-100 justify-content-between">
+                                <span class="ms-4">
+                                    <input type="checkbox" class="form-check-input mt-2 me-1" name="allow_implants" checked />
+                                    <h5 class="mb-1">Implants</h5>
+                                </span>
+                                <span>esi-clones.read_implants.v1</span>
+                            </div>
+                            <p class="mb-1">Allows us to pull the implants that this character currently has plugged in. We only display implants that are plugged into slots 1-5 as these are the
+                                implants that effect skill training. Implants that are plugged into the slots 6-10 will be ignored as their effects are outside the scope of this application.</p>
+                        </label>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

@@ -79,10 +79,10 @@ func activeNav(t string, settings *skillz.UserSettings) string {
 		} else if tab == "queue" && !settings.HideQueue {
 			activeTab = tab
 			break
-		} else if tab == "flyable" && !settings.HideQueue {
+		} else if tab == "flyable" && !settings.HideFlyable {
 			activeTab = tab
 			break
-		} else if tab == "implants" && !settings.HideQueue {
+		} else if tab == "implants" && !settings.HideImplants {
 			activeTab = tab
 			break
 		}
@@ -105,10 +105,10 @@ func activeTabPane(t string, settings *skillz.UserSettings) string {
 		} else if tab == "queue" && !settings.HideQueue {
 			activeTab = tab
 			break
-		} else if tab == "flyable" && !settings.HideQueue {
+		} else if tab == "flyable" && !settings.HideFlyable {
 			activeTab = tab
 			break
-		} else if tab == "implants" && !settings.HideQueue {
+		} else if tab == "implants" && !settings.HideImplants {
 			activeTab = tab
 			break
 		}

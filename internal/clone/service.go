@@ -59,7 +59,7 @@ func (s *Service) Process(ctx context.Context, user *skillz.User) error {
 	for _, f := range funcs {
 		err = f(ctx, user)
 		if err != nil {
-			break
+			s.logger.WithError(err).Error("processor func returned an error")
 		}
 	}
 
@@ -107,31 +107,51 @@ func (s *Service) Implants(ctx context.Context, characterID uint64) ([]*skillz.C
 
 func (s *Service) updateImplants(ctx context.Context, user *skillz.User) error {
 
-	etagID, etag, err := s.esi.Etag(ctx, esi.GetCharacterImplants, &esi.Params{CharacterID: null.Uint64From(user.CharacterID)})
+	s.logger.WithFields(logrus.Fields{
+		"service": "clone",
+		"userID":  user.ID.String(),
+	}).Info("updating implants")
+
+	etagID, _, err := s.esi.Etag(ctx, esi.GetCharacterImplants, &esi.Params{CharacterID: null.Uint64From(user.CharacterID)})
 	if err != nil {
 		return errors.Wrap(err, "failed to fetch etag for expiry check")
 	}
 
-	if etag != nil && etag.CachedUntil.Unix() > time.Now().Unix() {
-		return nil
-	}
+	// if etag != nil && etag.CachedUntil.Unix() > time.Now().Unix() {
+	// 	return nil
+	// }
 
-	mods := s.esi.BaseCharacterModifiers(ctx, user, etagID, etag)
+	mods := s.esi.BaseCharacterModifiers(ctx, user, etagID, nil)
 
-	implantsOk, err := s.esi.GetCharacterImplants(ctx, user.CharacterID, mods...)
+	implants, err := s.esi.GetCharacterImplants(ctx, user.CharacterID, mods...)
 	if err != nil {
 		return errors.Wrap(err, "failed to fetch character implants from ESI")
 	}
 
-	if implantsOk.Updated {
-		implants := implantsOk.Implants
-
+	if implants != nil {
 		err = s.clones.DeleteCharacterImplants(ctx, user.CharacterID)
 		if err != nil {
 			return errors.Wrap(err, "failed to update character implants")
 		}
 
 		if len(implants) > 0 {
+
+			for _, implant := range implants {
+
+				implantType, err := s.universe.Type(ctx, implant.ImplantID)
+				if err != nil {
+					return err
+				}
+
+				attribute := implantType.GetAttribute(skillz.ImplantSlotAttributeID)
+				if attribute == nil {
+					return errors.Wrap(err, "failed to fetch implant slot attribute from implant type")
+				}
+
+				implant.Slot = uint(attribute.Value)
+
+			}
+
 			err = s.clones.CreateCharacterImplants(ctx, implants)
 			if err != nil {
 				return errors.Wrap(err, "failed to update character implants")

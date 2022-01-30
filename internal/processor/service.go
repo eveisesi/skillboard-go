@@ -90,7 +90,7 @@ func (s *Service) processUser(ctx context.Context, userID uuid.UUID) error {
 		user.IsNew = false
 		user.LastProcessed.SetValid(time.Now())
 		user.IsProcessing = false
-		err = s.user.UpdateUser(ctx, user)
+		err = s.user.CreateUser(ctx, user)
 		if err != nil {
 			s.logger.WithError(err).Error("failed to update user")
 		}
@@ -111,7 +111,7 @@ func (s *Service) processUser(ctx context.Context, userID uuid.UUID) error {
 	}
 
 	user.IsProcessing = true
-	err = s.user.UpdateUser(ctx, user)
+	err = s.user.CreateUser(ctx, user)
 	if err != nil {
 		s.logger.WithError(err).Error("failed to update user")
 	}

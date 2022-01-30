@@ -3,6 +3,11 @@
     <div class="row">
         <div class="col">
             <h3 class="header">Viewing Skillboard for <%= user.Character.Name %></h3>
+            <%= if (user.Settings.Visibility.String() == "Private") { %>
+            <div class="alert alert-warning">
+                This account is currently private. If you intend on linking this account to other users, you will need to update the Visibility via the Settings Menu
+            </div>
+            <% } %>
         </div>
     </div>
     <div class="row mt-2">
@@ -98,122 +103,10 @@
             </div>
             <div class="row">
                 <%= if (!settings.HideAttributes) { %>
-                <div class="col-lg-6">
-                    <table class="table table-sm">
-                        <thead class="table-dark">
-                            <tr>
-                                <td colspan="2" class="text-center">Attribute Overview</td>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <% let attributes = user.Attributes %>
-                            <%= if (attributes.BonusRemaps.Valid) {%>
-                            <tr>
-                                <td>
-                                    Available Remaps
-                                </td>
-                                <td>
-                                    <%= attributes.BonusRemaps.Uint %>
-                                </td>
-                            </tr>
-                            <% } %>
-                            <tr>
-                                <td>
-                                    Charisma
-                                </td>
-                                <td>
-                                    <%= attributes.Charisma %>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    Intelligence
-                                </td>
-                                <td>
-                                    <%= attributes.Intelligence %>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    Memory
-                                </td>
-                                <td>
-                                    <%= attributes.Memory %>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    Perception
-                                </td>
-                                <td>
-                                    <%= attributes.Perception %>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    Willpower
-                                </td>
-                                <td>
-                                    <%= attributes.Willpower %>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <%= partial("user/attributes.plush.html") %>
                 <% } %>
                 <%= if (!settings.HideQueue) { %>
-
-                <div class="col-lg-6">
-                    <table class="table table-sm">
-                        <thead class="table-dark">
-                            <tr>
-                                <td colspan="2" class="text-center">
-                                    Skill Queue Overview
-                                </td>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>
-                                    Number of Skillz Queued
-                                </td>
-                                <td>
-                                    <%= len(user.QueueSummary.Queue) %>
-                                </td>
-                            </tr>
-                            <% let nextPos = nextPos(user.QueueSummary.Queue) %>
-                            <%= if (nextPos) {%>
-                            <tr>
-                                <td>
-                                    Currently Training
-                                </td>
-                                <td>
-                                    <%= nextPos.Type.Name %>
-                                </td>
-                            </tr>
-                            <%= if (nextPos.FinishDate.Valid) {%>
-                            <tr>
-                                <td>
-                                    Anticipated Finish Date
-                                </td>
-                                <td>
-                                    <%= nextPos.FinishDate.Time.Format("2006-01-02") %>
-                                </td>
-                            </tr>
-                            <% } %>
-                            <tr>
-                                <td colspan="2" class="text-center">
-                                    <small class="text-white">
-                                        If the above is in the past,
-                                        then the character has not
-                                        logged in recently
-                                    </small>
-                                </td>
-                            </tr>
-                            <% } %>
-                        </tbody>
-                    </table>
-                </div>
+                <%= partial("user/queueSummary.plush.html") %>
                 <% } %>
 
             </div>
@@ -235,9 +128,16 @@
                             Queue</button>
                     </li>
                     <% } %>
+                    <%= if(!setting.HideFlyable) { %>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link <%=activeNav("flyable", settings) %>" id="flyableTab" data-bs-toggle="pill" data-bs-target="#flyableContent" type="button" role="tab">Flyable</button>
                     </li>
+                    <% } %>
+                    <%= if(!setting.HideImplants) { %>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link <%=activeNav("implant", settings) %>" id="implantTab" data-bs-toggle="pill" data-bs-target="#implantContent" type="button" role="tab">Implants</button>
+                    </li>
+                    <% } %>
                 </ul>
             </div>
         </div>
@@ -258,6 +158,11 @@
                 <%= if (!settings.HideFlyable) { %>
                 <div class="tab-pane fade <%=activeTabPane("flyable", settings) %>" id="flyableContent" role="tabpanel">
                     <%= partial("user/flyable.plush.html") %>
+                </div>
+                <% } %>
+                <%= if (!settings.HideImplants) { %>
+                <div class="tab-pane fade <%=activeTabPane("implants", settings) %>" id="implantContent" role="tabpanel">
+                    <%= partial("user/implants.plush.html") %>
                 </div>
                 <% } %>
             </div>

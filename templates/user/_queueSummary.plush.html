@@ -1,0 +1,51 @@
+<div class="col-lg-6">
+    <table class="table table-sm">
+        <thead class="table-dark">
+            <tr>
+                <td colspan="2" class="text-center">
+                    Skill Queue Overview
+                </td>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    Number of Skillz Queued
+                </td>
+                <td>
+                    <%= len(user.QueueSummary.Queue) %>
+                </td>
+            </tr>
+            <% let nextPos = nextPos(user.QueueSummary.Queue) %>
+            <%= if (nextPos) {%>
+            <tr>
+                <td>
+                    Currently Training
+                </td>
+                <td>
+                    <%= nextPos.Type.Name %>
+                </td>
+            </tr>
+            <%= if (nextPos.FinishDate.Valid) {%>
+            <tr>
+                <td>
+                    Anticipated Finish Date
+                </td>
+                <td>
+                    <%= nextPos.FinishDate.Time.Format("2006-01-02") %>
+                </td>
+            </tr>
+            <% } %>
+            <tr>
+                <td colspan="2" class="text-center">
+                    <small class="text-white">
+                        If the above is in the past,
+                        then the character has not
+                        logged in recently
+                    </small>
+                </td>
+            </tr>
+            <% } %>
+        </tbody>
+    </table>
+</div>

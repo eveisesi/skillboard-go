@@ -185,6 +185,10 @@ type Structure struct {
 
 func (Structure) IsLocationInfo() {}
 
+const (
+	ImplantSlotAttributeID uint = 331
+)
+
 type Type struct {
 	ID             uint         `db:"id" json:"id"`
 	Name           string       `db:"name" json:"name"`
@@ -202,6 +206,15 @@ type Type struct {
 
 	Attributes []*TypeDogmaAttribute `json:"dogma_attributes"`
 	Group      *Group                `json:"group"`
+}
+
+func (t *Type) GetAttribute(attributeID uint) *TypeDogmaAttribute {
+	for _, attribute := range t.Attributes {
+		if attribute.AttributeID == attributeID {
+			return attribute
+		}
+	}
+	return nil
 }
 
 type TypeDogmaAttribute struct {

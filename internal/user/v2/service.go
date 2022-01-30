@@ -17,6 +17,7 @@ import (
 	"github.com/eveisesi/skillz/internal/auth"
 	"github.com/eveisesi/skillz/internal/cache"
 	"github.com/eveisesi/skillz/internal/character"
+	"github.com/eveisesi/skillz/internal/clone"
 	"github.com/eveisesi/skillz/internal/corporation"
 	"github.com/eveisesi/skillz/internal/skill"
 	"github.com/go-redis/redis/v8"
@@ -37,7 +38,7 @@ type API interface {
 	RefreshUser(ctx context.Context, user *skillz.User) error
 	UserByCharacterID(ctx context.Context, characterID uint64) (*skillz.User, error)
 	SearchUsers(ctx context.Context, q string) ([]*skillz.UserSearchResult, error)
-	UpdateUser(ctx context.Context, user *skillz.User) error
+	CreateUser(ctx context.Context, user *skillz.User) error
 
 	Recent(ctx context.Context) ([]*skillz.User, []*skillz.User, error)
 	// NewUsersBySP(ctx context.Context) ([]*skillz.UserWithSkillMeta, error)
@@ -58,6 +59,7 @@ type Service struct {
 	corporation corporation.API
 	alliance    alliance.API
 
+	clones clone.API
 	skills skill.API
 
 	skillz.UserRepository
@@ -74,6 +76,7 @@ func New(
 	character character.API,
 	corporation corporation.API,
 	skills skill.API,
+	clones clone.API,
 	user skillz.UserRepository,
 ) *Service {
 	return &Service{
@@ -85,6 +88,7 @@ func New(
 		character:      character,
 		corporation:    corporation,
 		skills:         skills,
+		clones:         clones,
 		UserRepository: user,
 	}
 }
@@ -259,6 +263,9 @@ func (s *Service) LoadUserAll(ctx context.Context, id uuid.UUID) (*skillz.User, 
 
 	wg.Add(1)
 	go s.LoadSkillMeta(ctx, user, entry, mx, wg)
+
+	wg.Add(1)
+	go s.LoadImplants(ctx, user, entry, mx, wg)
 
 	wg.Wait()
 
@@ -489,7 +496,7 @@ func (s *Service) ValidateCurrentToken(ctx context.Context, user *skillz.User) e
 
 	user.ApplyToken(token)
 
-	return s.UserRepository.UpdateUser(ctx, user)
+	return s.UserRepository.CreateUser(ctx, user)
 
 }
 

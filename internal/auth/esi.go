@@ -21,7 +21,7 @@ type esi interface {
 	InitializeAttempt(ctx context.Context) (*skillz.AuthAttempt, error)
 	DeleteAuthAttempt(ctx context.Context, attempt *skillz.AuthAttempt) error
 	AuthAttempt(ctx context.Context, state string) (*skillz.AuthAttempt, error)
-	AuthorizationURI(ctx context.Context, state string) string
+	AuthorizationURI(ctx context.Context, state string, scopes []string) string
 	ValidateESITokenForUser(ctx context.Context, user *skillz.User) (bool, *oauth2.Token, error)
 	BearerForESICode(ctx context.Context, code string) (*oauth2.Token, error)
 	ParseAndVerifyESIToken(ctx context.Context, t string) (jwt.Token, error)
@@ -63,8 +63,8 @@ func (s *Service) DeleteAuthAttempt(ctx context.Context, attempt *skillz.AuthAtt
 	return s.cache.DeleteAuthAttempt(ctx, attempt)
 }
 
-func (s *Service) AuthorizationURI(ctx context.Context, state string) string {
-	return s.esiAuth.oauthConfig.AuthCodeURL(state)
+func (s *Service) AuthorizationURI(ctx context.Context, state string, scopes []string) string {
+	return s.esiAuth.oauthConfig.AuthCodeURL(state, oauth2.SetAuthURLParam("scope", strings.Join(scopes, " ")))
 }
 
 func isExpiredJWTError(err error) bool {

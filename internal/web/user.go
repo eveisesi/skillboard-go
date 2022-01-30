@@ -86,7 +86,6 @@ func (s *Service) userHandler(c buffalo.Context) error {
 		}
 
 		if settings.Visibility == skillz.VisibilityToken {
-
 			token := c.Param("token")
 			if token != "" {
 

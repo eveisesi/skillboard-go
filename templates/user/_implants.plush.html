@@ -1,0 +1,41 @@
+<div class="container mt-2">
+    <div class="row">
+        <%= if (len(user.Implants) == 0) {%>
+        <div class="col-lg-10 offset-1">
+            <div class="alert alert-primary">
+                This character does not have an implants plugged in
+            </div>
+        </div>
+        <% } else { %>
+        <div class="col-lg-8 offset-2">
+            <h5 class="header text-center">
+                Implants Currently Plugged In
+            </h5>
+            <div class="card">
+
+                <ul class="list-group list-group-flush">
+                    <%= for (implant) in user.Implants {%>
+                    <li class="list-group-item text-white">
+                        <div class="d-flex w-100">
+                            <img src="https://images.evetech.net/types/<%= implant.ImplantID %>/icon?size=128" class="me-3" />
+                            <div>
+                                <h5>
+                                    Slot <%= implant.Slot %>: <%= implant.Type.Name %>
+                                </h5>
+                                <p>
+                                    <a class="btn btn-primary" href="https://www.evedata.org/item?id=<%=implant.ImplantID%>" target="_blank">
+                                        View Implant on Eve Data
+                                    </a>
+                                </p>
+                            </div>
+                        </div>
+                    </li>
+
+                    <%}%>
+                </ul>
+            </div>
+        </div>
+        <%}%>
+            </div>
+        </div>
+    </div>

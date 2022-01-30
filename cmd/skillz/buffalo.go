@@ -6,6 +6,7 @@ import (
 	"github.com/eveisesi/skillz/internal/auth"
 	"github.com/eveisesi/skillz/internal/cache"
 	"github.com/eveisesi/skillz/internal/character"
+	"github.com/eveisesi/skillz/internal/clone"
 	"github.com/eveisesi/skillz/internal/corporation"
 	"github.com/eveisesi/skillz/internal/esi"
 	"github.com/eveisesi/skillz/internal/etag"
@@ -50,6 +51,7 @@ func buffaloCmd(c *cli.Context) error {
 	characterRepo := mysql.NewCharacterRepository(mysqlClient)
 	corporationRepo := mysql.NewCorporationRepository(mysqlClient)
 	etagRepo := mysql.NewETagRepository(mysqlClient)
+	cloneRepo := mysql.NewCloneRepository(mysqlClient)
 	skillzRepo := mysql.NewSkillRepository(mysqlClient)
 	userRepo := mysql.NewUserRepository(mysqlClient)
 	universeRepo := mysql.NewUniverseRepository(mysqlClient)
@@ -61,6 +63,7 @@ func buffaloCmd(c *cli.Context) error {
 	corporation := corporation.New(logger, cache, esi, etag, corporationRepo)
 	alliance := alliance.New(logger, cache, esi, etag, allianceRepo)
 	universe := universe.New(logger, cache, esi, universeRepo)
+	clone := clone.New(logger, cache, etag, esi, universe, cloneRepo)
 	skills := skill.New(logger, cache, esi, universe, skillzRepo)
 
 	auth := auth.New(
@@ -70,7 +73,7 @@ func buffaloCmd(c *cli.Context) error {
 		oauth2Config(),
 	)
 
-	user := user.New(redisClient, logger, cache, auth, alliance, character, corporation, skills, userRepo)
+	user := user.New(redisClient, logger, cache, auth, alliance, character, corporation, skills, clone, userRepo)
 
 	return web.NewService(
 		env,
