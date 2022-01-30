@@ -128,12 +128,12 @@
                             Queue</button>
                     </li>
                     <% } %>
-                    <%= if(!setting.HideFlyable) { %>
+                    <%= if(!settings.HideFlyable) { %>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link <%=activeNav("flyable", settings) %>" id="flyableTab" data-bs-toggle="pill" data-bs-target="#flyableContent" type="button" role="tab">Flyable</button>
                     </li>
                     <% } %>
-                    <%= if(!setting.HideImplants) { %>
+                    <%= if(!settings.HideImplants) { %>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link <%=activeNav("implant", settings) %>" id="implantTab" data-bs-toggle="pill" data-bs-target="#implantContent" type="button" role="tab">Implants</button>
                     </li>
