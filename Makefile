@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 
 deps:
-	docker compose up -d redis mysql
+	source .env && docker compose up -d redis mysql
 
 processor:
 	go mod tidy
@@ -20,16 +20,16 @@ test:
 	go run ./cmd/skillz/*.go test
 
 dup:
-	docker compose up -d
+	source .env && docker compose up -d
 
 dpull:
-	docker compose pull
+	source .env && docker compose pull
 
 ddown:
-	docker compose down
+	source .env && docker compose down
 
 ddownv:
-	docker compose down -v
+	source .env && docker compose down -v
 
 dlogsf:
-	docker compose logs -f server cron processor
+	source .env && docker compose logs -f server cron processor
