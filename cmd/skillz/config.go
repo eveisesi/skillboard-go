@@ -43,7 +43,7 @@ type config struct {
 }
 
 func buildConfig() {
-	_ = godotenv.Load(".env")
+	_ = godotenv.Load(".env", "app.env")
 
 	cfg = new(config)
 	err := envconfig.Process("", cfg)

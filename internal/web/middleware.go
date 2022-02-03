@@ -71,10 +71,11 @@ func (s *Service) monitoring(next http.Handler) http.Handler {
 
 		p := r.URL.Path
 		ignorable := []string{
-			"/robots.txt/",
+			"/robots.txt",
 			"/assets/",
 		}
 		for _, ignore := range ignorable {
+			fmt.Println(p, ignore, strings.Contains(p, ignore))
 			if strings.Contains(p, ignore) {
 				tx.Ignore()
 			}
