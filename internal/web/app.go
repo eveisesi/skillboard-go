@@ -10,6 +10,7 @@ import (
 	"github.com/gobuffalo/buffalo"
 	"github.com/gobuffalo/buffalo/render"
 	csrf "github.com/gobuffalo/mw-csrf"
+	"github.com/newrelic/go-agent/v3/newrelic"
 	"github.com/sirupsen/logrus"
 )
 
@@ -21,6 +22,7 @@ type Service struct {
 	user       user.API
 	logger     *logrus.Logger
 	renderer   *render.Engine
+	newrelic   *newrelic.Application
 }
 
 const keyAuthenticatedUser = "authenticatedUser"
@@ -37,6 +39,7 @@ func NewService(
 	user user.API,
 
 	renderer *render.Engine,
+	newrelic *newrelic.Application,
 ) *Service {
 
 	var baseDomain = "https://skillboard.local"
@@ -51,6 +54,7 @@ func NewService(
 		user:       user,
 		renderer:   renderer,
 		logger:     logger,
+		newrelic:   newrelic,
 	}
 
 	s.app = buffalo.New(buffalo.Options{
@@ -59,6 +63,9 @@ func NewService(
 		WorkerOff:   true,
 		Addr:        "0.0.0.0:54400",
 	})
+
+	mux := s.app.Muxer()
+	mux.Use(s.monitoring)
 
 	s.app.Use(s.setBaseDomain)
 	s.app.Use(s.setCurrentUser)

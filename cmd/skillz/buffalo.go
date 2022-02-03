@@ -82,6 +82,7 @@ func buffaloCmd(c *cli.Context) error {
 		auth,
 		user,
 		renderer(),
+		nr,
 	).Start()
 
 }

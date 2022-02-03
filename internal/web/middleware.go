@@ -3,10 +3,12 @@ package web
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/eveisesi/skillz/internal/user/v2"
 	"github.com/gobuffalo/buffalo"
 	"github.com/gofrs/uuid"
+	"github.com/newrelic/go-agent/v3/newrelic"
 )
 
 func (s *Service) setBaseDomain(next buffalo.Handler) buffalo.Handler {
@@ -49,6 +51,36 @@ func (s *Service) authorize(next buffalo.Handler) buffalo.Handler {
 		}
 		return next(c)
 	}
+}
+
+func (s *Service) monitoring(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tx := s.newrelic.StartTransaction(fmt.Sprintf("%s %s", r.Method, r.URL.Path))
+		tx.AddAttribute("environment", s.env.String())
+		if r.Referer() != "" {
+			tx.AddAttribute("referer", r.Referer())
+		}
+		defer tx.End()
+
+		tx.SetWebRequestHTTP(r)
+		w = tx.SetWebResponse(w)
+
+		r = newrelic.RequestWithTransactionContext(r, tx)
+
+		next.ServeHTTP(w, r)
+
+		p := r.URL.Path
+		ignorable := []string{
+			"/robots.txt/",
+			"/assets/",
+		}
+		for _, ignore := range ignorable {
+			if strings.Contains(p, ignore) {
+				tx.Ignore()
+			}
+		}
+
+	})
 }
 
 // func (s *Service) PageCacher(h http.Handler) http.Handler {
