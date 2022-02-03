@@ -7,3 +7,4 @@ cmd/skillz/token.go
 .config/backup.env
 .config/.key
 docker.env
+app.env

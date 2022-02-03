@@ -2,30 +2,30 @@ version: "3.7"
 
 services:
     server:
-        image: ghcr.io/eveisesi/skillboard/skillboard-api:0.4.2
+        image: ghcr.io/eveisesi/skillboard/skillboard-api:${APP_IMAGE_VERSION}
         restart: unless-stopped
         container_name: skillboard-server
-        env_file: .env
+        env_file: app.env
         command: /app/skillboard-api buffalo
         ports:
            - "54400:54400"
     processor:
-        image: ghcr.io/eveisesi/skillboard/skillboard-api:0.4.2
+        image: ghcr.io/eveisesi/skillboard/skillboard-api:${APP_IMAGE_VERSION}
         restart: unless-stopped
         container_name: skillboard-processor
-        env_file: .env
+        env_file: app.env
         command: /app/skillboard-api processor
     cron:
-        image: ghcr.io/eveisesi/skillboard/skillboard-api:0.4.2
+        image: ghcr.io/eveisesi/skillboard/skillboard-api:${APP_IMAGE_VERSION}
         restart: unless-stopped
         container_name: skillboard-cron
-        env_file: .env
+        env_file: app.env
         command: /app/skillboard-api cron
     redis:
         image: redis:6.2.5
         restart: unless-stopped
         container_name: skillboard-redis
-        env_file: .env
+        env_file: app.env
         ports:
             - "54410:6379"
         command: >
@@ -38,7 +38,7 @@ services:
         image: mysql:5.7
         restart: unless-stopped
         container_name: skillboard-mysql
-        env_file: .env
+        env_file: app.env
         ports:
             - "54420:3306"
         volumes:
