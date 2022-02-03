@@ -75,7 +75,6 @@ func (s *Service) monitoring(next http.Handler) http.Handler {
 			"/assets/",
 		}
 		for _, ignore := range ignorable {
-			fmt.Println(p, ignore, strings.Contains(p, ignore))
 			if strings.Contains(p, ignore) {
 				tx.Ignore()
 			}
