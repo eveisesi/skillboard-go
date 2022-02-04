@@ -132,7 +132,7 @@ func (s *Service) User(ctx context.Context, id uuid.UUID, rels ...UserRel) (*ski
 	}
 
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, errors.Wrap(err, "not user found for provided id")
+		return nil, ErrUserNotFound
 	}
 
 	user.Settings, err = s.UserSettings(ctx, id)
@@ -141,7 +141,7 @@ func (s *Service) User(ctx context.Context, id uuid.UUID, rels ...UserRel) (*ski
 	}
 
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, errors.Wrap(err, "user has no settings configured")
+		return nil, ErrUserNotFound
 	}
 
 	entry := s.logger.
