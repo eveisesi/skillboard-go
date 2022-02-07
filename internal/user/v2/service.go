@@ -29,14 +29,15 @@ import (
 
 type API interface {
 	Login(ctx context.Context, code, state string) (*skillz.User, error)
-	LoadUserAll(ctx context.Context, id uuid.UUID) (*skillz.User, error)
+	LoadUserAll(ctx context.Context, id string) (*skillz.User, error)
 
 	UserFromToken(ctx context.Context, token jwt.Token) (*skillz.User, error)
 	ValidateCurrentToken(ctx context.Context, user *skillz.User) error
 
-	User(ctx context.Context, id uuid.UUID, rels ...UserRel) (*skillz.User, error)
+	User(ctx context.Context, id string, rels ...UserRel) (*skillz.User, error)
 	RefreshUser(ctx context.Context, user *skillz.User) error
 	UserByCharacterID(ctx context.Context, characterID uint64) (*skillz.User, error)
+	UserByUUID(ctx context.Context, id uuid.UUID) (*skillz.User, error)
 	SearchUsers(ctx context.Context, q string) ([]*skillz.UserSearchResult, error)
 	CreateUser(ctx context.Context, user *skillz.User) error
 	DeleteUser(ctx context.Context, user *skillz.User) error
@@ -46,8 +47,8 @@ type API interface {
 	ResetUserCache(ctx context.Context, user *skillz.User) error
 	ProcessUpdatableUsers(ctx context.Context) error
 
-	UserSettings(ctx context.Context, id uuid.UUID) (*skillz.UserSettings, error)
-	CreateUserSettings(ctx context.Context, userID uuid.UUID, settings *skillz.UserSettings) error
+	UserSettings(ctx context.Context, id string) (*skillz.UserSettings, error)
+	CreateUserSettings(ctx context.Context, userID string, settings *skillz.UserSettings) error
 }
 
 type Service struct {
@@ -121,7 +122,7 @@ const (
 	UserSkillMetaRel
 )
 
-func (s *Service) User(ctx context.Context, id uuid.UUID, rels ...UserRel) (*skillz.User, error) {
+func (s *Service) User(ctx context.Context, id string, rels ...UserRel) (*skillz.User, error) {
 
 	var mx = new(sync.Mutex)
 	var wg = new(sync.WaitGroup)
@@ -225,7 +226,7 @@ func (s *Service) Recent(ctx context.Context) ([]*skillz.User, []*skillz.User, e
 
 var ErrUserNotFound = errors.New("user does not exist")
 
-func (s *Service) LoadUserAll(ctx context.Context, id uuid.UUID) (*skillz.User, error) {
+func (s *Service) LoadUserAll(ctx context.Context, id string) (*skillz.User, error) {
 
 	var mx = new(sync.Mutex)
 	var wg = new(sync.WaitGroup)
@@ -386,7 +387,7 @@ func (s *Service) Login(ctx context.Context, code, state string) (*skillz.User, 
 		return nil, errors.Wrap(err, "failed to remove auth attempt from cache")
 	}
 
-	err = s.redis.ZAdd(ctx, internal.UpdateQueue, &redis.Z{Score: float64(time.Now().Unix()), Member: user.ID.String()}).Err()
+	err = s.redis.ZAdd(ctx, internal.UpdateQueue, &redis.Z{Score: float64(time.Now().Unix()), Member: user.ID}).Err()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to push user id to processing queue")
 	}
@@ -420,7 +421,7 @@ func (s *Service) Login(ctx context.Context, code, state string) (*skillz.User, 
 
 func (s *Service) RefreshUser(ctx context.Context, user *skillz.User) error {
 
-	err := s.redis.ZAdd(ctx, internal.UpdateQueue, &redis.Z{Score: float64(time.Now().Unix()), Member: user.ID.String()}).Err()
+	err := s.redis.ZAdd(ctx, internal.UpdateQueue, &redis.Z{Score: float64(time.Now().Unix()), Member: user.ID}).Err()
 	if err != nil {
 		return errors.Wrap(err, "failed to push user id to processing queue")
 	}
@@ -431,33 +432,33 @@ func (s *Service) RefreshUser(ctx context.Context, user *skillz.User) error {
 
 func (s *Service) UserFromToken(ctx context.Context, token jwt.Token) (*skillz.User, error) {
 
-	var user *skillz.User
-	var err error
+	subject := token.Subject()
+	if subject == "" {
+		return nil, errors.New("token subject is empty, expected parsable value")
+	}
 
-	switch token.Issuer() {
-	case "login.eveonline.com":
-		subject := token.Subject()
-		if subject == "" {
-			return nil, errors.New("token subject is empty, expected parsable value")
+	characterID, err := memberIDFromSubject(subject)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse character id from token subject")
+	}
+
+	claims := token.PrivateClaims()
+	if _, ok := claims["owner"]; !ok {
+		return nil, errors.New("invalid token, owner claim is missing")
+	}
+
+	ownerHash := claims["owner"].(string)
+
+	userID := hashedUserID(ownerHash, strconv.FormatUint(characterID, 10))
+
+	user, err := s.UserRepository.UserByCharacterID(ctx, characterID)
+	if err != nil && errors.Is(err, sql.ErrNoRows) {
+		user = &skillz.User{
+			ID:          userID,
+			CharacterID: characterID,
+			IsNew:       true,
 		}
-
-		characterID, ierr := memberIDFromSubject(subject)
-		if ierr != nil {
-			return nil, errors.Wrap(err, "failed to parse character id from token subject")
-		}
-
-		user, err = s.UserRepository.UserByCharacterID(ctx, characterID)
-		if err != nil && errors.Is(err, sql.ErrNoRows) {
-			user = &skillz.User{
-				ID:          uuid.Must(uuid.NewV4()),
-				CharacterID: characterID,
-				IsNew:       true,
-			}
-			err = nil
-		}
-
-	default:
-		return nil, errors.Errorf("unsupported token issuer")
+		err = nil
 	}
 
 	if err != nil {
@@ -482,6 +483,12 @@ func (s *Service) UserFromToken(ctx context.Context, token jwt.Token) (*skillz.U
 	}
 
 	return user, nil
+
+}
+
+func hashedUserID(ownerHash, characterID string) string {
+	s := []string{ownerHash, characterID}
+	return fmt.Sprintf("%x", sha1.Sum([]byte(strings.Join(s, ":"))))
 
 }
 
@@ -523,7 +530,7 @@ func (s *Service) ProcessUpdatableUsers(ctx context.Context) error {
 	s.logger.WithField("user_count", len(users)).Info("updatable user count")
 
 	for _, user := range users {
-		err = s.redis.ZAdd(ctx, internal.UpdateQueue, &redis.Z{Score: float64(time.Now().Unix()), Member: user.ID.String()}).Err()
+		err = s.redis.ZAdd(ctx, internal.UpdateQueue, &redis.Z{Score: float64(time.Now().Unix()), Member: user.ID}).Err()
 		if err != nil {
 			return errors.Wrap(err, "failed to push user id to processing queue")
 		}
@@ -542,7 +549,7 @@ const (
 	PermissionHideShips
 )
 
-func (s *Service) UserSettings(ctx context.Context, id uuid.UUID) (*skillz.UserSettings, error) {
+func (s *Service) UserSettings(ctx context.Context, id string) (*skillz.UserSettings, error) {
 
 	settings, err := s.cache.UserSettings(ctx, id)
 	if err != nil {
@@ -562,10 +569,10 @@ func (s *Service) UserSettings(ctx context.Context, id uuid.UUID) (*skillz.UserS
 		return nil, nil
 	}
 
-	defer func(ctx context.Context, id uuid.UUID, settings *skillz.UserSettings) {
+	defer func(ctx context.Context, id string, settings *skillz.UserSettings) {
 		err = s.cache.SetUserSettings(ctx, id, settings, time.Hour)
 		if err != nil {
-			s.logger.WithError(err).WithField("user_id", id.String()).Error("failed to cache user settings")
+			s.logger.WithError(err).WithField("user_id", id).Error("failed to cache user settings")
 		}
 
 	}(context.Background(), id, settings)
@@ -574,7 +581,7 @@ func (s *Service) UserSettings(ctx context.Context, id uuid.UUID) (*skillz.UserS
 
 }
 
-func (s *Service) CreateUserSettings(ctx context.Context, id uuid.UUID, settings *skillz.UserSettings) error {
+func (s *Service) CreateUserSettings(ctx context.Context, id string, settings *skillz.UserSettings) error {
 
 	settings.UserID = id
 	if settings.VisibilityToken == "" {
@@ -589,7 +596,7 @@ func (s *Service) CreateUserSettings(ctx context.Context, id uuid.UUID, settings
 	defer func() {
 		err = s.cache.SetUserSettings(ctx, settings.UserID, settings, time.Hour)
 		if err != nil {
-			s.logger.WithError(err).WithField("user_id", settings.UserID.String()).Error("failed to cache user settings")
+			s.logger.WithError(err).WithField("user_id", settings.UserID).Error("failed to cache user settings")
 		}
 	}()
 

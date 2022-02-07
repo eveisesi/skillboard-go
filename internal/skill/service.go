@@ -266,7 +266,7 @@ func (s *Service) updateSkills(ctx context.Context, user *skillz.User) error {
 
 	s.logger.WithFields(logrus.Fields{
 		"service": "skill",
-		"userID":  user.ID.String(),
+		"userID":  user.ID,
 	}).Info("updating skills")
 
 	etagID, etag, err := s.esi.Etag(ctx, esi.GetCharacterSkills, &esi.Params{CharacterID: null.Uint64From(user.CharacterID)})
@@ -333,7 +333,7 @@ func (s *Service) updateAttributes(ctx context.Context, user *skillz.User) error
 
 	s.logger.WithFields(logrus.Fields{
 		"service": "skill",
-		"userID":  user.ID.String(),
+		"userID":  user.ID,
 	}).Info("updating attributes")
 
 	etagID, etag, err := s.esi.Etag(ctx, esi.GetCharacterAttributes, &esi.Params{CharacterID: null.Uint64From(user.CharacterID)})
@@ -443,7 +443,7 @@ func (s *Service) updateSkillQueue(ctx context.Context, user *skillz.User) error
 
 	s.logger.WithFields(logrus.Fields{
 		"service": "skill",
-		"userID":  user.ID.String(),
+		"userID":  user.ID,
 	}).Info("updating skill queue")
 
 	etagID, etag, err := s.esi.Etag(ctx, esi.GetCharacterSkillQueue, &esi.Params{CharacterID: null.Uint64From(user.CharacterID)})
@@ -487,7 +487,7 @@ func (s *Service) processFlyableShips(ctx context.Context, user *skillz.User) er
 
 	s.logger.WithFields(logrus.Fields{
 		"service": "skill",
-		"userID":  user.ID.String(),
+		"userID":  user.ID,
 	}).Info("updating flyable ships")
 
 	err := s.skills.DeleteCharacterFlyableShips(ctx, user.CharacterID)

@@ -8,13 +8,12 @@ import (
 
 	"github.com/eveisesi/skillz"
 	"github.com/go-redis/redis/v8"
-	"github.com/gofrs/uuid"
 	"github.com/pkg/errors"
 )
 
 type UserAPI interface {
-	UserSettings(ctx context.Context, id uuid.UUID) (*skillz.UserSettings, error)
-	SetUserSettings(ctx context.Context, id uuid.UUID, settings *skillz.UserSettings, expires time.Duration) error
+	UserSettings(ctx context.Context, id string) (*skillz.UserSettings, error)
+	SetUserSettings(ctx context.Context, id string, settings *skillz.UserSettings, expires time.Duration) error
 
 	SearchUsers(ctx context.Context, q string) ([]*skillz.UserSearchResult, error)
 	SetSearchUsersResults(ctx context.Context, q string, users []*skillz.UserSearchResult, expires time.Duration) error
@@ -199,11 +198,11 @@ func (s *Service) BustNewUsersBySP(ctx context.Context) error {
 	return s.redis.Del(ctx, generateKey(usersNewBySPPrefix)).Err()
 }
 
-func (s *Service) UserSettings(ctx context.Context, id uuid.UUID) (*skillz.UserSettings, error) {
+func (s *Service) UserSettings(ctx context.Context, id string) (*skillz.UserSettings, error) {
 	if s.disabled {
 		return nil, nil
 	}
-	key := generateKey(userSettingsKeyPrefix, id.String())
+	key := generateKey(userSettingsKeyPrefix, id)
 	result, err := s.redis.Get(ctx, key).Bytes()
 	if err != nil && !errors.Is(err, redis.Nil) {
 		return nil, errors.Wrapf(err, errorFFormat, userAPI, "UserSettings", "failed to fetch results from cache")
@@ -219,11 +218,11 @@ func (s *Service) UserSettings(ctx context.Context, id uuid.UUID) (*skillz.UserS
 
 }
 
-func (s *Service) SetUserSettings(ctx context.Context, id uuid.UUID, settings *skillz.UserSettings, expires time.Duration) error {
+func (s *Service) SetUserSettings(ctx context.Context, id string, settings *skillz.UserSettings, expires time.Duration) error {
 	if s.disabled {
 		return nil
 	}
-	key := generateKey(userSettingsKeyPrefix, id.String())
+	key := generateKey(userSettingsKeyPrefix, id)
 	data, err := json.Marshal(settings)
 	if err != nil {
 		return errors.Wrapf(err, errorFFormat, userAPI, "SetType", "failed to encode structure as json")

@@ -109,7 +109,7 @@ func (s *Service) updateImplants(ctx context.Context, user *skillz.User) error {
 
 	s.logger.WithFields(logrus.Fields{
 		"service": "clone",
-		"userID":  user.ID.String(),
+		"userID":  user.ID,
 	}).Info("updating implants")
 
 	etagID, _, err := s.esi.Etag(ctx, esi.GetCharacterImplants, &esi.Params{CharacterID: null.Uint64From(user.CharacterID)})

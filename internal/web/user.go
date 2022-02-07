@@ -10,6 +10,7 @@ import (
 	"github.com/eveisesi/skillz/internal/user/v2"
 	"github.com/gertd/go-pluralize"
 	"github.com/gobuffalo/buffalo"
+	"github.com/gobuffalo/buffalo/render"
 	"github.com/gofrs/uuid"
 	"github.com/pkg/errors"
 	"golang.org/x/text/language"
@@ -54,10 +55,22 @@ var userSettingsPageTitle = func(name string) (string, string) {
 func (s *Service) userHandler(c buffalo.Context) error {
 	var ctx = c.Request().Context()
 
-	userID, err := uuid.FromString(c.Param("userID"))
-	if err != nil {
-		c.Flash().Add("danger", "invalid id supplied for userID")
-		return c.Redirect(http.StatusFound, "rootPath()")
+	userID := c.Param("userID")
+
+	userUUID, err := uuid.FromString(userID)
+	if err == nil {
+		user, err := s.user.UserByUUID(ctx, userUUID)
+		if err != nil {
+			if err != nil {
+				return c.Error(http.StatusInternalServerError, fmt.Errorf("unable to find user for valid uuid in database"))
+			}
+		}
+		data := render.Data{"userID": user.ID}
+		if c.Param("token") != "" {
+			data["token"] = c.Param("token")
+		}
+
+		return c.Redirect(http.StatusFound, "userPath()", data)
 	}
 
 	u, err := s.user.User(ctx, userID)
@@ -71,6 +84,7 @@ func (s *Service) userHandler(c buffalo.Context) error {
 	}
 
 	settings := u.Settings
+	spew.Dump(settings)
 	if settings != nil {
 		if settings.Visibility == skillz.VisibilityPrivate {
 			sessionUser := c.Data()[keyAuthenticatedUser]

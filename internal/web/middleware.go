@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/eveisesi/skillz/internal/user/v2"
 	"github.com/gobuffalo/buffalo"
-	"github.com/gofrs/uuid"
 	"github.com/newrelic/go-agent/v3/newrelic"
 )
 
@@ -21,9 +21,10 @@ func (s *Service) setBaseDomain(next buffalo.Handler) buffalo.Handler {
 func (s *Service) setCurrentUser(next buffalo.Handler) buffalo.Handler {
 	return func(c buffalo.Context) error {
 		if uuidInf := c.Session().Get(keyAuthenticatedUserID); uuidInf != nil {
-			userID, ok := uuidInf.(uuid.UUID)
+			userID, ok := uuidInf.(string)
 			if !ok {
-				c.Flash().Add("error", "unable to verify authenticated user session")
+				spew.Dump(uuidInf)
+				c.Flash().Add("danger", "unable to verify authenticated user session")
 				c.Session().Delete(keyAuthenticatedUserID)
 				return c.Redirect(http.StatusFound, "rootPath()")
 			}

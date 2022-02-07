@@ -8,7 +8,6 @@ import (
 	"github.com/eveisesi/skillz/internal"
 	"github.com/eveisesi/skillz/internal/user/v2"
 	"github.com/go-redis/redis/v8"
-	"github.com/gofrs/uuid"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -44,19 +43,13 @@ func (s *Service) Run() error {
 			return err
 		}
 
-		userIDStr, ok := result.Member.(string)
+		userID, ok := result.Member.(string)
 		if !ok {
 			s.logger.Errorf("unexpected value for member, expected string, got %T", result.Member)
 			continue
 		}
 
-		entry = entry.WithField("userIDStr", userIDStr)
-
-		userID, err := uuid.FromString(userIDStr)
-		if err != nil {
-			entry.WithError(err).Errorf("invalid uuid found on update queue")
-			continue
-		}
+		entry = entry.WithField("userID", userID)
 
 		_, err = s.redis.ZAdd(ctx, internal.UpdatingQueue, &result.Z).Result()
 		if err != nil {
@@ -79,7 +72,7 @@ func (s *Service) Run() error {
 
 }
 
-func (s *Service) processUser(ctx context.Context, userID uuid.UUID) error {
+func (s *Service) processUser(ctx context.Context, userID string) error {
 
 	user, err := s.user.User(ctx, userID)
 	if err != nil {

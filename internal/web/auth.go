@@ -33,7 +33,7 @@ func (s *Service) loginGetHandler(c buffalo.Context) error {
 
 		c.Session().Set(keyAuthenticatedUserID, user.ID)
 
-		return c.Redirect(http.StatusFound, "userPath()", render.Data{"userID": user.ID.String()})
+		return c.Redirect(http.StatusFound, "userPath()", render.Data{"userID": user.ID})
 
 	}
 

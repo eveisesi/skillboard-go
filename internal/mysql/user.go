@@ -19,6 +19,7 @@ type userRepository struct {
 
 const (
 	UserID                  = "id"
+	UserUUID                = "uuid"
 	UserAccessToken         = "access_token"
 	UserRefreshToken        = "refresh_token"
 	UserExpires             = "expires"
@@ -59,15 +60,16 @@ func NewUserRepository(db QueryExecContext) skillz.UserRepository {
 			table: TableUserSettings,
 			columns: []string{
 				SettingsUserID, SettingsVisibility,
-				SettingsHideQueue, SettingsHideFlyable,
-				SettingsHideSkills, SettingsHideAttributes, SettingsHideImplants,
+				SettingsVisibilityToken, SettingsHideQueue,
+				SettingsHideFlyable, SettingsHideSkills,
+				SettingsHideAttributes, SettingsHideImplants,
 				ColumnCreatedAt, ColumnUpdatedAt,
 			},
 		},
 	}
 }
 
-func (r *userRepository) User(ctx context.Context, id uuid.UUID) (*skillz.User, error) {
+func (r *userRepository) User(ctx context.Context, id string) (*skillz.User, error) {
 
 	query, args, err := sq.Select(r.users.columns...).
 		From(r.users.table).
@@ -98,6 +100,23 @@ func (r *userRepository) UserByCharacterID(ctx context.Context, characterID uint
 	var user = new(skillz.User)
 	err = r.db.GetContext(ctx, user, query, args...)
 	return user, errors.Wrapf(err, prefixFormat, userRepositoryIdentifier, "UserByCharacterID")
+
+}
+
+func (r *userRepository) UserByUUID(ctx context.Context, id uuid.UUID) (*skillz.User, error) {
+
+	query, args, err := sq.Select(r.users.columns...).
+		From(r.users.table).
+		Where(sq.Eq{UserUUID: id}).
+		Limit(1).
+		ToSql()
+	if err != nil {
+		return nil, errors.Wrapf(err, errorFFormat, userRepositoryIdentifier, "UserByUUID", "failed to generate sql")
+	}
+
+	var user = new(skillz.User)
+	err = r.db.GetContext(ctx, user, query, args...)
+	return user, errors.Wrapf(err, prefixFormat, userRepositoryIdentifier, "UserByUUID")
 
 }
 
@@ -232,7 +251,7 @@ func (r *userRepository) NewUsersBySP(ctx context.Context) ([]*skillz.User, erro
 
 }
 
-func (r *userRepository) UserSettings(ctx context.Context, id uuid.UUID) (*skillz.UserSettings, error) {
+func (r *userRepository) UserSettings(ctx context.Context, id string) (*skillz.UserSettings, error) {
 
 	query, args, err := sq.Select(r.settings.columns...).
 		From(r.settings.table).

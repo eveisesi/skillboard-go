@@ -14,17 +14,17 @@ type Service struct {
 }
 
 const (
-	allianceAPI    string = "AllianceAPI"
-	authAPI        string = "AuthAPI"
-	characterAPI   string = "CharacterAPI"
-	cloneAPI       string = "CloneAPI"
-	contactAPI     string = "ContactAPI"
+	allianceAPI  string = "AllianceAPI"
+	authAPI      string = "AuthAPI"
+	characterAPI string = "CharacterAPI"
+	cloneAPI     string = "CloneAPI"
+	// contactAPI     string = "ContactAPI"
 	corporationAPI string = "CorporationAPI"
 	etagAPI        string = "EtagAPI"
-	pageAPI        string = "PageAPI"
-	skillAPI       string = "SkillAPI"
-	universeAPI    string = "UniverseAPI"
-	userAPI        string = "UserAPI"
+	// pageAPI        string = "PageAPI"
+	skillAPI    string = "SkillAPI"
+	universeAPI string = "UniverseAPI"
+	userAPI     string = "UserAPI"
 )
 
 const (

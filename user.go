@@ -10,13 +10,14 @@ import (
 )
 
 type UserRepository interface {
-	User(ctx context.Context, id uuid.UUID) (*User, error)
+	User(ctx context.Context, id string) (*User, error)
+	UserByUUID(ctx context.Context, id uuid.UUID) (*User, error)
 	UserByCharacterID(ctx context.Context, characterID uint64) (*User, error)
 	SearchUsers(ctx context.Context, q string) ([]*User, error)
 	CreateUser(ctx context.Context, user *User) error
 	DeleteUser(ctx context.Context, user *User) error
 
-	UserSettings(ctx context.Context, id uuid.UUID) (*UserSettings, error)
+	UserSettings(ctx context.Context, id string) (*UserSettings, error)
 	CreateUserSettings(ctx context.Context, settings *UserSettings) error
 
 	UsersSortedByProcessedAtLimit(ctx context.Context) ([]*User, error)
@@ -30,7 +31,7 @@ type RecentUsers struct {
 }
 
 type User struct {
-	ID                uuid.UUID   `db:"id" json:"id"`
+	ID                string      `db:"id" json:"id"`
 	CharacterID       uint64      `db:"character_id,omitempty" json:"character_id"`
 	AccessToken       string      `db:"access_token" json:"-"`
 	RefreshToken      string      `db:"refresh_token" json:"-"`
@@ -100,7 +101,7 @@ func (v Visibility) Uint() uint {
 }
 
 type UserSettings struct {
-	UserID          uuid.UUID  `db:"user_id" json:"user_id" form:"-"`
+	UserID          string     `db:"user_id" json:"user_id" form:"-"`
 	Visibility      Visibility `db:"visibility" form:"visibility"`
 	VisibilityToken string     `db:"visibility_token"`
 	HideSkills      bool       `db:"hide_skills" form:"hide_skills"`
