@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/eveisesi/skillz"
 	"github.com/eveisesi/skillz/internal/user/v2"
 	"github.com/gertd/go-pluralize"
@@ -84,7 +83,6 @@ func (s *Service) userHandler(c buffalo.Context) error {
 	}
 
 	settings := u.Settings
-	spew.Dump(settings)
 	if settings != nil {
 		if settings.Visibility == skillz.VisibilityPrivate {
 			sessionUser := c.Data()[keyAuthenticatedUser]
@@ -210,8 +208,6 @@ func (s *Service) deleteUserSettingsHandler(c buffalo.Context) error {
 	var r = c.Request()
 	var ctx = r.Context()
 	var form = r.Form
-
-	spew.Dump(form)
 
 	if !form.Has("confirmed") {
 		return c.Redirect(http.StatusFound, "usersSettingsPath()")
