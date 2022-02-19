@@ -181,11 +181,9 @@ func (s *Service) Recent(ctx context.Context) ([]*skillz.User, []*skillz.User, e
 	var users []*skillz.User
 	var err error
 
-	if len(users) == 0 {
-		users, err = s.UserRepository.NewUsersBySP(ctx)
-		if err != nil {
-			return nil, nil, err
-		}
+	users, err = s.UserRepository.NewUsersBySP(ctx)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	var wg = new(sync.WaitGroup)
@@ -210,7 +208,16 @@ func (s *Service) Recent(ctx context.Context) ([]*skillz.User, []*skillz.User, e
 
 	wg.Wait()
 
-	highlighted := append(make([]*skillz.User, 0, len(users)), users...)
+	var populated = make([]*skillz.User, 0, len(users))
+	for _, user := range users {
+		if user.Character == nil {
+			continue
+		}
+
+		populated = append(populated, user)
+	}
+
+	highlighted := append(make([]*skillz.User, 0, len(populated)), populated...)
 
 	sort.Slice(highlighted, func(i, j int) bool {
 		return highlighted[i].Meta.TotalSP > highlighted[j].Meta.TotalSP
@@ -220,7 +227,7 @@ func (s *Service) Recent(ctx context.Context) ([]*skillz.User, []*skillz.User, e
 		highlighted = highlighted[0:6]
 	}
 
-	return highlighted, users, nil
+	return highlighted, populated, nil
 
 }
 
