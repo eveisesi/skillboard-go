@@ -259,22 +259,33 @@ func (s *Service) LoadUserAll(ctx context.Context, id string) (*skillz.User, err
 	go s.LoadCharacter(ctx, user, entry, mx, wg)
 
 	wg.Add(1)
-	go s.LoadAttributes(ctx, user, entry, mx, wg)
-
-	wg.Add(1)
-	go s.LoadSkillGrouped(ctx, user, entry, mx, wg)
-
-	wg.Add(1)
-	go s.LoadFlyable(ctx, user, entry, mx, wg)
-
-	wg.Add(1)
-	go s.LoadSkillQueue(ctx, user, entry, mx, wg)
-
-	wg.Add(1)
 	go s.LoadSkillMeta(ctx, user, entry, mx, wg)
 
-	wg.Add(1)
-	go s.LoadImplants(ctx, user, entry, mx, wg)
+	if !user.Settings.HideSkills {
+		wg.Add(1)
+		go s.LoadSkillGrouped(ctx, user, entry, mx, wg)
+	}
+
+	if !user.Settings.HideFlyable {
+		wg.Add(1)
+		go s.LoadFlyable(ctx, user, entry, mx, wg)
+	}
+
+	if !user.Settings.HideQueue {
+		wg.Add(1)
+		go s.LoadSkillQueue(ctx, user, entry, mx, wg)
+	}
+
+	if !user.Settings.HideAttributes {
+		wg.Add(1)
+		go s.LoadAttributes(ctx, user, entry, mx, wg)
+	}
+
+	if !user.Settings.HideImplants {
+		wg.Add(1)
+		go s.LoadImplants(ctx, user, entry, mx, wg)
+
+	}
 
 	wg.Wait()
 

@@ -58,7 +58,7 @@ type User struct {
 	Attributes    *CharacterAttributes        `json:"attributes,omitempty"`
 	Flyable       []*ShipGroup                `json:"flyable,omitempty"`
 	Meta          *CharacterSkillMeta         `json:"meta,omitempty"`
-	Implants      []*CharacterImplant
+	Implants      []*CharacterImplant         `json:"implants,omitempty"`
 }
 
 func (i *User) ApplyToken(t *oauth2.Token) {
@@ -102,13 +102,13 @@ func (v Visibility) Uint() uint {
 
 type UserSettings struct {
 	UserID          string     `db:"user_id" json:"user_id" form:"-"`
-	Visibility      Visibility `db:"visibility" form:"visibility"`
-	VisibilityToken string     `db:"visibility_token"`
-	HideSkills      bool       `db:"hide_skills" form:"hide_skills"`
-	HideQueue       bool       `db:"hide_queue" form:"hide_queue"`
-	HideAttributes  bool       `db:"hide_attributes" form:"hide_attributes"`
-	HideFlyable     bool       `db:"hide_flyable" form:"hide_flyable"`
-	HideImplants    bool       `db:"hide_implants" form:"hide_settings"`
+	Visibility      Visibility `db:"visibility" form:"visibility" json:"visibility"`
+	VisibilityToken string     `db:"visibility_token" json:"visibility_token"`
+	HideSkills      bool       `db:"hide_skills" form:"hide_skills" json:"hide_skills"`
+	HideQueue       bool       `db:"hide_queue" form:"hide_queue" json:"hide_queue"`
+	HideAttributes  bool       `db:"hide_attributes" form:"hide_attributes" json:"hide_attributes"`
+	HideFlyable     bool       `db:"hide_flyable" form:"hide_flyable" json:"hide_flyable"`
+	HideImplants    bool       `db:"hide_implants" form:"hide_settings" json:"hide_settings"`
 	CreatedAt       time.Time  `db:"created_at" json:"-" form:"-"`
 	UpdatedAt       time.Time  `db:"updated_at" json:"-" form:"-"`
 }

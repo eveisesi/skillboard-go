@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -142,6 +143,13 @@ func (s *Service) userHandler(c buffalo.Context) error {
 	}
 
 	c.Set("user", u)
+
+	jsonUser, err := json.Marshal(u)
+	if err != nil {
+		s.flashDanger(c, "Failed to encoding user data to json")
+		return c.Redirect(http.StatusFound, "rootPath()")
+	}
+	c.Set("jsonUser", string(jsonUser))
 
 	return c.Render(http.StatusOK, s.renderer.HTML("user/index.plush.html", "user/layout.plush.html"))
 }

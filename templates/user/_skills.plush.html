@@ -1,88 +1,14 @@
 <div class="container">
     <div class="row">
         <div class="col-lg-4">
+            <h5 class="header mt-2">Skill Levels</h5>
+            <div id="skillLevelListGroup"></div>
             <h5 class="header mt-2">Skill Groups (Trained / SP)</h5>
-            <ul class="list-group">
-                <%= for (group) in user.SkillsGrouped { %>
-                <li class="list-group-item text-white d-flex w-100 justify-content-between">
-                    <span>
-                        <%= group.Name %>
-                    </span>
-                    <%= if (group.SkillGroup) { %>
-                    <span>
-                        (<%=hasSkillCount(group.SkillGroup)%> / <%=formatNum(group.TotalGroupSP)%>)
-                    </span>
-                    <% } %>
-                </li>
-                <% } %>
-            </ul>
+            <div id="skillGroupListGroup"></div>
         </div>
         <div class="col-lg-8">
             <h5 class="header mt-2">Skills</h5>
-            <%= for (group) in user.SkillsGrouped { %>
-            <div class="card mb-2">
-                <div class="card-header">
-                    <h5 class="mb-0 d-flex w-100 justify-content-between">
-                        <span>
-                            <%= group.Name %> Skills
-                        </span>
-                        <%= if (group.SkillGroup) { %>
-                        <span>
-                            (<%=hasSkillCount(group.SkillGroup)%> / <%=formatNum(group.TotalGroupSP)%>)
-                        </span>
-                        <% } %>
-
-                    </h5>
-                </div>
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item text-white disabled">
-                        <%= levelVSkillCount(group.SkillGroup) %> Level V Skills injected for a total of <%= formatNum(levelVSPTotal(group.SkillGroup)) %> Skill Points
-                    </li>
-                    <%= for (type) in group.Skills {%>
-                    <li class="list-group-item text-white">
-                        <div class="d-flex w-100 justify-content-between">
-                            <div>
-                                <%= if (type.Skill) { %>
-                                <%= type.Name %>
-                                <% } else { %>
-                                <span class="text-muted"><strike><%= type.Name %></strike></span>
-                                <% } %><br>
-                                <span class="text-muted">
-                                    <% let r = 0 %>
-                                    <%= if (type.Rank) { %>
-                                    <% r = type.Rank.Value %>
-                                    <% } %>
-                                    <% let s = 0 %>
-                                    <%= if (type.Skill) { %>
-                                    <% s = type.Skill.SkillpointsInSkill %>
-                                    <% } %>
-                                    Rank: <%= r %> | Total SP: <%= formatNum(s) %> of <%= formatNum(possibleSP(r)) %>
-                                </span>
-                            </div>
-                            <div>
-                                <% let l = 0 %>
-                                <%= if (type.Skill) { %>
-                                <% l = int(type.Skill.TrainedSkillLevel) %>
-                                <% } %>
-                                <%= for (v) in [1,2,3,4,5] { %>
-                                <%= if (v > l) { %>
-                                <%= break %>
-                                <% } %>
-                                <i class="fas fa-square"></i>
-                                <% } %>
-                                <%= for (x) in [1,2,3,4,5] { %>
-                                <%= if (x <= l) { %>
-                                <%= continue %>
-                                <% } %>
-                                <i class="far fa-square"></i>
-                                <% } %>
-                            </div>
-                        </div>
-                    </li>
-                    <% } %>
-                </ul>
-            </div>
-            <% } %>
+            <div id="skillGroupDetails"></div>
         </div>
     </div>
 </div>

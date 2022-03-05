@@ -57,15 +57,15 @@ type CharacterAttributes struct {
 }
 
 type CharacterSkillQueueSummary struct {
-	Summary []*QueueGroupSummary
-	Queue   []*CharacterSkillQueue
+	Summary []*QueueGroupSummary   `json:"summary"`
+	Queue   []*CharacterSkillQueue `json:"queue"`
 }
 
 type QueueGroupSummary struct {
-	Group       *Group
-	Count       uint
-	Skillpoints uint
-	Duration    time.Duration
+	Group       *Group        `json:"group"`
+	Count       uint          `json:"count"`
+	Skillpoints uint          `json:"skillpoints"`
+	Duration    time.Duration `json:"duration"`
 }
 
 type CharacterSkillQueue struct {
