@@ -26,7 +26,7 @@ func NewQueryLogger(execer QueryExecContext, logger *logrus.Logger) *queryLogger
 }
 
 func (s *queryLogger) SelectContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
-	s.logger.WithField("service", "mysql").Debug(query)
+	s.logger.WithField("service", "mysql").WithField("args", args).Debug(query)
 	return s.queryExecr.SelectContext(ctx, dest, query, args...)
 }
 
