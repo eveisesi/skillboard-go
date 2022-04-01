@@ -31,7 +31,7 @@ func (s *queryLogger) SelectContext(ctx context.Context, dest interface{}, query
 }
 
 func (s *queryLogger) GetContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
-	s.logger.WithField("service", "mysql").Debug(query)
+	s.logger.WithField("service", "mysql").WithField("args", args).Debug(query)
 	return s.queryExecr.GetContext(ctx, dest, query, args...)
 }
 
