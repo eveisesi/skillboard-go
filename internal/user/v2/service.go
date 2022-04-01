@@ -374,6 +374,10 @@ func (s *Service) Login(ctx context.Context, code, state string) (*skillz.User, 
 	if user.OwnerHash == "" {
 		user.OwnerHash = ownerHash
 	} else if user.OwnerHash != ownerHash {
+		s.logger.WithFields(logrus.Fields{
+			"claims":       claims,
+			"character_id": user.CharacterID,
+		}).Error("character owner hash mismatch. please contact support")
 		return nil, errors.New("character owner hash mismatch. please contact support")
 	}
 
