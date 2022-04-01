@@ -378,6 +378,7 @@ func (s *Service) Login(ctx context.Context, code, state string) (*skillz.User, 
 			"claims":        claims,
 			"character_id":  user.CharacterID,
 			"userOwnerHash": user.OwnerHash,
+			"token":         bearer.AccessToken,
 		}).Error("character owner hash mismatch. please contact support")
 		return nil, errors.New("character owner hash mismatch. please contact support")
 	}
