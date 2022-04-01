@@ -476,11 +476,13 @@ func (s *Service) UserFromToken(ctx context.Context, token jwt.Token) (*skillz.U
 
 	user, err := s.UserRepository.UserByCharacterID(ctx, characterID)
 	if err != nil && errors.Is(err, sql.ErrNoRows) {
+
 		user = &skillz.User{
 			ID:          userID,
 			CharacterID: characterID,
 			IsNew:       true,
 		}
+		s.logger.WithField("user", user).Info("new user")
 		err = nil
 	}
 
