@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/eveisesi/skillz"
 	"github.com/eveisesi/skillz/internal"
 	"github.com/eveisesi/skillz/internal/alliance"
@@ -484,6 +485,7 @@ func (s *Service) UserFromToken(ctx context.Context, token jwt.Token) (*skillz.U
 	entry.Info("UserFromToken params")
 
 	user, err := s.UserRepository.UserByCharacterID(ctx, characterID)
+	spew.Dump(err, user)
 	if err != nil && errors.Is(err, sql.ErrNoRows) {
 		user = &skillz.User{
 			ID:          userID,
