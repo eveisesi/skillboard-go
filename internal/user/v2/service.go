@@ -379,7 +379,6 @@ func (s *Service) Login(ctx context.Context, code, state string) (*skillz.User, 
 			"claims":        claims,
 			"character_id":  user.CharacterID,
 			"userOwnerHash": user.OwnerHash,
-			"token":         bearer.AccessToken,
 		}).Error("character owner hash mismatch. please contact support")
 		return nil, errors.New("character owner hash mismatch. please contact support")
 	}
@@ -476,14 +475,6 @@ func (s *Service) UserFromToken(ctx context.Context, token jwt.Token) (*skillz.U
 
 	userID := hashedUserID(ownerHash, strconv.FormatUint(characterID, 10))
 
-	entry := s.logger.WithFields(logrus.Fields{
-		"service":     "user.UserFromToken",
-		"ownerHash":   ownerHash,
-		"characterID": characterID,
-		"userID":      userID,
-	})
-	entry.Info("UserFromToken params")
-
 	user, err := s.UserRepository.UserByCharacterID(ctx, characterID)
 	spew.Dump(err, user)
 	if err != nil && errors.Is(err, sql.ErrNoRows) {
@@ -492,15 +483,12 @@ func (s *Service) UserFromToken(ctx context.Context, token jwt.Token) (*skillz.U
 			CharacterID: characterID,
 			IsNew:       true,
 		}
-		s.logger.WithField("user", user).Info("new user")
 		err = nil
 	}
 
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to locate user for this token in our database")
 	}
-
-	entry.WithField("user", user).Info("userByCharacterID")
 
 	character, err := s.character.Character(ctx, user.CharacterID)
 	if err != nil {
