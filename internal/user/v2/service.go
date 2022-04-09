@@ -371,17 +371,6 @@ func (s *Service) Login(ctx context.Context, code, state string) (*skillz.User, 
 
 	ownerHash := claims["owner"].(string)
 
-	if user.OwnerHash == "" {
-		user.OwnerHash = ownerHash
-	} else if user.OwnerHash != ownerHash {
-		s.logger.WithFields(logrus.Fields{
-			"claims":        claims,
-			"character_id":  user.CharacterID,
-			"userOwnerHash": user.OwnerHash,
-		}).Error("character owner hash mismatch. please contact support")
-		return nil, errors.New("character owner hash mismatch. please contact support")
-	}
-
 	scp := make([]skillz.Scope, 0)
 	switch a := claims["scp"].(type) {
 	case []interface{}:
@@ -394,6 +383,7 @@ func (s *Service) Login(ctx context.Context, code, state string) (*skillz.User, 
 		return nil, errors.New("invalid type for scp claim in token.")
 	}
 
+	user.OwnerHash = ownerHash
 	user.Scopes = scp
 	user.AccessToken = bearer.AccessToken
 	user.RefreshToken = bearer.RefreshToken
