@@ -398,7 +398,7 @@ func (s *Service) TypeGroupsHydrated(ctx context.Context, categoryID uint) ([]*s
 		groupIDs = append(groupIDs, group.ID)
 	}
 
-	skillTypes, err := s.universe.Types(ctx, skillz.NewInOperator(mysql.TypesGroupID, groupIDs))
+	skillTypes, err := s.universe.Types(ctx, skillz.NewInOperator(mysql.TypesGroupID, groupIDs), skillz.NewEqualOperator(mysql.TypesPublished, 1))
 	if err != nil {
 		return nil, err
 	}
