@@ -37,7 +37,6 @@ func processorCommand(c *cli.Context) error {
 	allianceRepo := mysql.NewAllianceRepository(mysqlClient)
 	corporationRepo := mysql.NewCorporationRepository(mysqlClient)
 	characterRepo := mysql.NewCharacterRepository(mysqlClient)
-	// contactRepo := mysql.NewContactRepository(mysqlClient)
 	cloneRepo := mysql.NewCloneRepository(mysqlClient)
 	skillsRepo := mysql.NewSkillRepository(mysqlClient)
 	userRepo := mysql.NewUserRepository(mysqlClient)

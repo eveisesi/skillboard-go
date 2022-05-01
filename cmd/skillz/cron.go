@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/eveisesi/skillz"
 	"github.com/eveisesi/skillz/internal/alliance"
@@ -16,6 +17,7 @@ import (
 	"github.com/eveisesi/skillz/internal/esi"
 	"github.com/eveisesi/skillz/internal/etag"
 	"github.com/eveisesi/skillz/internal/mysql"
+	"github.com/eveisesi/skillz/internal/processor"
 	"github.com/eveisesi/skillz/internal/skill"
 	"github.com/eveisesi/skillz/internal/universe"
 	"github.com/eveisesi/skillz/internal/user/v2"
@@ -56,21 +58,37 @@ func cronCommand(_ *cli.Context) error {
 	alliance := alliance.New(logger, cache, esi, etag, allianceRepo)
 	universe := universe.New(logger, cache, esi, universeRepo)
 	clone := clone.New(logger, cache, etag, esi, universe, cloneRepo)
-	skill := skill.New(logger, cache, esi, universe, skillsRepo)
-	user := user.New(redisClient, logger, cache, auth, alliance, character, corporation, skill, clone, userRepo)
+	skills := skill.New(logger, cache, esi, universe, skillsRepo)
+	user := user.New(redisClient, logger, cache, auth, alliance, character, corporation, skills, clone, userRepo)
 
 	cron := cron.New()
 
-	entryID, err := cron.AddFunc("@every 3h", func() {
+	processor := processor.New(logger, redisClient, nr, user, skillz.ScopeProcessors{
+		clone,
+		skills,
+	})
+
+	entryID, err := cron.AddFunc("0 */3 * * *", func() {
 
 		var ctx = context.Background()
 
 		logger.Info("executing process updateable users cron")
 
-		err := user.ProcessUpdatableUsers(ctx)
+		users, err := user.ProcessUpdatableUsers(ctx)
 		if err != nil {
 			logger.WithError(err).Fatal("failed to update processable users")
 		}
+
+		logger.WithField("count", len(users)).Info("updateable users")
+
+		for _, user := range users {
+			err = processor.ProcessUser(ctx, user)
+			if err != nil {
+				logger.WithError(err).Error("failed to process user id")
+				time.Sleep(time.Second * 3)
+			}
+		}
+
 	})
 	if err != nil {
 		logger.WithError(err).Error("failed to add user update job to cron scheduler")

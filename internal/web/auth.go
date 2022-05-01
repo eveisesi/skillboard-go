@@ -31,6 +31,16 @@ func (s *Service) loginGetHandler(c buffalo.Context) error {
 			return errors.NewBuffaloHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to query user from attempt"))
 		}
 
+		if user.IsNew {
+			s.logger.WithField("user", user.ID).Info("processing new user")
+			err = s.processor.ProcessUser(ctx, user)
+			if err != nil {
+				s.logger.WithError(err).WithField("user", user.ID).Error("failed to process user")
+				s.flashDanger(c, "Failed to fetch user data. Please try again. If error persists, join us on Discord")
+				return c.Render(http.StatusOK, s.renderer.HTML("login/index.plush.html"))
+			}
+		}
+
 		c.Session().Set(keyAuthenticatedUserID, user.ID)
 
 		return c.Redirect(http.StatusFound, "userPath()", render.Data{"userID": user.ID})

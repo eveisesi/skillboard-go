@@ -11,6 +11,7 @@ import (
 	"github.com/eveisesi/skillz/internal/esi"
 	"github.com/eveisesi/skillz/internal/etag"
 	"github.com/eveisesi/skillz/internal/mysql"
+	"github.com/eveisesi/skillz/internal/processor"
 	"github.com/eveisesi/skillz/internal/skill"
 	"github.com/eveisesi/skillz/internal/universe"
 	"github.com/eveisesi/skillz/internal/user/v2"
@@ -74,6 +75,10 @@ func buffaloCmd(c *cli.Context) error {
 	)
 
 	user := user.New(redisClient, logger, cache, auth, alliance, character, corporation, skills, clone, userRepo)
+	processor := processor.New(logger, redisClient, nr, user, skillz.ScopeProcessors{
+		clone,
+		skills,
+	})
 
 	return web.NewService(
 		env,
@@ -81,6 +86,7 @@ func buffaloCmd(c *cli.Context) error {
 		logger,
 		auth,
 		user,
+		processor,
 		renderer(),
 		nr,
 	).Start()

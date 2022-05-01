@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html>
 
-    <head>
-        <title><%= meta.Title %></title>
-        <%= partial("header.html") %>
+<head>
+    <title>
+        <%= meta.Title %>
+    </title>
+    <%= partial("header.html") %>
         <!-- Primary Meta Tags -->
 
         <meta name="title" content="title">
@@ -14,35 +16,39 @@
         <meta property="og:url" content="<%= baseDomain %><%= userPath({userID: user.ID }) %>">
         <meta property="og:title" content="<%= meta.Title %>">
         <meta property="og:description" content="<%= meta.Description %>">
-        <meta property="og:image" content="https://images.evetech.net/characters/<%= user.CharacterID %>/portrait?size=256">
+        <meta property="og:image"
+            content="https://images.evetech.net/characters/<%= user.CharacterID %>/portrait?size=256">
 
         <!-- Twitter -->
         <meta property="twitter:card" content="summary_large_image">
         <meta property="twitter:url" content="<%= baseDomain %><%= userPath({userID: user.ID }) %>">
         <meta property="twitter:title" content="<%= meta.Title %>">
         <meta property="twitter:description" content="<%= meta.Description %>">
-        <meta property="twitter:image" content="https://images.evetech.net/characters/<%= user.CharacterID %>/portrait?size=256">
+        <meta property="twitter:image"
+            content="https://images.evetech.net/characters/<%= user.CharacterID %>/portrait?size=256">
 
         <%= stylesheetTag("application.css") %>
-    </head>
+</head>
 
-    <body>
-        <%= partial("navbar.html") %>
+<body>
+    <%= partial("navbar.html") %>
         <%= partial("flash.html") %>
-        <%= yield %>
-        <%= partial("footer.html") %>
+            <%= yield %>
+                <%= partial("footer.html") %>
 
-        <script>
-            var user = JSON.parse(`<%=raw(jsonUser)%>`)
-        </script>
+                    <script>
+                        var skillzGrouped = JSON.parse(`<%=raw(jsonSkillGrouped)%>`)
+                        console.log(skillzGrouped)
+                    </script>
 
 
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
-            crossorigin="anonymous"></script>
-        <script src="//cdnjs.cloudflare.com/ajax/libs/numeral.js/2.0.6/numeral.min.js"></script>
+                    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+                        integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
+                        crossorigin="anonymous"></script>
+                    <script src="//cdnjs.cloudflare.com/ajax/libs/numeral.js/2.0.6/numeral.min.js"></script>
 
-        <%= javascriptTag("helpers.js") %>
-        <%= javascriptTag("skills.js") %>
-    </body>
+                    <%= javascriptTag("helpers.js") %>
+                        <%= javascriptTag("skills.js") %>
+</body>
 
 </html>

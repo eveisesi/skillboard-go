@@ -5,6 +5,7 @@ import (
 
 	"github.com/eveisesi/skillz"
 	"github.com/eveisesi/skillz/internal/auth"
+	"github.com/eveisesi/skillz/internal/processor"
 	"github.com/eveisesi/skillz/internal/user/v2"
 	"github.com/eveisesi/skillz/public"
 	"github.com/gobuffalo/buffalo"
@@ -20,6 +21,7 @@ type Service struct {
 	app        *buffalo.App
 	auth       auth.API
 	user       user.API
+	processor  *processor.Service
 	logger     *logrus.Logger
 	renderer   *render.Engine
 	newrelic   *newrelic.Application
@@ -37,12 +39,13 @@ func NewService(
 
 	auth auth.API,
 	user user.API,
+	processor *processor.Service,
 
 	renderer *render.Engine,
 	newrelic *newrelic.Application,
 ) *Service {
 
-	var baseDomain = "https://skillboard.local"
+	var baseDomain = "http://localhost:54400"
 	if env == skillz.Production {
 		baseDomain = "https://skillboard.eveisesi.space"
 	}
@@ -52,6 +55,7 @@ func NewService(
 		baseDomain: baseDomain,
 		auth:       auth,
 		user:       user,
+		processor:  processor,
 		renderer:   renderer,
 		logger:     logger,
 		newrelic:   newrelic,

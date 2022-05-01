@@ -105,18 +105,26 @@ func (s *Service) processUser(ctx context.Context, userID string) error {
 		return err
 	}
 
+	return s.ProcessUser(ctx, user)
+
+}
+
+func (s *Service) ProcessUser(ctx context.Context, user *skillz.User) error {
+
+	txn := newrelic.FromContext(ctx)
+
 	defer func() {
 		user.IsNew = false
 		user.LastProcessed.SetValid(time.Now())
 		user.IsProcessing = false
-		err = s.user.CreateUser(ctx, user)
+		err := s.user.CreateUser(ctx, user)
 		if err != nil {
 			txn.NoticeError(errors.Wrap(err, "failed to update user"))
 			s.logger.WithError(err).Error("failed to update user")
 		}
 	}()
 
-	err = s.user.ValidateCurrentToken(ctx, user)
+	err := s.user.ValidateCurrentToken(ctx, user)
 	if err != nil {
 		err = errors.Wrap(err, "failed to validate token")
 		txn.NoticeError(err)

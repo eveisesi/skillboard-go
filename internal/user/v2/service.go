@@ -45,7 +45,7 @@ type API interface {
 	Recent(ctx context.Context) ([]*skillz.User, []*skillz.User, error)
 	// NewUsersBySP(ctx context.Context) ([]*skillz.UserWithSkillMeta, error)
 	ResetUserCache(ctx context.Context, user *skillz.User) error
-	ProcessUpdatableUsers(ctx context.Context) error
+	ProcessUpdatableUsers(ctx context.Context) ([]*skillz.User, error)
 
 	UserSettings(ctx context.Context, id string) (*skillz.UserSettings, error)
 	CreateUserSettings(ctx context.Context, userID string, settings *skillz.UserSettings) error
@@ -533,23 +533,14 @@ func memberIDFromSubject(sub string) (uint64, error) {
 
 }
 
-func (s *Service) ProcessUpdatableUsers(ctx context.Context) error {
+func (s *Service) ProcessUpdatableUsers(ctx context.Context) ([]*skillz.User, error) {
 
 	users, err := s.UserRepository.UsersSortedByProcessedAtLimit(ctx)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return errors.Wrap(err, "failed to query users table for processable users")
+		return nil, errors.Wrap(err, "failed to query users table for processable users")
 	}
 
-	s.logger.WithField("user_count", len(users)).Info("updatable user count")
-
-	for _, user := range users {
-		err = s.redis.ZAdd(ctx, internal.UpdateQueue, &redis.Z{Score: float64(time.Now().Unix()), Member: user.ID}).Err()
-		if err != nil {
-			return errors.Wrap(err, "failed to push user id to processing queue")
-		}
-	}
-
-	return nil
+	return users, nil
 
 }
 

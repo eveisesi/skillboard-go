@@ -144,12 +144,12 @@ func (s *Service) userHandler(c buffalo.Context) error {
 
 	c.Set("user", u)
 
-	jsonUser, err := json.Marshal(u)
+	jsonSkillGrouped, err := json.Marshal(u.SkillsGrouped)
 	if err != nil {
 		s.flashDanger(c, "Failed to encoding user data to json")
 		return c.Redirect(http.StatusFound, "rootPath()")
 	}
-	c.Set("jsonUser", string(jsonUser))
+	c.Set("jsonSkillGrouped", string(jsonSkillGrouped))
 
 	return c.Render(http.StatusOK, s.renderer.HTML("user/index.plush.html", "user/layout.plush.html"))
 }

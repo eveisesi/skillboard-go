@@ -1,0 +1,1 @@
+DROP TABLE `ship_flight_requirements`;

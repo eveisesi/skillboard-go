@@ -18,21 +18,21 @@ function setFilterSkillLevel(skillLevel) {
 function renderSkillLevelListGroup() {
     let rows = []
     rows.push(`
-    <li data-level="-2" class="list-group-item text-white ${selectedSkillLevel === -2 ? 'active':''}" onclick="setFilterSkillLevel(this.getAttribute('data-level'))">
+    <li data-level="-2" class="list-group-item text-white ${selectedSkillLevel === -2 ? 'active' : ''}" onclick="setFilterSkillLevel(this.getAttribute('data-level'))">
     All Skills
     </li>
-    `,`
-    <li data-level="-1" class="list-group-item text-white ${selectedSkillLevel === -1 ? 'active':''}" onclick="setFilterSkillLevel(this.getAttribute('data-level'))">
+    `, `
+    <li data-level="-1" class="list-group-item text-white ${selectedSkillLevel === -1 ? 'active' : ''}" onclick="setFilterSkillLevel(this.getAttribute('data-level'))">
     All Uninjected/Untrained Skills
     </li>\
-    `,`
-    <li data-level="0" class="list-group-item text-white ${selectedSkillLevel === 0 ? 'active':''}" onclick="setFilterSkillLevel(this.getAttribute('data-level'))">
+    `, `
+    <li data-level="0" class="list-group-item text-white ${selectedSkillLevel === 0 ? 'active' : ''}" onclick="setFilterSkillLevel(this.getAttribute('data-level'))">
     All Injected Skills
     </li>
     `)
     for (let i = 1; i <= 5; i++) {
         rows.push(`
-        <li data-level="${i}" class="list-group-item text-white ${selectedSkillLevel === i ? 'active':''}" onclick="setFilterSkillLevel(this.getAttribute('data-level'))">
+        <li data-level="${i}" class="list-group-item text-white ${selectedSkillLevel === i ? 'active' : ''}" onclick="setFilterSkillLevel(this.getAttribute('data-level'))">
         Skill Trained Level ${i}
         </li>
         `)
@@ -40,10 +40,9 @@ function renderSkillLevelListGroup() {
     document.querySelector("#skillLevelListGroup").innerHTML = `<ul class="list-group">${rows.join("")}</ul>`;
 }
 function renderSkillGroupListGroup() {
-    const groups = user.groupedSkillz;
-    let rows = groups.map(group => {
+    let rows = skillzGrouped.map(group => {
         return `
-            <li data-id="${group.id}" class="list-group-item text-white d-flex w-100 justify-content-between ${group.id == selectedSkillGroupID ? 'active':''}" onclick="setActiveGroupID(this.getAttribute('data-id'))">
+            <li data-id="${group.id}" class="list-group-item text-white d-flex w-100 justify-content-between ${group.id == selectedSkillGroupID ? 'active' : ''}" onclick="setActiveGroupID(this.getAttribute('data-id'))">
             <span>
             ${group.name}
             </span>
@@ -54,7 +53,7 @@ function renderSkillGroupListGroup() {
         `
     })
     rows.unshift(
-        `<li data-id="-1" class="list-group-item text-white ${selectedSkillGroupID === -1  ? 'active':''}" onclick="setActiveGroupID(this.getAttribute('data-id'))">All</li>`
+        `<li data-id="-1" class="list-group-item text-white ${selectedSkillGroupID === -1 ? 'active' : ''}" onclick="setActiveGroupID(this.getAttribute('data-id'))">All</li>`
     )
     document.querySelector("#skillGroupListGroup").innerHTML = `<ul class="list-group">${rows.join("")}</ul>`;
     renderSkillGroupDetails()
@@ -63,16 +62,16 @@ function renderSkillGroupListGroup() {
 
 
 function renderSkillGroupDetails() {
-    const groups = user.groupedSkillz
+    const groups = skillzGrouped
     let cards = [];
-    for(let i = 0; i < groups.length; i++) {
+    for (let i = 0; i < groups.length; i++) {
         const group = groups[i]
         if (selectedSkillGroupID > 0 && selectedSkillGroupID != group.id) {
             continue
-        } 
+        }
         const skillLines = []
-        for(let i = 0; i < group.skills.length; i++) {
-            const skill= group.skills[i]
+        for (let i = 0; i < group.skills.length; i++) {
+            const skill = group.skills[i]
             let typeName = `<span class="text-muted"><strike>${skill.name}</strike></span>`
             if (skill.skill) {
                 typeName = `<span>${skill.name}</span>`
@@ -83,27 +82,27 @@ function renderSkillGroupDetails() {
                 rank = skill.rank.value
             }
             if (selectedSkillLevel == -1 && skill.skill) {
-                continue 
+                continue
             }
-            if (!skill.skill && selectedSkillLevel >=0) {
+            if (!skill.skill && selectedSkillLevel >= 0) {
                 continue
             }
             let right = []
             if (skill.skill) {
-                if (selectedSkillLevel >0 && selectedSkillLevel !== skill.skill.trained_skill_level) {
-                    continue 
+                if (selectedSkillLevel > 0 && selectedSkillLevel !== skill.skill.trained_skill_level) {
+                    continue
                 }
                 sp = skill.skill.skillpoints_in_skill
-                for(let i = 1; i <= skill.skill.trained_skill_level; i++) {
+                for (let i = 1; i <= skill.skill.trained_skill_level; i++) {
                     right.push(`<i class="me-1 fas fa-square"></i>`)
                 }
                 if (skill.skill.trained_skill_level < 5) {
-                    for (let i = skill.skill.trained_skill_level+1; i <= 5; i++ ) {
+                    for (let i = skill.skill.trained_skill_level + 1; i <= 5; i++) {
                         right.push(`<i class="me-1 far fa-square"></i>`)
                     }
                 }
-                
-            }   
+
+            }
 
             const left = `
                 <div>
@@ -129,10 +128,11 @@ function renderSkillGroupDetails() {
         }
 
         if (skillLines.length == 0) {
+            console.log("skillLines.length == 0")
             continue
         }
 
-        cards.push( `
+        cards.push(`
             <div class="card mb-2">
                 <div class="card-header">
                     <h5 class="mb-0 d-flex w-100 justify-content-between">
