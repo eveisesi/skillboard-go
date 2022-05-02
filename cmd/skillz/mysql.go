@@ -36,7 +36,7 @@ func buildMySQL() {
 	db.SetConnMaxIdleTime(time.Second * 5)
 	db.SetConnMaxLifetime(time.Second * 30)
 	db.SetMaxOpenConns(10)
-	db.SetMaxIdleConns(15)
+	db.SetMaxIdleConns(5)
 
 	err = db.Ping()
 	if err != nil {
