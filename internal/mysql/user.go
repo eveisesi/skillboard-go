@@ -7,7 +7,6 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/eveisesi/skillz"
-	"github.com/gofrs/uuid"
 	"github.com/pkg/errors"
 )
 
@@ -100,23 +99,6 @@ func (r *userRepository) UserByCharacterID(ctx context.Context, characterID uint
 	var user = new(skillz.User)
 	err = r.db.GetContext(ctx, user, query, args...)
 	return user, errors.Wrapf(err, prefixFormat, userRepositoryIdentifier, "UserByCharacterID")
-
-}
-
-func (r *userRepository) UserByUUID(ctx context.Context, id uuid.UUID) (*skillz.User, error) {
-
-	query, args, err := sq.Select(r.users.columns...).
-		From(r.users.table).
-		Where(sq.Eq{UserUUID: id}).
-		Limit(1).
-		ToSql()
-	if err != nil {
-		return nil, errors.Wrapf(err, errorFFormat, userRepositoryIdentifier, "UserByUUID", "failed to generate sql")
-	}
-
-	var user = new(skillz.User)
-	err = r.db.GetContext(ctx, user, query, args...)
-	return user, errors.Wrapf(err, prefixFormat, userRepositoryIdentifier, "UserByUUID")
 
 }
 

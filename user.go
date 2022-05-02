@@ -4,14 +4,12 @@ import (
 	"context"
 	"time"
 
-	"github.com/gofrs/uuid"
 	"github.com/volatiletech/null"
 	"golang.org/x/oauth2"
 )
 
 type UserRepository interface {
 	User(ctx context.Context, id string) (*User, error)
-	UserByUUID(ctx context.Context, id uuid.UUID) (*User, error)
 	UserByCharacterID(ctx context.Context, characterID uint64) (*User, error)
 	SearchUsers(ctx context.Context, q string) ([]*User, error)
 	CreateUser(ctx context.Context, user *User) error

@@ -21,7 +21,6 @@ import (
 	"github.com/eveisesi/skillz/internal/corporation"
 	"github.com/eveisesi/skillz/internal/skill"
 	"github.com/go-redis/redis/v8"
-	"github.com/gofrs/uuid"
 	"github.com/lestrrat-go/jwx/jwt"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -37,7 +36,6 @@ type API interface {
 	User(ctx context.Context, id string, rels ...UserRel) (*skillz.User, error)
 	RefreshUser(ctx context.Context, user *skillz.User) error
 	UserByCharacterID(ctx context.Context, characterID uint64) (*skillz.User, error)
-	UserByUUID(ctx context.Context, id uuid.UUID) (*skillz.User, error)
 	SearchUsers(ctx context.Context, q string) ([]*skillz.UserSearchResult, error)
 	CreateUser(ctx context.Context, user *skillz.User) error
 	DeleteUser(ctx context.Context, user *skillz.User) error
