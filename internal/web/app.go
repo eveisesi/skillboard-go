@@ -10,6 +10,7 @@ import (
 	"github.com/eveisesi/skillz/public"
 	"github.com/gobuffalo/buffalo"
 	"github.com/gobuffalo/buffalo/render"
+	buflog "github.com/gobuffalo/logger"
 	csrf "github.com/gobuffalo/mw-csrf"
 	"github.com/newrelic/go-agent/v3/newrelic"
 	"github.com/sirupsen/logrus"
@@ -66,6 +67,7 @@ func NewService(
 		SessionName: sessionName,
 		WorkerOff:   true,
 		Addr:        "0.0.0.0:54400",
+		Logger:      buflog.NewLogger("debug"),
 	})
 
 	mux := s.app.Muxer()
